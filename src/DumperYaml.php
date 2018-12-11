@@ -120,6 +120,9 @@ class DumperYaml
             case 'integer':
                 return static::faker()->numberBetween(1, 99);
                 break;
+            case 'boolean':
+                return static::faker()->boolean;
+                break;
         }
         return null;
     }

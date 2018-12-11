@@ -9,6 +9,7 @@ use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\RouteCompiler;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class RoutesParser
@@ -103,13 +104,16 @@ class RoutesParser
         $stdTypes = ['int', 'integer', 'string', 'float', 'array', 'bool', 'boolean'];
         foreach ($ref->getParameters() as $parameter) {
             if ($parameter->hasType() && ($type = $parameter->getType()->getName()) && !in_array($type, $stdTypes)) {
-                if (class_exists($type) && isset(class_parents($type)[FormRequest::class])) {
-                    $this->getParamsFromFormRequest($type);
-                    dd($type);
+                if (
+                    class_exists($type)
+                    && isset(class_parents($type)[FormRequest::class])
+                    && ($request = $this->getParamsFromFormRequest($type)) !== null
+                ) {
+                    break;
                 }
             }
         }
-        dump($ref->getParameters());
+        return $request;
     }
 
     protected function getParamsFromFormRequest($className)
@@ -117,51 +121,16 @@ class RoutesParser
         $rulesData = $this->parseFormRequestRules($className);
         $annotationsData = $this->parseFormRequestAnnotations($className);
 
-        dd($rulesData, $annotationsData);
-        $ref = $this->reflectionClass($className);
-        $annotations = $this->classAnnotations($className, 'OA\RequestBody');
-        //dd($annotations);
-        $requests = [];
-        /** @var \OA\RequestBody $annotation */
-        foreach ($annotations as $annotation) {
-            $requests[$annotation->contentType] = $annotation->toArray();
+        $result = $annotationsData;
+        foreach ($result['content'] as $contentType => $schema) {
+            $path = 'content.' . $contentType;
+            if (isset($schema['schema'])) {
+                $path .= '.schema';
+            }
+            $merged = static::mergeArray(Arr::get($result, $path), $rulesData);
+            Arr::set($result, $path, $merged);
         }
-        //$annotation = $this->annotationReader()->getClassAnnotation($ref, 'OA\RequestBody');
-        //dd($requests);
-        /** @var FormRequest $instance */
-        $instance = new $className;
-        $rulesRaw = $instance->rules();
-        $rules = [];
-        $intRules = ['integer'];
-        $floatRules = ['numeric'];
-        foreach ($rulesRaw as $key => $row) {
-            if (is_string($row)) {
-                $row = explode('|', $row);
-            }
-            $row = array_filter($row, function ($value) { return is_string($value); });
-            $type = 'string';
-            $isUrl = in_array('url', $row);
-            if (!empty(array_intersect($intRules, $row))) {
-                $type = 'integer';
-            }
-            if (!empty(array_intersect($floatRules, $row))) {
-                $type = 'float';
-            }
-            if (in_array('array', $row)) {
-                $type = 'array';
-            }
-
-            $rules[$key] = [
-                'required' => in_array('required', $row) && !in_array('nullable', $row),
-                'type' => $type,
-            ];
-            $example = DumperYaml::getExampleValue($type);
-            if (($example = DumperYaml::getExampleValue($type)) !== null) {
-                $rules[$key]['example'] = $example;
-            }
-            //dd($row);
-        }
-        dd($rules);
+        return $result;
     }
 
     protected function parseFormRequestRules($className)
@@ -171,20 +140,67 @@ class RoutesParser
         if (!method_exists($instance, 'rules')) {
             return [];
         }
-        $rulesRaw = $instance->rules();
-        $exampleData = [];
-        foreach ($rulesRaw as $key => $row) {
+        try {
+            $rulesRaw = $instance->rules();
+        } catch (\Throwable $exception) {
+            $rulesRaw = [];
+        }
+        $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
+        $exampleData = $this->processFormRequestRules($rulesRaw);
+        return DumperYaml::describe($exampleData);
+    }
+
+    protected function normalizeFormRequestRules(array $rules)
+    {
+        $result = [];
+        $rulesExpanded = [];
+        foreach ($rules as $key => $row) {
+            if (strpos($key, '.') !== false) {
+                Arr::set($rulesExpanded, $key, $row);
+                unset($rules[$key]);
+            }
+        }
+        $rules = array_merge($rules, $rulesExpanded);
+        foreach ($rules as $key => $row) {
+            if (is_object($row)) {
+                continue;
+            }
             if (is_string($row)) {
                 $row = explode('|', $row);
             }
-            $row = array_filter($row, function ($value) { return is_string($value); });
+            if (Arr::isAssoc($row)) {
+                $row = $this->normalizeFormRequestRules($row);
+            } else {
+                $row = array_values(array_filter($row, function ($value) { return is_string($value); }));
+            }
+            $result[$key] = $row;
+        }
+        return $result;
+    }
+
+    protected function processFormRequestRules(array $rules)
+    {
+        $result = [];
+        foreach ($rules as $key => $row) {
+            if (Arr::isAssoc($row)) {
+                $result[$key] = $this->processFormRequestRules($row);
+                continue;
+            }
             foreach ($row as $ruleName) {
+                if (strpos($ruleName, ':')) {
+                    $ruleName = explode(':', $ruleName)[0];
+                }
                 if (($example = DumperYaml::getExampleValueByRule($ruleName)) !== null) {
-                    $exampleData[$key] = $example;
+                    if ($key === '*') {
+                        $result = [$example];
+                    } else {
+                        $result[$key] = $example;
+                    }
+                    break;
                 }
             }
         }
-        return DumperYaml::describe($exampleData);
+        return $result;
     }
 
     /**
@@ -195,12 +211,15 @@ class RoutesParser
     protected function parseFormRequestAnnotations($className)
     {
         $annotations = $this->classAnnotations($className, 'OA\RequestBody');
-        $requests = [];
+        if (empty($annotations)) {
+            $annotations = [new \OA\RequestBodyJson(['content' => []])];
+        }
+        $request = [];
         /** @var \OA\RequestBody $annotation */
         foreach ($annotations as $annotation) {
-            $requests[$annotation->contentType] = $annotation->toArray();
+            $request = static::mergeArray($request, $annotation->toArray());
         }
-        return $requests;
+        return $request;
     }
 
     protected function normalizeUri($uri)
@@ -298,5 +317,33 @@ class RoutesParser
         return [
             '[0-9]+' => 'integer',
         ];
+    }
+
+    /**
+     * @param array $a
+     * @param array $b
+     * @return array|mixed
+     */
+    protected static function mergeArray($a, $b)
+    {
+        $args = func_get_args();
+        $res = array_shift($args);
+        while (!empty($args)) {
+            foreach (array_shift($args) as $k => $v) {
+                if (is_int($k)) {
+                    if (array_key_exists($k, $res)) {
+                        $res[] = $v;
+                    } else {
+                        $res[$k] = $v;
+                    }
+                } elseif (is_array($v) && isset($res[$k]) && is_array($res[$k])) {
+                    $res[$k] = static::mergeArray($res[$k], $v);
+                } else {
+                    $res[$k] = $v;
+                }
+            }
+        }
+
+        return $res;
     }
 }

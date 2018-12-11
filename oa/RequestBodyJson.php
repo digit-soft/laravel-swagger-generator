@@ -31,62 +31,28 @@ class RequestBodyJson extends RequestBody
     /**
      * Process content row by row recursively
      * @param array $content
+     * @return array
      */
-    protected function processContent($content = [])
+    protected function processContent($content)
     {
         $result = [];
-        $described = [];
-        $examples = [];
         foreach ($content as $key => $row) {
-            $rowRes = $row;
             if (is_object($row)) {
                 if (!method_exists($row, 'toArray')) {
                     continue;
                 }
                 if ($row instanceof RequestParam) {
-                    $described[$row->name] = $row->toArray();
+                    $result[$row->name] = $row->toArray();
                 } else {
-                    $examples[$key] = $row->toArray();
+                    $result[$key] = DumperYaml::describe($row->toArray());
                 }
             } elseif (is_array($row)) {
-                $rowRes = $this->processContent($row);
+                $result[$key] = $this->processContent($row);
+            } else {
+                $result[$key] = $row;
             }
-            if (is_object($row) && method_exists($row, 'toArray')) {
-                $rowRes = $row->toArray();
-                $key = $row instanceof RequestParam ? $row->name : $key;
-            } elseif (is_array($row)) {
-                $rowRes = $this->processContent($row);
-            }
-            $result[$key] = $rowRes;
         }
         return $result;
-    }
-
-    protected function processContent2($content, array &$examples, array &$described)
-    {
-        $result = [];
-        foreach ($content as $key => $row) {
-            $rowRes = $row;
-            if (is_object($row)) {
-                if (!method_exists($row, 'toArray')) {
-                    continue;
-                }
-                if ($row instanceof RequestParam) {
-                    $described[$row->name] = $row->toArray();
-                } else {
-                    $examples[$key] = $row->toArray();
-                }
-            } elseif (is_array($row)) {
-                $this->processContent($row, $examples, $described);
-            }
-            if (is_object($row) && method_exists($row, 'toArray')) {
-                $rowRes = $row->toArray();
-                $key = $row instanceof RequestParam ? $row->name : $key;
-            } elseif (is_array($row)) {
-                $rowRes = $this->processContent($row);
-            }
-            $result[$key] = $rowRes;
-        }
     }
 
     /**
@@ -95,14 +61,15 @@ class RequestBodyJson extends RequestBody
     public function toArray()
     {
         $content = $this->processContent($this->content);
-        dd($content);
-        $contentDescribed = DumperYaml::describe($content);
         $data = [
             'description' => $this->description ?? '',
             'required' => true,
             'content' => [
                 $this->contentType => [
-                    'schema' => $contentDescribed,
+                    'schema' => [
+                        'type' => 'object',
+                        'properties' => $content,
+                    ],
                 ],
             ],
         ];
