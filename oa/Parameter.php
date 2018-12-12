@@ -20,9 +20,11 @@ class Parameter extends BaseAnnotation
 
     public $name;
 
-    public $type;
+    public $type = 'integer';
 
     public $description;
+
+    public $required = true;
 
     /**
      * Parameter constructor.
@@ -30,12 +32,7 @@ class Parameter extends BaseAnnotation
      */
     public function __construct($values)
     {
-        if (isset($values['value'])) {
-            $values = ['name' => $values['value']];
-        }
-        $this->name = $values['name'];
-        $this->type = $values['type'] ?? 'integer';
-        $this->in = $values['in'] ?? 'path';
+        $this->configureSelf($values, 'name');
     }
 
     /**
@@ -44,9 +41,10 @@ class Parameter extends BaseAnnotation
     public function toArray()
     {
         $data = [
-            'in' => $this->in,
             'name' => $this->name,
+            'in' => $this->in,
             'description' => $this->description ?? '',
+            'required' => $this->required,
             'schema' => [
                 'type' => $this->type,
             ],
