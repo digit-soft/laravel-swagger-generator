@@ -27,7 +27,7 @@ trait WithAnnotationReader
     protected function routeAnnotation(Route $route, $name = 'OA\Tag')
     {
         $ref = $this->routeReflection($route);
-        if ($ref !== null) {
+        if ($ref !== null && $ref instanceof \ReflectionMethod) {
             return $this->annotationReader()->getMethodAnnotation($ref, $name);
         }
         return null;
@@ -42,6 +42,9 @@ trait WithAnnotationReader
     protected function routeAnnotations(Route $route, $name = null)
     {
         $ref = $this->routeReflection($route);
+        if (!$ref instanceof \ReflectionMethod) {
+            return [];
+        }
         $annotations = $this->annotationReader()->getMethodAnnotations($ref);
         if ($name === null) {
             return $annotations;
