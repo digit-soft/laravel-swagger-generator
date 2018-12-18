@@ -72,8 +72,8 @@ class RoutesParser
             if (($security = $this->getRouteSecurity($route)) !== null) {
                 $routeData['security'] = $security;
             }
-            if (($tag = $this->getRouteTag($route)) !== null) {
-                $routeData['tags'] = [$tag];
+            if (($tags = $this->getRouteTags($route)) !== null) {
+                $routeData['tags'] = $tags;
             }
             if (($summary = $this->getRouteSummary($route)) !== null) {
                 $routeData['summary'] = $summary;
@@ -105,6 +105,11 @@ class RoutesParser
         return $paths;
     }
 
+    /**
+     * Get params for route
+     * @param Route $route
+     * @return array|null
+     */
     protected function getRouteParams(Route $route)
     {
         $params = [];
@@ -136,6 +141,11 @@ class RoutesParser
         return !empty($params) ? $params : null;
     }
 
+    /**
+     * Get PHPDoc 'params' for route
+     * @param Route $route
+     * @return array
+     */
     protected function getRouteDocParams(Route $route)
     {
         $ref = $this->routeReflection($route);
@@ -146,6 +156,11 @@ class RoutesParser
         return $this->getDocTagsPropertiesDescribed($docBlockStr, 'param');
     }
 
+    /**
+     * Get responses for route
+     * @param Route $route
+     * @return array
+     */
     protected function getRouteResponses(Route $route)
     {
         $result = [];
@@ -160,6 +175,11 @@ class RoutesParser
         return $result;
     }
 
+    /**
+     * Get request body for route
+     * @param Route $route
+     * @return array|null
+     */
     protected function getRouteRequest(Route $route)
     {
         $ref = $this->routeReflection($route);
@@ -179,6 +199,11 @@ class RoutesParser
         return $request;
     }
 
+    /**
+     * Get and process FormRequest annotations and rules
+     * @param string $className
+     * @return array
+     */
     protected function getParamsFromFormRequest($className)
     {
         $rulesData = $this->parseFormRequestRules($className);
@@ -196,6 +221,11 @@ class RoutesParser
         return $result;
     }
 
+    /**
+     * Get FormRequest rules, process them and return described data
+     * @param string $className
+     * @return array
+     */
     protected function parseFormRequestRules($className)
     {
         /** @var FormRequest $instance */
@@ -214,6 +244,11 @@ class RoutesParser
         return DumperYaml::describe($exampleData);
     }
 
+    /**
+     * Normalize FormRequest rules array
+     * @param array $rules
+     * @return array
+     */
     protected function normalizeFormRequestRules(array $rules)
     {
         $result = [];
@@ -242,6 +277,12 @@ class RoutesParser
         return $result;
     }
 
+    /**
+     * Process rules obtained from FromRequest class and return data examples.
+     *
+     * @param array $rules
+     * @return array
+     */
     protected function processFormRequestRules(array $rules)
     {
         $result = [];
@@ -268,7 +309,7 @@ class RoutesParser
     }
 
     /**
-     * Get form request annotations
+     * Get form request annotations (\OA\RequestBody)
      * @param string $className
      * @return array
      */
@@ -286,6 +327,13 @@ class RoutesParser
         return $request;
     }
 
+    /**
+     * Check that route must be processed
+     * @param Route      $route
+     * @param array      $matches
+     * @param array|null $only
+     * @return bool
+     */
     protected function checkRoute(Route $route, $matches = [], $only = null)
     {
         $uri = '/' . ltrim($route->uri, '/');
@@ -303,22 +351,25 @@ class RoutesParser
     }
 
     /**
-     * Get route tag name
+     * Get route tag names
      * @param Route $route
-     * @return string|null
+     * @return string[]
      */
-    protected function getRouteTag(Route $route)
+    protected function getRouteTags(Route $route)
     {
         $methodRef = $this->routeReflection($route);
+        $tags = [];
         if ($methodRef instanceof \ReflectionMethod) {
-            $annotation = $this->routeAnnotation($route, 'OA\Tag');
-            if ($annotation instanceof \OA\Tag) {
-                return $annotation->name;
+            $annotations = $this->routeAnnotations($route, 'OA\Tag');
+            foreach ($annotations as $annotation) {
+                $tags[] = $annotation->name;
             }
-            $controllerName = explode('\\', $methodRef->class);
-            return last($controllerName);
+            if (empty($tags)) {
+                $controllerName = explode('\\', $methodRef->class);
+                $tags[] = last($controllerName);
+            }
         }
-        return null;
+        return $tags;
     }
 
     /**

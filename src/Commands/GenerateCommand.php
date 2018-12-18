@@ -9,7 +9,6 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Str;
 
 class GenerateCommand extends Command
 {
@@ -54,13 +53,13 @@ class GenerateCommand extends Command
         $arrayContent['paths'] = $this->getRoutesData();
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
-        $this->getOutput()->success("Swagger YML file generated");
+        $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
     }
 
     protected function getRoutesData()
     {
         $parser = new RoutesParser($this->routes, $this->getOutput());
-        return $parser->parse($this->getOutput());
+        return $parser->parse();
     }
 
     /**
