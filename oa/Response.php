@@ -4,6 +4,7 @@ namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
 use Doctrine\Common\Annotations\Annotation\Target;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Arr;
 
 /**
@@ -16,6 +17,8 @@ class Response extends BaseAnnotation
     public $contentType = 'application/json';
     public $status = 200;
     public $description;
+    public $asList = false;
+    public $withPager = false;
 
     protected static $defaultResponses = [];
 
@@ -33,7 +36,13 @@ class Response extends BaseAnnotation
      */
     public function toArray()
     {
-        $content = static::wrapInDefaultResponse($this->status, $this->getContent());
+        if ($this->asList) {
+            $contentRaw = DumperYaml::describe([""]);
+            Arr::set($contentRaw, 'items', $this->getContent());
+        } else {
+            $contentRaw = $this->asList ? [$this->getContent()] : $this->getContent();
+        }
+        $content = $this->wrapInDefaultResponse($contentRaw);
         return [
             'description' => $this->description ?? '',
             'content' => [
@@ -64,31 +73,80 @@ class Response extends BaseAnnotation
 
     /**
      * Wrap response content in default response
-     * @param int  $status
      * @param bool $content
-     * @return array
+     * @return array|mixed
      */
-    protected static function wrapInDefaultResponse($status, $content = true)
+    protected function wrapInDefaultResponse($content = null)
     {
-        $status = intval($status);
-        $key = in_array($status, [200, 201]) ? 'ok' : 'error';
-        $contentKey = $key === 'ok' ? 'properties.result' : 'properties.errors';
+        $withPager = $this->withPager;
+        $content = $content ?? $this->content;
+        $responseData = static::getDefaultResponse($this->contentType, $this->status);
+        if ($responseData === null) {
+            return $content;
+        }
+        list($responseRaw, $resultKey) = array_values($responseData);
+        if ($withPager && static::isSuccessStatus($this->status)) {
+            $responseRaw['pagination'] = static::getPagerExample();
+        }
+        $response = DumperYaml::describe($responseRaw);
+        Arr::set($response, $resultKey, $content);
+        return $response;
+    }
+
+    /**
+     * Get default response by content type [response, result_array_key]
+     * @param string $contentType
+     * @param int $status
+     * @return mixed|null
+     */
+    protected static function getDefaultResponse($contentType, $status = 200)
+    {
+        $key = static::isSuccessStatus($status) ? 'ok' : 'error';
         $responses = [
-            'ok' => [
-                'success' => true,
-                'message' => 'OK',
-                'result' => false,
-            ],
-            'error' => [
-                'success' => false,
-                'message' => 'Error',
-                'errors' => [],
+            'application/json' => [
+                'ok' => [
+                    'response' => [
+                        'success' => true,
+                        'message' => 'OK',
+                        'result' => false,
+                    ],
+                    'resultKey' => 'properties.result',
+                ],
+                'error' => [
+                    'response' => [
+                        'success' => false,
+                        'message' => 'Error',
+                        'errors' => [],
+                    ],
+                    'resultKey' => 'errors',
+                ],
             ],
         ];
+        $responseKey = $contentType . '.' . $key;
+        if (($responseData = Arr::get($responses, $responseKey, null)) === null) {
+            return null;
+        }
+        return $responseData;
+    }
 
-        $response = DumperYaml::describe($responses[$key]);
-        Arr::set($response, $contentKey, $content);
+    /**
+     * Check that status is successful
+     * @param int|string $status
+     * @return bool
+     */
+    protected static function isSuccessStatus($status)
+    {
+        $status = intval($status);
+        return in_array($status, [200, 201]);
+    }
 
-        return $response;
+    /**
+     * Get pager example
+     * @return array
+     */
+    protected static function getPagerExample()
+    {
+        $pager = new LengthAwarePaginator([], 100, 10, 1);
+        return Arr::except($pager->toArray(), ['items']);
     }
 }

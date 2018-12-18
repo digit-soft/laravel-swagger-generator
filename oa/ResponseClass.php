@@ -3,14 +3,14 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
-use DigitSoft\Swagger\ModelParser;
+use DigitSoft\Swagger\Parsers\ClassParser;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * @Annotation
  * @Target({"METHOD"})
  */
-class ResponseModel extends Response
+class ResponseClass extends Response
 {
     public $with;
 
@@ -20,7 +20,7 @@ class ResponseModel extends Response
     protected function getContent()
     {
         if ($this->content === null || !class_exists($this->content)) {
-            throw new \Exception("Model '{$this->content}' not found");
+            throw new \Exception("Class '{$this->content}' not found");
         }
         return [
             'type' => 'object',
@@ -34,7 +34,7 @@ class ResponseModel extends Response
      */
     protected function getModelProperties()
     {
-        $parser = new ModelParser($this->content);
+        $parser = new ClassParser($this->content);
         $properties = $parser->properties(true);
         $propertiesRead = [];
         if (($with = $this->getWith()) !== null) {
@@ -73,6 +73,9 @@ class ResponseModel extends Response
                 $propData['properties'][$propNameNested] = $this->describeProperty($propNameNested, $propDataNested);
             }
         } else {
+            if (strpos($propData['type'], '|') !== false) {
+                $propData['type'] = explode('|', $propData['type'])[0];
+            }
             $propValue = DumperYaml::getExampleValue($propData['type'], $propName);
             $propData = array_merge($propData, DumperYaml::describe($propValue));
         }
