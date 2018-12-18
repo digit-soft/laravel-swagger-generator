@@ -2,51 +2,76 @@
 
 namespace DigitSoft\Swagger;
 
+use DigitSoft\Swagger\Parser\RoutesParserEvents;
+use DigitSoft\Swagger\Parser\RoutesParserHelpers;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
+use DigitSoft\Swagger\Parser\WithDocParser;
+use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithRouteReflections;
+use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
-use Illuminate\Routing\RouteCompiler;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class RoutesParser
 {
+    const EVENT_START = 'parse_start';
+    const EVENT_FINISH = 'parse_finish';
+    const EVENT_ROUTE_PROCESSED = 'route_processed';
+    const EVENT_ROUTE_SKIPPED = 'route_skipped';
+    const EVENT_FORM_REQUEST_FAILED = 'route_form_request_failed';
+
     /**
      * @var Route[]|RouteCollection
      */
     protected $routes;
+    /**
+     * @var OutputStyle
+     */
+    protected $output;
 
-    protected $docFactory;
-
-    use WithRouteReflections, WithAnnotationReader;
+    use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
+        RoutesParserHelpers, RoutesParserEvents;
 
     /**
      * RoutesParser constructor.
-     * @param RouteCollection $routes
+     * @param RouteCollection  $routes
+     * @param OutputStyle|null $output
      */
-    public function __construct(RouteCollection $routes)
+    public function __construct(RouteCollection $routes, OutputStyle $output = null)
     {
         $this->routes = $routes;
+        $this->output = $output;
     }
 
+    /**
+     * Parse routes collection
+     * @return array
+     */
     public function parse()
     {
+        $this->trigger(static::EVENT_START);
         $paths = [];
         $only = config('swagger-generator.routes.only', []);
         $matches = config('swagger-generator.routes.matches', []);
         $documentedMethods = config('swagger-generator.routes.methods', ['GET']);
+        $routeNum = 1;
         foreach ($this->routes as $route) {
             if (!$this->checkRoute($route, $matches, $only)) {
+                $this->trigger(static::EVENT_ROUTE_SKIPPED, $route);
                 continue;
             }
+            $actionMethod = $route->getActionMethod();
             $routeData = [
                 'summary' => '',
                 'description' => '',
-                'operationId' => $route->getActionMethod(),
+                'operationId' => $actionMethod === 'Closure' ? 'closure_' . $routeNum : $actionMethod,
             ];
+            if (($security = $this->getRouteSecurity($route)) !== null) {
+                $routeData['security'] = $security;
+            }
             if (($tag = $this->getRouteTag($route)) !== null) {
                 $routeData['tags'] = [$tag];
             }
@@ -62,20 +87,21 @@ class RoutesParser
             if (($request = $this->getRouteRequest($route)) !== null) {
                 $routeData['requestBody'] = $request;
             }
-
-            if ($route->uri === 'api/v1.0/users/{user}') {
-                //dump($route, $route->getActionMethod());
+            if (($responses = $this->getRouteResponses($route)) !== null) {
+                $routeData['responses'] = $responses;
             }
 
-            //dd($controller, $method);
-            $path = $this->normalizeUri($route->uri());
+            $path = $this->normalizeUri($route->uri(), true);
             $paths[$path] = $paths[$path] ?? [];
             foreach ($route->methods as $method) {
                 if (in_array($method, $documentedMethods)) {
                     $paths[$path][strtolower($method)] = $routeData;
                 }
             }
+            ++$routeNum;
+            $this->trigger(static::EVENT_ROUTE_PROCESSED, $route);
         }
+        $this->trigger(static::EVENT_FINISH);
         return $paths;
     }
 
@@ -84,17 +110,50 @@ class RoutesParser
         $params = [];
         /** @var \OA\Parameter[] $paramsAnn */
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
+        $paramsDoc = $this->getRouteDocParams($route);
         if (empty($paramsAnn)) {
             $paramsAnn = [];
             foreach ($route->parameterNames() as $parameterName) {
+                $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
                 $type = $this->getRouteParamType($route, $parameterName);
-                $paramsAnn[] = new \OA\Parameter(['name' => $parameterName, 'type' => $type]);
+                $paramsAnn[] = new \OA\Parameter([
+                    'name' => $parameterName,
+                    'type' => $type,
+                    'required' => $required,
+                ]);
             }
         }
         foreach ($paramsAnn as $param) {
-            $params[$param->name] = $param->toArray();
+            if (empty($param->description) && ($paramDoc = static::getArrayElemByStrKey($paramsDoc, $param->name)) !== null) {
+                $param->description = $paramDoc['description'];
+            }
+            $params[] = $param->toArray();
         }
         return !empty($params) ? $params : null;
+    }
+
+    protected function getRouteDocParams(Route $route)
+    {
+        $ref = $this->routeReflection($route);
+        $docBlockStr = $ref->getDocComment();
+        if (empty($docBlockStr)) {
+            return [];
+        }
+        return $this->getDocTagsPropertiesDescribed($docBlockStr, 'param');
+    }
+
+    protected function getRouteResponses(Route $route)
+    {
+        $result = [];
+        /** @var \OA\Response[] $annotations */
+        $annotations = $this->routeAnnotations($route, 'OA\Response');
+        foreach ($annotations as $annotation) {
+            $data = [
+                $annotation->status => $annotation->toArray(),
+            ];
+            $result = static::merge($result, $data);
+        }
+        return $result;
     }
 
     protected function getRouteRequest(Route $route)
@@ -127,7 +186,7 @@ class RoutesParser
             if (isset($schema['schema'])) {
                 $path .= '.schema';
             }
-            $merged = static::mergeArray(Arr::get($result, $path), $rulesData);
+            $merged = static::merge(Arr::get($result, $path), $rulesData);
             Arr::set($result, $path, $merged);
         }
         return $result;
@@ -143,6 +202,7 @@ class RoutesParser
         try {
             $rulesRaw = $instance->rules();
         } catch (\Throwable $exception) {
+            $this->trigger(static::EVENT_FORM_REQUEST_FAILED, $instance, $exception);
             $rulesRaw = [];
         }
         $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
@@ -217,17 +277,9 @@ class RoutesParser
         $request = [];
         /** @var \OA\RequestBody $annotation */
         foreach ($annotations as $annotation) {
-            $request = static::mergeArray($request, $annotation->toArray());
+            $request = static::merge($request, $annotation->toArray());
         }
         return $request;
-    }
-
-    protected function normalizeUri($uri)
-    {
-        $uri = '/' . ltrim($uri, '/');
-        $uri = str_replace('?}', '}', $uri);
-
-        return $uri;
     }
 
     protected function checkRoute(Route $route, $matches = [], $only = null)
@@ -246,16 +298,49 @@ class RoutesParser
         return false;
     }
 
+    /**
+     * Get route tag name
+     * @param Route $route
+     * @return string|null
+     */
     protected function getRouteTag(Route $route)
     {
         $methodRef = $this->routeReflection($route);
-        $annotation = $this->annotationReader()->getMethodAnnotation($methodRef, 'OA\Tag');
-        if ($annotation instanceof \OA\Tag) {
-            return $annotation->name;
+        if ($methodRef instanceof \ReflectionMethod) {
+            $annotation = $this->routeAnnotation($route, 'OA\Tag');
+            if ($annotation instanceof \OA\Tag) {
+                return $annotation->name;
+            }
+            $controllerName = explode('\\', $methodRef->class);
+            return last($controllerName);
         }
         return null;
     }
 
+    /**
+     * Get route security definitions
+     * @param Route $route
+     * @return array|null
+     */
+    protected function getRouteSecurity(Route $route)
+    {
+        $methodRef = $this->routeReflection($route);
+        $results = [];
+        if ($methodRef instanceof \ReflectionMethod) {
+            /** @var \OA\Secured[] $annotations */
+            $annotations = $this->routeAnnotations($route, 'OA\Secured');
+            foreach ($annotations as $annotation) {
+                $results[] = $annotation->toArray();
+            }
+        }
+        return !empty($results) ? $results : null;
+    }
+
+    /**
+     * Get route summary
+     * @param Route $route
+     * @return string|null
+     */
     protected function getRouteSummary($route)
     {
         $methodRef = $this->routeReflection($route);
@@ -266,6 +351,11 @@ class RoutesParser
         return null;
     }
 
+    /**
+     * Get description of route
+     * @param Route $route
+     * @return string|null
+     */
     protected function getRouteDescription($route)
     {
         $methodRef = $this->routeReflection($route);
@@ -277,17 +367,7 @@ class RoutesParser
     }
 
     /**
-     * @return \phpDocumentor\Reflection\DocBlockFactory
-     */
-    protected function getDocFactory()
-    {
-        if ($this->docFactory === null) {
-            $this->docFactory = \phpDocumentor\Reflection\DocBlockFactory::createInstance();
-        }
-        return $this->docFactory;
-    }
-
-    /**
+     * Get route param type by matching to regex
      * @param Route  $route
      * @param string $paramName
      * @param string $default
@@ -310,40 +390,5 @@ class RoutesParser
             }
         }
         return count($types) > 1 ? $default : reset($types);
-    }
-
-    protected static function paramPatternTypes()
-    {
-        return [
-            '[0-9]+' => 'integer',
-        ];
-    }
-
-    /**
-     * @param array $a
-     * @param array $b
-     * @return array|mixed
-     */
-    protected static function mergeArray($a, $b)
-    {
-        $args = func_get_args();
-        $res = array_shift($args);
-        while (!empty($args)) {
-            foreach (array_shift($args) as $k => $v) {
-                if (is_int($k)) {
-                    if (array_key_exists($k, $res)) {
-                        $res[] = $v;
-                    } else {
-                        $res[$k] = $v;
-                    }
-                } elseif (is_array($v) && isset($res[$k]) && is_array($res[$k])) {
-                    $res[$k] = static::mergeArray($res[$k], $v);
-                } else {
-                    $res[$k] = $v;
-                }
-            }
-        }
-
-        return $res;
     }
 }
