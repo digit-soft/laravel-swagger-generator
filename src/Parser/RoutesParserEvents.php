@@ -4,7 +4,6 @@ namespace DigitSoft\Swagger\Parser;
 
 use Illuminate\Console\OutputStyle;
 use Illuminate\Routing\Route;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 /**
@@ -17,6 +16,10 @@ trait RoutesParserEvents
      * @var Route[]
      */
     protected $skippedRoutes = [];
+    /**
+     * @var array
+     */
+    protected $failedFormRequests = [];
 
     /**
      * Trigger event
@@ -33,6 +36,9 @@ trait RoutesParserEvents
         return false;
     }
 
+    /**
+     *
+     */
     protected function eventParseStart()
     {
         if (!$this->output instanceof OutputStyle) {
@@ -58,6 +64,18 @@ trait RoutesParserEvents
             $this->output->warning(strtr('There are {count} skipped routes', ['{count}' => count($this->skippedRoutes)]));
             $this->output->table(['URI', 'Methods'], $routePaths);
         }
+        if (!empty($this->failedFormRequests)) {
+            $failedRequests = [];
+            foreach ($this->failedFormRequests as $key => $row) {
+                /** @var \Throwable $exception */
+                $className = $row[0];
+                $exception = $row[1];
+                $exceptionStr = $exception ? get_class($exception) . "\n" . $exception->getMessage() : '-';
+                $failedRequests[$className] = [$className, $exceptionStr];
+            }
+            $this->output->warning(strtr('There are {count} form requests where failed to get rules', ['{count}' => count($failedRequests)]));
+            $this->output->table(['Class name', 'Exception'], $failedRequests);
+        }
     }
 
     protected function eventRouteProcessed($route)
@@ -75,5 +93,10 @@ trait RoutesParserEvents
             return;
         }
         $this->output->progressAdvance();
+    }
+
+    protected function eventRouteFormRequestFailed($request, $exception = null)
+    {
+        $this->failedFormRequests[] = [get_class($request), $exception];
     }
 }

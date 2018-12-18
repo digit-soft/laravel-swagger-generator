@@ -250,7 +250,7 @@ class RoutesParser
                 if (strpos($ruleName, ':')) {
                     $ruleName = explode(':', $ruleName)[0];
                 }
-                if (($example = DumperYaml::getExampleValueByRule($ruleName)) !== null) {
+                if (($example = DumperYaml::getExampleValueByRule($ruleName, $key)) !== null) {
                     if ($key === '*') {
                         $result = [$example];
                     } else {

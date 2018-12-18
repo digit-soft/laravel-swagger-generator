@@ -85,6 +85,22 @@ class DumperYaml
      */
     public static function getExampleValue(string $type, $varName = null)
     {
+        $isArray = strpos($type, '[]') !== false;
+        $type = $isArray ? substr($type, 0, -2) : $type;
+        if (($example = static::getExampleValueInternal($type, $varName)) === null) {
+            return null;
+        }
+        return $isArray ? [$example] : $example;
+    }
+
+    /**
+     * Get example value
+     * @param string      $type
+     * @param string|null $varName
+     * @return mixed
+     */
+    public static function getExampleValueInternal(string $type, $varName = null)
+    {
         if (strpos($type, '\\') === 0) {
             $type = substr($type, 1);
         }
@@ -143,9 +159,25 @@ class DumperYaml
                 'remember_token',
                 'email_token',
             ],
-            'domainName' => [
+            'token' => [
+                'token',
+                'email_token',
+                'remember_token',
+                'service_token',
+            ],
+            'domain_name' => [
                 'domain',
                 'domainName',
+            ],
+            'service_name' => [
+                'service_name',
+                'serviceName',
+            ],
+            'phone' => [
+                'phone',
+                'phone_number',
+                'phone_numbers',
+                'phones',
             ],
         ];
         foreach ($subTypes as $subType => $names) {
@@ -158,12 +190,20 @@ class DumperYaml
 
     /**
      * Get example value by validation rule
-     * @param string $rule
+     * @param string      $rule
+     * @param string|null $varName
      * @return mixed
      */
-    public static function getExampleValueByRule(string $rule)
+    public static function getExampleValueByRule(string $rule, $varName = null)
     {
+        $generalTypes = ['string'];
+        if (in_array($rule, $generalTypes) && $varName !== null && ($typeByName = static::getExampleValueByName($varName)) !== null) {
+            return $typeByName;
+        }
         switch ($rule) {
+            case 'phone':
+                return static::faker()->phoneNumber;
+                break;
             case 'url':
                 return static::faker()->url;
                 break;
@@ -173,7 +213,13 @@ class DumperYaml
             case 'password':
                 return static::faker()->password(16, 36);
                 break;
-            case 'domainName':
+            case 'token':
+                return str_random(64);
+                break;
+            case 'service_name':
+                return array_random(['fb', 'google', 'twitter']);
+                break;
+            case 'domain_name':
                 return static::faker()->domainName;
                 break;
             case 'alpha':

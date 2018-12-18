@@ -48,20 +48,19 @@ class GenerateCommand extends Command
      */
     public function handle()
     {
-        $this->getOutput()->success("Command {$this->getName()} run!");
         $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
         $arrayContent['paths'] = $this->getRoutesData();
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
-        //$this->getOutput()->comment($filePath);
+        $this->getOutput()->success("Swagger YML file generated");
     }
 
     protected function getRoutesData()
     {
-        $parser = new RoutesParser($this->routes);
-        return $parser->parse();
+        $parser = new RoutesParser($this->routes, $this->getOutput());
+        return $parser->parse($this->getOutput());
     }
 
     /**
@@ -71,7 +70,10 @@ class GenerateCommand extends Command
     protected function getMainFile()
     {
         $path = config('swagger-generator.output.path');
-        $path = app()->basePath($path);
+        // absolute path
+        if (strpos($path, '/') !== 0) {
+            $path = app()->basePath($path);
+        }
         if (!$this->files->exists($path)) {
             $this->files->makeDirectory($path, 0755, true);
         }
