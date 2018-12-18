@@ -110,6 +110,10 @@ class RoutesParser
         $params = [];
         /** @var \OA\Parameter[] $paramsAnn */
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
+        $paramsBulkAnn = $this->routeAnnotation($route, 'OA\Parameters');
+        if (!empty($paramsBulkAnn)) {
+            $paramsAnn = static::merge($paramsAnn, $paramsBulkAnn->value);
+        }
         $paramsDoc = $this->getRouteDocParams($route);
         if (empty($paramsAnn)) {
             $paramsAnn = [];
