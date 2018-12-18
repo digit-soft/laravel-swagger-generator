@@ -6,6 +6,8 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 
 /**
+ * Used to declare controller action parameter
+ *
  * @Annotation
  * @Attributes({
  *   @Attribute("name", type="string"),

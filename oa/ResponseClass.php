@@ -7,6 +7,9 @@ use DigitSoft\Swagger\Parsers\ClassParser;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
+ * Used to describe controller action response.
+ * Data will be gathered from given class PHPDoc block.
+ *
  * @Annotation
  * @Target({"METHOD"})
  */

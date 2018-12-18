@@ -2,6 +2,8 @@
 namespace OA;
 
 /**
+ * Used to mark controller method as secured (with optional security scheme)
+ *
  * @Annotation
  * @Target({"METHOD"})
  * @Attributes({

@@ -5,6 +5,8 @@ namespace OA;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
+ * Used in annotations (RequestBody) to describe request body parameter
+ *
  * @Annotation
  * @Target({"CLASS", "ANNOTATION"})
  */

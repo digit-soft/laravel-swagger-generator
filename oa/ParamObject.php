@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @Annotation
  * @Target({"CLASS", "ANNOTATION"})
+ * @deprecated
  */
 class ParamObject extends BaseAnnotation
 {

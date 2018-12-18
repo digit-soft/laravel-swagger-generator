@@ -5,6 +5,8 @@ namespace OA;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
+ * Used in annotations (RequestBody) to describe request body array parameter
+ *
  * @Annotation
  * @Target({"CLASS", "ANNOTATION"})
  */
@@ -18,7 +20,7 @@ class RequestParamArray extends RequestParam
      */
     public function __construct(array $values)
     {
-        $this->configureSelf($values, 'name');
+        parent::__construct($values);
         $this->type = 'array';
     }
 

@@ -2,6 +2,8 @@
 namespace OA;
 
 /**
+ * Used to mark controller method with given tag
+ *
  * @Annotation
  * @Target({"METHOD"})
  * @Attributes({

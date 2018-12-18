@@ -7,6 +7,8 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
+ * Used to describe request body FormRequest class
+ *
  * @Annotation
  * @Target({"CLASS"})
  * @Attributes({

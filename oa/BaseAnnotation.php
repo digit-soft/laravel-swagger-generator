@@ -4,6 +4,9 @@ namespace OA;
 
 use Illuminate\Support\Arr;
 
+/**
+ * Basic annotation class to extend
+ */
 abstract class BaseAnnotation
 {
     /**

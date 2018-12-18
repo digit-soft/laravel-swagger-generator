@@ -6,12 +6,15 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
+ * Used to describe request body FormRequest class
+ *
  * @Annotation
  * @Target({"CLASS"})
  * @Attributes({
  *   @Attribute("description", type="string", required=false),
  *   @Attribute("contentType", type="string", required=false),
  * })
+ * @internal
  */
 class RequestBody extends BaseAnnotation
 {
