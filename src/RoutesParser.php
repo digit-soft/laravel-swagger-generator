@@ -117,7 +117,7 @@ class RoutesParser
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
         $paramsBulkAnn = $this->routeAnnotation($route, 'OA\Parameters');
         if (!empty($paramsBulkAnn)) {
-            $paramsAnn = static::merge($paramsAnn, $paramsBulkAnn->value);
+            $paramsAnn = DumperYaml::merge($paramsAnn, $paramsBulkAnn->value);
         }
         $paramsDoc = $this->getRouteDocParams($route);
         if (empty($paramsAnn)) {
@@ -170,7 +170,7 @@ class RoutesParser
             $data = [
                 $annotation->status => $annotation->toArray(),
             ];
-            $result = static::merge($result, $data);
+            $result = DumperYaml::merge($result, $data);
         }
         return $result;
     }
@@ -215,7 +215,7 @@ class RoutesParser
             if (isset($schema['schema'])) {
                 $path .= '.schema';
             }
-            $merged = static::merge(Arr::get($result, $path), $rulesData);
+            $merged = DumperYaml::merge(Arr::get($result, $path), $rulesData);
             Arr::set($result, $path, $merged);
         }
         return $result;
@@ -322,7 +322,7 @@ class RoutesParser
         $request = [];
         /** @var \OA\RequestBody $annotation */
         foreach ($annotations as $annotation) {
-            $request = static::merge($request, $annotation->toArray());
+            $request = DumperYaml::merge($request, $annotation->toArray());
         }
         return $request;
     }

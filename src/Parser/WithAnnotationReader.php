@@ -92,6 +92,7 @@ trait WithAnnotationReader
     {
         if ($this->annotationReader === null) {
             AnnotationRegistry::registerLoader('class_exists');
+            AnnotationReader::addGlobalIgnoredName('mixin');
             $this->annotationReader = new AnnotationReader();
         }
         return $this->annotationReader;

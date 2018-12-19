@@ -9,6 +9,8 @@ use Doctrine\Common\Annotations\Annotation\Target;
 use Illuminate\Support\Arr;
 
 /**
+ * Used to describe class property.
+ *
  * @Annotation
  * @Target({"CLASS"})
  * @Attributes({

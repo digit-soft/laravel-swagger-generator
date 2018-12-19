@@ -99,7 +99,7 @@ class DumperYaml
      * @param string|null $varName
      * @return mixed
      */
-    public static function getExampleValueInternal(string $type, $varName = null)
+    protected static function getExampleValueInternal(string $type, $varName = null)
     {
         if (strpos($type, '\\') === 0) {
             $type = substr($type, 1);
@@ -301,6 +301,7 @@ class DumperYaml
      * @param bool   $create
      * @param array  $requiredRelations
      * @return Model|null
+     * @internal
      */
     public static function makeModel($className, $create = true, $requiredRelations = [])
     {
@@ -325,6 +326,35 @@ class DumperYaml
             static::$_models[$className] = $model;
         }
         return static::$_models[$className] ?? null;
+    }
+
+    /**
+     * Merge arrays
+     * @param array $a
+     * @param array $b
+     * @return array
+     */
+    public static function merge($a, $b)
+    {
+        $args = func_get_args();
+        $res = array_shift($args);
+        while (!empty($args)) {
+            foreach (array_shift($args) as $k => $v) {
+                if (is_int($k)) {
+                    if (array_key_exists($k, $res)) {
+                        $res[] = $v;
+                    } else {
+                        $res[$k] = $v;
+                    }
+                } elseif (is_array($v) && isset($res[$k]) && is_array($res[$k])) {
+                    $res[$k] = static::merge($res[$k], $v);
+                } else {
+                    $res[$k] = $v;
+                }
+            }
+        }
+
+        return $res;
     }
 
     protected static function fillModelRelation(Model $model, $relationName)
