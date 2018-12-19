@@ -308,6 +308,7 @@ class DumperYaml
      */
     public static function normalizeType($type)
     {
+        $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
         $typeLower = strtolower($type);
         if (isset(static::$basicTypesShort[$typeLower])) {
             return static::$basicTypesShort[$typeLower];

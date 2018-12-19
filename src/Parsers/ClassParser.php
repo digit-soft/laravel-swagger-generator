@@ -41,15 +41,29 @@ class ClassParser
      */
     public function properties($onlyVisible = true)
     {
+        $appends = [];
         $hidden = null;
-        if ($onlyVisible && $this->isModel()) {
+        if ($this->isModel()) {
             /** @var Model $instance */
             $instance = $this->instantiate();
-            if ($instance && method_exists($instance, 'getHidden')) {
-                $hidden = $instance->getHidden();
-            }
+            $hidden = $onlyVisible ? $instance->getHidden() : null;
+            $appends = $this->getModelAppends($instance);
         }
-        return $this->getPropertiesDescribed('property', null, $hidden, true);
+        $properties = $this->getPropertiesDescribed('property', null, $hidden, true);
+        $properties = !empty($appends) ? DumperYaml::merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, true)) : $properties;
+        return $properties;
+    }
+
+    /**
+     * Get model appends attribute
+     * @param Model $model
+     * @return array
+     */
+    protected function getModelAppends($model)
+    {
+        $ref = $this->reflectionProperty($model, 'appends');
+        $ref->setAccessible(true);
+        return $ref->getValue($model);
     }
 
     /**
@@ -82,6 +96,7 @@ class ClassParser
         }
         // Describe only first level class objects
         foreach ($properties as $key => $row) {
+            $row['type'] = DumperYaml::normalizeType($row['type']);
             if (DumperYaml::isTypeClassName($row['type'])) {
                 $properties[$key] = DumperYaml::describe([]);
                 $classDescription = (new static($row['type']))->properties();
