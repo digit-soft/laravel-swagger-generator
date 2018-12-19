@@ -2,9 +2,13 @@
 
 namespace DigitSoft\Swagger\Parser;
 
-use DigitSoft\Swagger\DumperYaml;
 use Illuminate\Support\Str;
 
+/**
+ * Trait RoutesParserHelpers
+ * @package DigitSoft\Swagger\Parser
+ * @property array $components
+ */
 trait RoutesParserHelpers
 {
     /**
@@ -24,6 +28,45 @@ trait RoutesParserHelpers
         }
 
         return $uri;
+    }
+
+    /**
+     * @param string $key
+     * @param string $type
+     * @return null
+     */
+    protected function getComponent($key, $type = self::COMPONENT_RESPONSE)
+    {
+        if (empty($key)) {
+            return null;
+        }
+        return $this->components[$type][$key] ?? null;
+    }
+
+    /**
+     * Set component
+     * @param array  $component
+     * @param string $key
+     * @param string $type
+     */
+    protected function setComponent($component, $key, $type = self::COMPONENT_RESPONSE)
+    {
+        if (empty($key)) {
+            return;
+        }
+        $this->components[$type][$key] = $component;
+    }
+
+    /**
+     * Get component reference name
+     * @param string $key
+     * @param string $type
+     * @return string
+     */
+    protected function getComponentReference($key, $type = self::COMPONENT_RESPONSE)
+    {
+        $keys = ['components', $type, $key];
+        return '#/' . implode('/', $keys);
     }
 
     /**

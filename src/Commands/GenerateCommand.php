@@ -9,6 +9,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateCommand extends Command
 {
@@ -50,16 +51,33 @@ class GenerateCommand extends Command
         $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
-        $arrayContent['paths'] = $this->getRoutesData();
+        $routesData = $this->getRoutesData();
+        $arrayContent = DumperYaml::merge($arrayContent, $routesData);
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
         $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
     }
 
+    /**
+     * Get data from routes parser
+     * @return array
+     */
     protected function getRoutesData()
     {
         $parser = new RoutesParser($this->routes, $this->getOutput());
-        return $parser->parse();
+        $paths = $parser->parse();
+        ksort($parser->components['responses']);
+        ksort($parser->components['requestBodies']);
+        $data = ['paths' => $paths, 'components' => $parser->components];
+        if ($this->getOutput()->isVerbose()) {
+            $responses = array_keys($parser->components['responses']);
+            $requests = array_keys($parser->components['requestBodies']);
+            array_walk($responses, function (&$value){ $value = [$value]; });
+            array_walk($requests, function (&$value){ $value = [$value]; });
+            $this->getOutput()->table(['Responses'], $responses);
+            $this->getOutput()->table(['Request Bodies'], $requests);
+        }
+        return $data;
     }
 
     /**

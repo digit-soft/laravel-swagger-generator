@@ -17,6 +17,8 @@ class DumperYaml
      * @var Filesystem
      */
     protected $files;
+
+    protected static $classShortcuts = [];
     /**
      * @var \ReflectionClass[]
      */
@@ -64,6 +66,27 @@ class DumperYaml
             $this->files->put($filePath, $yamlContent);
         }
         return $yamlContent;
+    }
+
+    /**
+     * Shorten class name
+     * @param string $className
+     * @return string
+     */
+    public static function shortenClass($className)
+    {
+        $className = ltrim($className, '\\');
+        if (isset(static::$classShortcuts[$className])) {
+            return static::$classShortcuts[$className];
+        }
+        $classNameArray = explode('\\', $className);
+        $classNameShort = $classNameShortBase = end($classNameArray);
+        $num = 0;
+        while (in_array($classNameShort, static::$classShortcuts)) {
+            $classNameShort = $classNameShortBase . '_' . $num;
+            $num++;
+        }
+        return static::$classShortcuts[$className] = $classNameShort;
     }
 
     /**

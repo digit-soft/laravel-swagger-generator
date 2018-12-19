@@ -13,6 +13,20 @@ trait WithDocParser
     protected $docFactory;
 
     /**
+     * Get summary from PHPDoc block
+     * @param string $docStr
+     * @return string
+     */
+    protected function getDocSummary($docStr)
+    {
+        if (!is_string($docStr)) {
+            return '';
+        }
+        $docblock = $this->getDocFactory()->create($docStr);
+        return $docblock->getSummary();
+    }
+
+    /**
      * Get doc tags
      * @param string      $docStr
      * @param string|null $tagName

@@ -23,6 +23,10 @@ class RoutesParser
     const EVENT_ROUTE_SKIPPED = 'route_skipped';
     const EVENT_FORM_REQUEST_FAILED = 'route_form_request_failed';
 
+    const COMPONENT_RESPONSE = 'responses';
+    const COMPONENT_REQUESTS = 'requestBodies';
+    const COMPONENT_PARAMETER = 'parameters';
+
     /**
      * @var Route[]|RouteCollection
      */
@@ -31,6 +35,12 @@ class RoutesParser
      * @var OutputStyle
      */
     protected $output;
+
+    public $components = [
+        'requestBodies' => [],
+        'responses' => [],
+        'parameters' => [],
+    ];
 
     use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
         RoutesParserHelpers, RoutesParserEvents;
@@ -167,8 +177,14 @@ class RoutesParser
         /** @var \OA\Response[] $annotations */
         $annotations = $this->routeAnnotations($route, 'OA\Response');
         foreach ($annotations as $annotation) {
+            $annKey = $annotation->getComponentKey();
+            if (($annotationData = $this->getComponent($annKey, static::COMPONENT_RESPONSE)) === null) {
+                $annotationData = $annotation->toArray();
+                $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
+            }
+            $annotationDataRef = ['$ref' => $this->getComponentReference($annKey, static::COMPONENT_RESPONSE)];
             $data = [
-                $annotation->status => $annotation->toArray(),
+                $annotation->status => $annKey !== null ? $annotationDataRef : $annotationData,
             ];
             $result = DumperYaml::merge($result, $data);
         }
@@ -206,19 +222,27 @@ class RoutesParser
      */
     protected function getParamsFromFormRequest($className)
     {
-        $rulesData = $this->parseFormRequestRules($className);
-        $annotationsData = $this->parseFormRequestAnnotations($className);
-
-        $result = $annotationsData;
-        foreach ($result['content'] as $contentType => $schema) {
-            $path = 'content.' . $contentType;
-            if (isset($schema['schema'])) {
-                $path .= '.schema';
+        $classKey = DumperYaml::shortenClass($className);
+        if (($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
+            $rulesData = $this->parseFormRequestRules($className);
+            $annotationsData = $this->parseFormRequestAnnotations($className);
+            if (empty($annotationsData['description'])) {
+                $classRef = $this->reflectionClass($className);
+                $annotationsData['description'] = $this->getDocSummary($classRef->getDocComment());
             }
-            $merged = DumperYaml::merge(Arr::get($result, $path), $rulesData);
-            Arr::set($result, $path, $merged);
+
+            $result = $annotationsData;
+            foreach ($result['content'] as $contentType => $schema) {
+                $path = 'content.' . $contentType;
+                if (isset($schema['schema'])) {
+                    $path .= '.schema';
+                }
+                $merged = DumperYaml::merge(Arr::get($result, $path), $rulesData);
+                Arr::set($result, $path, $merged);
+            }
+            $this->setComponent($result, $classKey, static::COMPONENT_REQUESTS);
         }
-        return $result;
+        return !empty($result) ? ['$ref' => $this->getComponentReference($classKey, static::COMPONENT_REQUESTS)] : [];
     }
 
     /**
