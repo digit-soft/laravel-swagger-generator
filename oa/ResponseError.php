@@ -12,6 +12,9 @@ class ResponseError extends Response
     public $status = 400;
     public $content = [];
 
+    protected $defaultContent = [];
+    protected $defaultDescription;
+
     /**
      * Response constructor.
      * @param array $values
@@ -19,5 +22,17 @@ class ResponseError extends Response
     public function __construct(array $values)
     {
         $this->configureSelf($values, 'status');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getComponentKey()
+    {
+        $isDefault = $this->content === $this->defaultContent && $this->description === $this->defaultDescription;
+        if (!$isDefault) {
+            return null;
+        }
+        return 'ResponseError_' . $this->status;
     }
 }

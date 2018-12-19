@@ -36,6 +36,20 @@ class ResponseClass extends Response
     }
 
     /**
+     * @inheritdoc
+     */
+    public function getComponentKey()
+    {
+        $className = explode('\\', $this->content);
+        $key = end($className);
+        if (!empty($this->with)) {
+            $with = implode('_', $this->getWith());
+            $key .= '__with_' . $with;
+        }
+        return $key;
+    }
+
+    /**
      * Get model properties
      * @return array
      */
