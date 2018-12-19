@@ -92,7 +92,10 @@ trait WithAnnotationReader
     {
         if ($this->annotationReader === null) {
             AnnotationRegistry::registerLoader('class_exists');
-            AnnotationReader::addGlobalIgnoredName('mixin');
+            $ignored = config('swagger-generator.ignoredAnnotationNames', []);
+            foreach ($ignored as $item) {
+                AnnotationReader::addGlobalIgnoredName($item);
+            }
             $this->annotationReader = new AnnotationReader();
         }
         return $this->annotationReader;
