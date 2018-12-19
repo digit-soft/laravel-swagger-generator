@@ -54,15 +54,17 @@ trait RoutesParserEvents
         }
         $this->output->progressFinish();
         if (!empty($this->skippedRoutes)) {
-            $routePaths = [];
-            foreach ($this->skippedRoutes as $route) {
-                $routePaths[] = [
-                    $route->uri(),
-                    json_encode($route->methods()),
-                ];
-            }
             $this->output->warning(strtr('There are {count} skipped routes', ['{count}' => count($this->skippedRoutes)]));
-            $this->output->table(['URI', 'Methods'], $routePaths);
+            if ($this->output->isVerbose()) {
+                $routePaths = [];
+                foreach ($this->skippedRoutes as $route) {
+                    $routePaths[] = [
+                        $route->uri(),
+                        json_encode($route->methods()),
+                    ];
+                }
+                $this->output->table(['URI', 'Methods'], $routePaths);
+            }
         }
         if (!empty($this->failedFormRequests)) {
             $failedRequests = [];
@@ -74,7 +76,9 @@ trait RoutesParserEvents
                 $failedRequests[$className] = [$className, $exceptionStr];
             }
             $this->output->warning(strtr('There are {count} form requests where failed to get rules', ['{count}' => count($failedRequests)]));
-            $this->output->table(['Class name', 'Exception'], $failedRequests);
+            if ($this->output->isVerbose()) {
+                $this->output->table(['Class name', 'Exception'], $failedRequests);
+            }
         }
     }
 

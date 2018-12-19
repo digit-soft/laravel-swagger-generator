@@ -9,6 +9,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Arr;
 use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateCommand extends Command
@@ -66,6 +67,7 @@ class GenerateCommand extends Command
     {
         $parser = new RoutesParser($this->routes, $this->getOutput());
         $paths = $parser->parse();
+        $this->sortPaths($paths);
         ksort($parser->components['responses']);
         ksort($parser->components['requestBodies']);
         $data = ['paths' => $paths, 'components' => $parser->components];
@@ -78,6 +80,36 @@ class GenerateCommand extends Command
             $this->getOutput()->table(['Request Bodies'], $requests);
         }
         return $data;
+    }
+
+    /**
+     * Sort router paths
+     * @param array $paths
+     */
+    protected function sortPaths(&$paths)
+    {
+        ksort($paths);
+        $byTags = [];
+        // Group by first tag
+        foreach ($paths as $path => $route) {
+            // Sort by method in same path
+            uksort($route, function ($a, $b) {
+                $methods = ['head', 'get', 'post', 'patch', 'put', 'delete'];
+                $aPos = array_search($a, $methods);
+                $bPos = array_search($b, $methods);
+                return $aPos < $bPos ? -1 : 1;
+            });
+            $firstMethod = reset($route);
+            $tag = reset($firstMethod['tags']);
+            $byTags[$tag][$path] = $route;
+        }
+        // Sort tags
+        ksort($byTags);
+        // Rewrite paths array
+        $paths = [];
+        foreach ($byTags as $tag => $routes) {
+            $paths = DumperYaml::merge($paths, $routes);
+        }
     }
 
     /**

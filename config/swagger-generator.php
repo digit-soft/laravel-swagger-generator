@@ -8,7 +8,9 @@ return [
     */
     'routes' => [
         'only' => [],
-        'matches' => ['/api/*', '/attachments/*', '/images/*'],
+        'not' => [],
+        'matches' => [],
+        'notMatches' => [],
         'methods' => ['GET', 'POST', 'PUT', 'DELETE'],
     ],
     /*

@@ -362,9 +362,19 @@ class RoutesParser
     {
         $uri = '/' . ltrim($route->uri, '/');
         $only = $only ?? config('swagger-generator.routes.only', []);
+        $not = $not ?? config('swagger-generator.routes.not', []);
         $matches = $matches ?? config('swagger-generator.routes.matches', []);
+        $matchesNot = $matchesNot ?? config('swagger-generator.routes.notMatches', []);
+        if (!empty($not) && in_array($uri, $not)) {
+            return false;
+        }
         if (!empty($only) && in_array($uri, $only)) {
             return true;
+        }
+        foreach ($matchesNot as $pattern) {
+            if (Str::is($pattern, $uri)) {
+                return false;
+            }
         }
         foreach ($matches as $pattern) {
             if (Str::is($pattern, $uri)) {
