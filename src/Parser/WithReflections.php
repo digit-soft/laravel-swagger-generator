@@ -32,6 +32,22 @@ trait WithReflections
     }
 
     /**
+     * Get method reflection
+     * @param string|object $class
+     * @param string        $property
+     * @return \ReflectionProperty
+     */
+    protected function reflectionProperty($class, $property)
+    {
+        $refClass = $this->reflectionClass($class);
+        $propertyName = $refClass->name . '->' . $property;
+        if (!isset($this->reflections[$propertyName])) {
+            $this->reflections[$propertyName] = $refClass->getProperty($property);
+        }
+        return $this->reflections[$propertyName];
+    }
+
+    /**
      * Get class reflection
      * @param string|object $class
      * @return \ReflectionClass
