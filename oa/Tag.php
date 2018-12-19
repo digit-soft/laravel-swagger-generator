@@ -11,7 +11,7 @@ namespace OA;
  *   @Attribute("name", type = "string"),
  * })
  */
-class Tag
+class Tag extends BaseAnnotation
 {
     public $name;
 
@@ -21,9 +21,15 @@ class Tag
      */
     public function __construct(array $values)
     {
-        if (isset($values['value'])) {
-            $values = ['name' => $values['value']];
-        }
-        $this->name = $values['name'];
+        $this->configureSelf($values, 'name');
+    }
+
+    /**
+     * Get object string representation
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->name;
     }
 }
