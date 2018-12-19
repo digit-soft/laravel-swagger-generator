@@ -2,10 +2,11 @@
 namespace OA;
 
 /**
- * Used to mark controller method with given tag
+ * Used to mark controller method with given tag.
+ * Can be used on controller itself (all methods will have those tags).
  *
  * @Annotation
- * @Target({"METHOD"})
+ * @Target({"METHOD", "CLASS"})
  * @Attributes({
  *   @Attribute("name", type = "string"),
  * })

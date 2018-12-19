@@ -360,7 +360,9 @@ class RoutesParser
         $methodRef = $this->routeReflection($route);
         $tags = [];
         if ($methodRef instanceof \ReflectionMethod) {
+            $annotationsClass = $this->classAnnotations($methodRef->class, 'OA\Tag');
             $annotations = $this->routeAnnotations($route, 'OA\Tag');
+            $annotations = DumperYaml::merge($annotationsClass, $annotations);
             foreach ($annotations as $annotation) {
                 $tags[] = $annotation->name;
             }
