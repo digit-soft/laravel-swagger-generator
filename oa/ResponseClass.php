@@ -3,6 +3,8 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
+use DigitSoft\Swagger\Parser\WithAnnotationReader;
+use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parsers\ClassParser;
 use Doctrine\Common\Annotations\Annotation\Target;
 
@@ -16,6 +18,8 @@ use Doctrine\Common\Annotations\Annotation\Target;
 class ResponseClass extends Response
 {
     public $with;
+
+    use WithReflections, WithAnnotationReader;
 
     /**
      * @inheritdoc
@@ -47,6 +51,23 @@ class ResponseClass extends Response
         $result = [];
         foreach ($properties as $varName => $varData) {
             $result[$varName] = $this->describeProperty($varName, $varData);
+        }
+        $propertiesAnn = $this->getModelPropertyAnnotations();
+        $result = DumperYaml::merge($result, $propertiesAnn);
+        return $result;
+    }
+
+    /**
+     * Get properties by annotations
+     * @return array
+     */
+    protected function getModelPropertyAnnotations()
+    {
+        /** @var \OA\Property[] $annotations */
+        $annotations = $this->classAnnotations($this->content, 'OA\Property');
+        $result = [];
+        foreach ($annotations as $annotation) {
+            $result[$annotation->name] = $annotation->toArray();
         }
         return $result;
     }

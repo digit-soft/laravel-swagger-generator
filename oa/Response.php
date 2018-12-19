@@ -29,7 +29,7 @@ class Response extends BaseAnnotation
     public $status = 200;
     public $description;
     public $asList = false;
-    public $withPager = false;
+    public $asPagedList = false;
 
     /**
      * Response constructor.
@@ -45,11 +45,12 @@ class Response extends BaseAnnotation
      */
     public function toArray()
     {
-        if ($this->asList) {
+        $asList = $this->asList || $this->asPagedList;
+        if ($asList) {
             $contentRaw = DumperYaml::describe([""]);
             Arr::set($contentRaw, 'items', $this->getContent());
         } else {
-            $contentRaw = $this->asList ? [$this->getContent()] : $this->getContent();
+            $contentRaw = $this->getContent();
         }
         $content = $this->wrapInDefaultResponse($contentRaw);
         return [
@@ -87,14 +88,13 @@ class Response extends BaseAnnotation
      */
     protected function wrapInDefaultResponse($content = null)
     {
-        $withPager = $this->withPager;
         $content = $content ?? $this->content;
         $responseData = static::getDefaultResponse($this->contentType, $this->status);
         if ($responseData === null) {
             return $content;
         }
         list($responseRaw, $resultKey) = array_values($responseData);
-        if ($withPager && static::isSuccessStatus($this->status)) {
+        if ($this->asPagedList && static::isSuccessStatus($this->status)) {
             $responseRaw['pagination'] = static::getPagerExample();
         }
         $response = DumperYaml::describe($responseRaw);
