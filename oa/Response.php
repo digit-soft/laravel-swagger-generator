@@ -64,6 +64,15 @@ class Response extends BaseAnnotation
     }
 
     /**
+     * Get component key
+     * @return string|null
+     */
+    public function getComponentKey()
+    {
+        return null;
+    }
+
+    /**
      * Get content array
      * @return array
      */
@@ -127,7 +136,7 @@ class Response extends BaseAnnotation
                         'message' => 'Error',
                         'errors' => [],
                     ],
-                    'resultKey' => 'errors',
+                    'resultKey' => 'properties.errors',
                 ],
             ],
         ];
