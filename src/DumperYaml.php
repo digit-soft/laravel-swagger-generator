@@ -69,6 +69,18 @@ class DumperYaml
     }
 
     /**
+     * Parse Yaml file
+     * @param string $filePath
+     * @return array
+     */
+    public function fromYml($filePath)
+    {
+        $contentStr = $this->files->get($filePath);
+        $content = Yaml::parse($contentStr);
+        return $content;
+    }
+
+    /**
      * Shorten class name
      * @param string $className
      * @return string

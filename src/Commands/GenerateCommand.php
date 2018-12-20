@@ -52,11 +52,37 @@ class GenerateCommand extends Command
         $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
+        $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesBefore', []));
         $routesData = $this->getRoutesData();
         $arrayContent = DumperYaml::merge($arrayContent, $routesData);
+        $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesAfter', []));
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
         $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
+    }
+
+    /**
+     * Merge data with content of YML files
+     * @param array $data
+     * @param array $fileList
+     * @return array
+     */
+    protected function mergeWithFilesContent($data = [], $fileList = [])
+    {
+        if (empty($fileList)) {
+            return $data;
+        }
+        $filesContent = [];
+        $dumper = $this->getDumper();
+        foreach ($fileList as $fileName) {
+            if ($this->files->exists($fileName) && ($row = $dumper->fromYml($fileName)) !== null) {
+                $filesContent[] = $row;
+            }
+        }
+        if (empty($filesContent)) {
+            return $data;
+        }
+        return DumperYaml::merge($data, ...$filesContent);
     }
 
     /**
