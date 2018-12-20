@@ -286,7 +286,7 @@ class DumperYaml
      */
     public static function isBasicType($type)
     {
-        $type = static::normalizeType($type);
+        $type = static::normalizeType($type, true);
         return in_array($type, static::$basicTypes);
     }
 
@@ -297,18 +297,33 @@ class DumperYaml
      */
     public static function isTypeClassName($type)
     {
-        $type = static::normalizeType($type);
+        $type = static::normalizeType($type, true);
         return !in_array($type, static::$basicTypes) && class_exists($type);
+    }
+
+    /**
+     * Check that given type is array of types
+     * @param string $type
+     * @return bool
+     */
+    public static function isTypeArray($type)
+    {
+        $type = static::normalizeType($type);
+        return strpos($type, '[]') !== false;
     }
 
     /**
      * Normalize type name
      * @param string $type
+     * @param bool   $stripArray
      * @return string
      */
-    public static function normalizeType($type)
+    public static function normalizeType($type, $stripArray = false)
     {
         $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
+        if ($stripArray && static::isTypeArray($type)) {
+            $type = substr($type, 0, -2);
+        }
         $typeLower = strtolower($type);
         if (isset(static::$basicTypesShort[$typeLower])) {
             return static::$basicTypesShort[$typeLower];

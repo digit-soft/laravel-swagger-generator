@@ -110,6 +110,8 @@ class ResponseClass extends Response
             foreach ($propData['properties'] as $propNameNested => $propDataNested) {
                 $propData['properties'][$propNameNested] = $this->describeProperty($propNameNested, $propDataNested);
             }
+        } elseif($propData['type'] === 'array' && isset($propData['items'])) {
+            return $propData;
         } else {
             if (strpos($propData['type'], '|') !== false) {
                 $propData['type'] = explode('|', $propData['type'])[0];

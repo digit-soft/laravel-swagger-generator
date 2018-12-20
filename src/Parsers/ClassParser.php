@@ -99,8 +99,13 @@ class ClassParser
             $row['type'] = DumperYaml::normalizeType($row['type']);
             if (DumperYaml::isTypeClassName($row['type'])) {
                 $properties[$key] = DumperYaml::describe([]);
-                $classDescription = (new static($row['type']))->properties();
+                $classDescription = (new static(DumperYaml::normalizeType($row['type'], true)))->properties();
                 Arr::set($properties[$key], 'properties', $classDescription);
+                if (DumperYaml::isTypeArray($row['type'])) {
+                    $propertyArray = DumperYaml::describe([""]);
+                    Arr::set($propertyArray, 'items', $properties[$key]);
+                    $properties[$key] = $propertyArray;
+                }
             }
         }
         return $properties;
