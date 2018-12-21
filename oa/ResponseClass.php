@@ -2,10 +2,12 @@
 
 namespace OA;
 
+use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation\Target;
+use Illuminate\Support\Arr;
 
 /**
  * Used to describe controller action response.
@@ -28,7 +30,9 @@ class ResponseClass extends Response
         if ($this->content === null || !class_exists($this->content)) {
             throw new \Exception("Class '{$this->content}' not found");
         }
-        return $this->getModelProperties();
+        $properties = $this->getModelProperties();
+        $this->hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->hasNoData;
+        return $properties;
     }
 
     /**
@@ -56,7 +60,27 @@ class ResponseClass extends Response
             'with' => $this->getWith(),
             'description' => $this->description,
         ]);
-        return $variable->describe();
+        $result = $variable->describe();
+        $propertiesAnn = $this->getModelPropertyAnnotations();
+        $result['properties'] = DumperYaml::merge($result['properties'], $propertiesAnn);
+        return $result;
+    }
+
+    /**
+     * Get properties by annotations
+     * @return array
+     */
+    protected function getModelPropertyAnnotations()
+    {
+        /** @var \OA\Property[] $annotations */
+        $annotations = $this->classAnnotations($this->content, 'OA\Property');
+        $result = [];
+        foreach ($annotations as $annotation) {
+            $rowData = $annotation->toArray();
+            Arr::forget($rowData, ['name']);
+            $result[$annotation->name] = $rowData;
+        }
+        return $result;
     }
 
     /**

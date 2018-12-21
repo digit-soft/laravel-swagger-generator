@@ -21,7 +21,7 @@ class ResponseError extends Response
      */
     public function __construct(array $values)
     {
-        $this->configureSelf($values, 'status');
+        $this->setProperties = $this->configureSelf($values, 'status');
     }
 
     /**
@@ -34,5 +34,13 @@ class ResponseError extends Response
             return null;
         }
         return 'ResponseError_' . $this->status;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function hasData()
+    {
+        return true;
     }
 }

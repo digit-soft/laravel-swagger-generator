@@ -11,8 +11,8 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target({"CLASS"})
  * @Attributes({
- *   @Attribute("description", type="string", required=false),
- *   @Attribute("contentType", type="string", required=false),
+ *   @Attribute("description", type="string"),
+ *   @Attribute("contentType", type="string"),
  * })
  * @internal
  */
@@ -26,9 +26,7 @@ class RequestBody extends BaseAnnotation
 
     public function __construct(array $values)
     {
-        $this->content = $values['content'] ?? $this->content;
-        $this->description = $values['description'] ?? $this->description;
-        $this->contentType = $values['contentType'] ?? $this->contentType;
+        $this->configureSelf($values, 'content');
     }
 
     /**

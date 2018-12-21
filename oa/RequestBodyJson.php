@@ -14,7 +14,6 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Attributes({
  *   @Attribute("description", type="string", required=false),
  *   @Attribute("contentType", type="string", required=false),
- *   @Attribute("content", type="array", required=true),
  * })
  */
 class RequestBodyJson extends RequestBody

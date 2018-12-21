@@ -39,17 +39,22 @@ abstract class BaseAnnotation
      * Configure object
      * @param array       $config
      * @param string|null $defaultParam
+     * @return array
      */
     protected function configureSelf($config, $defaultParam = null)
     {
-        if (isset($config['value']) && !property_exists($this, 'value') && $defaultParam !== null) {
+        $setParams = [];
+        if (array_key_exists('value', $config) && !property_exists($this, 'value') && $defaultParam !== null) {
             $this->{$defaultParam} = Arr::pull($config, 'value');
+            $setParams[] = $defaultParam;
         }
         foreach ($config as $key => $value) {
             if (property_exists($this, $key)) {
                 $this->{$key} = $value;
+                $setParams[] = $key;
             }
         }
+        return $setParams;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
+use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
@@ -31,13 +32,16 @@ class Response extends BaseAnnotation
     public $asList = false;
     public $asPagedList = false;
 
+    protected $hasNoData = false;
+    public $setProperties = [];
+
     /**
      * Response constructor.
      * @param array $values
      */
     public function __construct(array $values)
     {
-        $this->configureSelf($values, 'content');
+        $this->setProperties = $this->configureSelf($values, 'content');
     }
 
     /**
@@ -53,6 +57,7 @@ class Response extends BaseAnnotation
             $contentRaw = $this->getContent();
         }
         $content = $this->wrapInDefaultResponse($contentRaw);
+        static::handleIncompatibleTypeKeys($content);
         return [
             'description' => $this->description ?? $this->getDefaultDescription(),
             'content' => [
@@ -73,11 +78,22 @@ class Response extends BaseAnnotation
     }
 
     /**
+     * Check that response has Data
+     * @return bool
+     */
+    public function hasData()
+    {
+        return !$this->hasNoData;
+    }
+
+    /**
      * Get content array
      * @return array
      */
     protected function getContent()
     {
+        $this->hasNoData = !in_array('content', $this->setProperties) && empty($this->content)
+            ? true : $this->hasNoData;
         return DumperYaml::describe($this->content);
     }
 
@@ -176,6 +192,36 @@ class Response extends BaseAnnotation
     {
         $list = static::getDefaultStatusDescriptions();
         return $list[$this->status] ?? '';
+    }
+
+    /**
+     * Remove incompatible array keys for current type
+     * @param array $target
+     */
+    protected static function handleIncompatibleTypeKeys(array &$target)
+    {
+        foreach ($target as $key => &$value) {
+            if (is_array($value)) {
+                static::handleIncompatibleTypeKeys($value);
+            }
+        }
+        if (!isset($target['type'])) {
+            return;
+        }
+        $type = $target['type'];
+        switch ($type) {
+            case Variable::SW_TYPE_OBJECT:
+                Arr::forget($target, ['items']);
+                if (!isset($target['properties']) && !isset($target['example'])) {
+                    $target['properties'] = [];
+                }
+                break;
+            case Variable::SW_TYPE_ARRAY:
+                Arr::forget($target, ['properties']);
+                break;
+            default:
+                Arr::forget($target, ['items', 'properties']);
+        }
     }
 
     /**
