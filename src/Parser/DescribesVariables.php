@@ -83,6 +83,8 @@ trait DescribesVariables
         $subTypes = [
             'url' => [
                 'url',
+                'logo',
+                'image',
             ],
             'email' => [
                 'email',
