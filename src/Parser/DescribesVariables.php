@@ -83,7 +83,10 @@ trait DescribesVariables
         $subTypes = [
             'url' => [
                 'url',
+            ],
+            'image' => [
                 'logo',
+                'avatar',
                 'image',
             ],
             'email' => [
@@ -143,6 +146,9 @@ trait DescribesVariables
                 break;
             case 'url':
                 return static::faker()->url;
+                break;
+            case 'image':
+                return static::faker()->imageUrl();
                 break;
             case 'email':
                 return static::faker()->email;

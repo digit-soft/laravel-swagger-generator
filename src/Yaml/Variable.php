@@ -5,7 +5,9 @@ namespace DigitSoft\Swagger\Yaml;
 
 use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\DescribesVariables;
+use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithFaker;
+use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parsers\ClassParser;
 use Illuminate\Support\Arr;
 
@@ -53,7 +55,7 @@ class Variable
 
     protected $swaggerType;
 
-    use WithFaker, DescribesVariables;
+    use WithFaker, WithReflections, WithAnnotationReader, DescribesVariables;
 
     /**
      * Variable constructor.
@@ -262,6 +264,8 @@ class Variable
             $propertiesRead = $parser->propertiesRead($with, null, false);
             $properties = DumperYaml::merge($properties, $propertiesRead);
         }
+        $propertiesByAnn = $this->getDescriptionByPropertyAnnotations($className);
+        $properties = DumperYaml::merge($properties, $propertiesByAnn);
         if (empty($properties)) {
             return null;
         }
@@ -272,6 +276,23 @@ class Variable
             $described[$name] = $nested->describe();
         }
         return $described;
+    }
+
+    /**
+     * Get properties by annotations
+     * @param string $className
+     * @return array
+     */
+    protected function getDescriptionByPropertyAnnotations($className)
+    {
+        /** @var \OA\Property[] $annotations */
+        $annotations = $this->classAnnotations($className, 'OA\Property');
+        $result = [];
+        foreach ($annotations as $annotation) {
+            $rowData = $annotation->toArray();
+            $result[$annotation->name] = $rowData;
+        }
+        return $result;
     }
 
     /**
