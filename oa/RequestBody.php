@@ -9,7 +9,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used to describe request body FormRequest class
  *
  * @Annotation
- * @Target({"CLASS"})
+ * @Target({"CLASS", "METHOD"})
  * @Attributes({
  *   @Attribute("description", type="string"),
  *   @Attribute("contentType", type="string"),

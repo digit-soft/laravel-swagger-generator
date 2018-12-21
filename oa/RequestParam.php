@@ -2,6 +2,7 @@
 
 namespace OA;
 
+use DigitSoft\Swagger\DumperYaml;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
@@ -56,6 +57,9 @@ class RequestParam extends BaseAnnotation
             $data['items'] = [
                 'type' => $this->items,
             ];
+        }
+        if (($example = DumperYaml::getExampleValue($this->type, $this->name)) !== null) {
+            $data['example'] = $example;
         }
 
         return $data;
