@@ -9,12 +9,18 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Str;
 
 class GenerateCommand extends Command
 {
+    public $diagnose = false;
+
     protected $name = 'swagger:generate';
 
     protected $description = 'Generate Swagger documentation';
+
+    protected $signature = 'swagger:generate {--diagnose}';
+
     /**
      * @var Filesystem
      */
@@ -43,10 +49,12 @@ class GenerateCommand extends Command
 
     /**
      * Handle command
-     * @throws \Exception
      */
     public function handle()
     {
+        if ($this->isDiag()) {
+            return $this->handleDiagnose();
+        }
         $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
@@ -57,6 +65,67 @@ class GenerateCommand extends Command
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
         $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
+    }
+
+    /**
+     * Handle request in diagnose mode
+     */
+    protected function handleDiagnose()
+    {
+        $this->getOutput()->success('Diagnose mode, files will not be generated.');
+        $parser = new RoutesParser($this->routes, $this->getOutput());
+        $paths = $parser->parse();
+        $routesCount = 0;
+        array_walk($paths, function ($value) use (&$routesCount) { $routesCount += count($value); });
+        $this->getOutput()->success(strtr('There are {count} route(s) parsed.', ['{count}' => $routesCount]));
+
+        foreach ($parser->problems as $key => $routes) {
+            $label = $this->getProblemLabel($key);
+            $label .= ' (' . count($routes) . ' occurrence(s))';
+            $this->getOutput()->warning($label);
+            if ($this->getOutput()->isVerbose()) {
+                $table = [];
+                foreach ($routes as $routeData) {
+                    /** @var Route $route */
+                    $route = $routeData[0];
+                    $additional = $routeData[1] ?? null;
+                    $table[] = [
+                        $route->uri(),
+                        $route->getActionName(),
+                        $additional,
+                    ];
+                }
+                $this->getOutput()->table(['URI', 'Controller', 'Additional'], $table);
+            }
+        }
+        if (!$this->getOutput()->isVerbose()) {
+            $this->getOutput()->title('To see additional information use option -v.');
+        }
+    }
+
+    /**
+     * Get problem label
+     * @param string $key
+     * @return mixed|string
+     */
+    protected function getProblemLabel($key)
+    {
+        $labels = [
+            RoutesParser::PROBLEM_NO_RESPONSE => 'Route has no described response body',
+            RoutesParser::PROBLEM_ROUTE_CLOSURE => 'Route is handled by closure. Closure not supports annotations.',
+            RoutesParser::PROBLEM_NO_DOC_CLASS => 'There is not PHPDoc for class.',
+            RoutesParser::PROBLEM_MISSING_TAG => 'Route "Tags" are not set.',
+        ];
+        return $labels[$key] ?? ucfirst(str_replace(['-', '_'], ' ', $key));
+    }
+
+    /**
+     * Check that diagnose mode enabled
+     * @return bool
+     */
+    protected function isDiag()
+    {
+        return $this->option('diagnose');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace DigitSoft\Swagger\Parser;
 
 use Illuminate\Console\OutputStyle;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Str;
 
@@ -37,7 +38,7 @@ trait RoutesParserEvents
     }
 
     /**
-     *
+     * Start parsing
      */
     protected function eventParseStart()
     {
@@ -47,6 +48,9 @@ trait RoutesParserEvents
         $this->output->progressStart(count($this->routes));
     }
 
+    /**
+     * Finish parsing
+     */
     protected function eventParseFinish()
     {
         if (!$this->output instanceof OutputStyle) {
@@ -82,6 +86,10 @@ trait RoutesParserEvents
         }
     }
 
+    /**
+     * Route processed
+     * @param Route $route
+     */
     protected function eventRouteProcessed($route)
     {
         if (!$this->output instanceof OutputStyle) {
@@ -90,6 +98,10 @@ trait RoutesParserEvents
         $this->output->progressAdvance();
     }
 
+    /**
+     * Route skipped
+     * @param Route $route
+     */
     protected function eventRouteSkipped(Route $route)
     {
         $this->skippedRoutes[] = $route;
@@ -99,8 +111,25 @@ trait RoutesParserEvents
         $this->output->progressAdvance();
     }
 
+    /**
+     * Failed to fetch from request data
+     * @param FormRequest $request
+     * @param null $exception
+     */
     protected function eventRouteFormRequestFailed($request, $exception = null)
     {
         $this->failedFormRequests[] = [get_class($request), $exception];
+    }
+
+    /**
+     * Some problem found
+     * @param string $problemType
+     * @param Route $route
+     * @param string|null  $additional
+     */
+    protected function eventProblemFound($problemType, Route $route, $additional = null)
+    {
+        $this->problems[$problemType] = $this->problems[$problemType] ?? [];
+        $this->problems[$problemType][$route->uri()] = [$route, $additional];
     }
 }

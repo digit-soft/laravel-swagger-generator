@@ -105,6 +105,7 @@ class Variable
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
                 if (class_exists($className)) {
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
+                    $res['properties'] = $res['properties'] ?? [];
                 }
                 break;
             case static::SW_TYPE_ARRAY:

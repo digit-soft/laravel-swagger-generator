@@ -22,10 +22,16 @@ class RoutesParser
     const EVENT_ROUTE_PROCESSED = 'route_processed';
     const EVENT_ROUTE_SKIPPED = 'route_skipped';
     const EVENT_FORM_REQUEST_FAILED = 'route_form_request_failed';
+    const EVENT_PROBLEM_FOUND = 'problem_found';
 
     const COMPONENT_RESPONSE = 'responses';
     const COMPONENT_REQUESTS = 'requestBodies';
     const COMPONENT_PARAMETER = 'parameters';
+
+    const PROBLEM_NO_RESPONSE = 'no_response';
+    const PROBLEM_ROUTE_CLOSURE = 'route_closure';
+    const PROBLEM_NO_DOC_CLASS = 'route_no_doc_class';
+    const PROBLEM_MISSING_TAG = 'route_tag_missing';
 
     /**
      * @var Route[]|RouteCollection
@@ -41,6 +47,8 @@ class RoutesParser
         'responses' => [],
         'parameters' => [],
     ];
+
+    public $problems = [];
 
     use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
         RoutesParserHelpers, RoutesParserEvents;
@@ -72,6 +80,10 @@ class RoutesParser
             if (!$this->checkRoute($route, $matches, $only)) {
                 $this->trigger(static::EVENT_ROUTE_SKIPPED, $route);
                 continue;
+            }
+            $ref = $this->routeReflection($route);
+            if ($ref instanceof \ReflectionFunction) {
+                $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_ROUTE_CLOSURE, $route);
             }
             $actionMethod = $route->getActionMethod();
             $routeData = [
@@ -176,10 +188,16 @@ class RoutesParser
         $result = [];
         /** @var \OA\Response[] $annotations */
         $annotations = $this->routeAnnotations($route, 'OA\Response');
+        if (empty($annotations)) {
+            $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_NO_RESPONSE, $route);
+        }
         foreach ($annotations as $annotation) {
             $annKey = $annotation->getComponentKey();
             if (($annotationData = $this->getComponent($annKey, static::COMPONENT_RESPONSE)) === null) {
                 $annotationData = $annotation->toArray();
+                if (!$annotation->hasData()) {
+                    $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_NO_DOC_CLASS, $route, $annotation->content);
+                }
                 $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
             }
             $annotationDataRef = ['$ref' => $this->getComponentReference($annKey, static::COMPONENT_RESPONSE)];
@@ -401,6 +419,7 @@ class RoutesParser
                 $tags[] = $annotation->name;
             }
             if (empty($tags)) {
+                $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_MISSING_TAG, $route);
                 $controllerName = explode('\\', $methodRef->class);
                 $tags[] = last($controllerName);
             }
