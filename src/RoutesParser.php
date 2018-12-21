@@ -230,6 +230,17 @@ class RoutesParser
                 }
             }
         }
+        // Parse route annotations
+        if ($request === null) {
+            /** @var \OA\RequestBody[] $requestAnn */
+            $requestAnn = $this->routeAnnotations($route, 'OA\RequestBody');
+            if (!empty($requestAnn)) {
+                $request = [];
+                foreach ($requestAnn as $annotation) {
+                    $request = DumperYaml::merge($request, $annotation->toArray());
+                }
+            }
+        }
         return $request;
     }
 
