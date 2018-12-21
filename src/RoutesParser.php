@@ -160,8 +160,11 @@ class RoutesParser
     {
         $params = [];
         /** @var \OA\Parameter[] $paramsAnn */
+        /** @var \OA\Parameter[] $paramsAnnCtrl */
+        /** @var \OA\Parameters $paramsBulkAnn */
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
         $paramsBulkAnn = $this->routeAnnotation($route, 'OA\Parameters');
+        $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, 'OA\Parameter'), null, 'name');
         if (!empty($paramsBulkAnn)) {
             $paramsAnn = DumperYaml::merge($paramsAnn, $paramsBulkAnn->value);
         }
@@ -171,11 +174,13 @@ class RoutesParser
             foreach ($route->parameterNames() as $parameterName) {
                 $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
                 $type = $this->getRouteParamType($route, $parameterName);
-                $paramsAnn[] = new \OA\Parameter([
+                $paramData = [
                     'name' => $parameterName,
                     'type' => $type,
                     'required' => $required,
-                ]);
+                ];
+                $annotation = $paramsAnnCtrl[$parameterName] ?? (new \OA\Parameter([]))->fill($paramData);
+                $paramsAnn[] = $annotation;
             }
         }
         foreach ($paramsAnn as $param) {

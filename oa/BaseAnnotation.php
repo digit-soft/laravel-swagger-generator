@@ -36,6 +36,17 @@ abstract class BaseAnnotation
     }
 
     /**
+     * Load data into object
+     * @param array $data
+     * @return static
+     */
+    public function fill(array $data)
+    {
+        $this->configureSelf($data);
+        return $this;
+    }
+
+    /**
      * Configure object
      * @param array       $config
      * @param string|null $defaultParam

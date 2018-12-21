@@ -4,11 +4,13 @@ namespace OA;
 
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
+use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used to declare controller action parameter
  *
  * @Annotation
+ * @Target({"METHOD", "CLASS"})
  * @Attributes({
  *   @Attribute("name", type="string"),
  *   @Attribute("type", type="string"),
@@ -45,12 +47,14 @@ class Parameter extends BaseAnnotation
         $data = [
             'name' => $this->name,
             'in' => $this->in,
-            'description' => $this->description ?? '',
             'required' => $this->required,
             'schema' => [
                 'type' => $this->type,
             ],
         ];
+        if ($this->description !== null) {
+            $data['description'] = $this->description;
+        }
         if (($example = $this->getExample($this->type)) !== null) {
             $data['example'] = $example;
         }

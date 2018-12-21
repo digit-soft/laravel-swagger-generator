@@ -60,6 +60,32 @@ trait WithAnnotationReader
     }
 
     /**
+     * Get route controller method annotation
+     * @param Route  $route
+     * @param string $name
+     * @return array
+     */
+    protected function controllerAnnotations(Route $route, $name = 'OA\Tag')
+    {
+        $ref = $this->routeReflection($route);
+        if (!$ref instanceof \ReflectionMethod) {
+            return [];
+        }
+        $annotations = $this->classAnnotations($ref->class);
+        if ($name === null) {
+            return $annotations;
+        }
+        $name = ltrim($name);
+        $result = [];
+        foreach ($annotations as $annotation) {
+            if ($annotation instanceof $name) {
+                $result[] = $annotation;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Get class annotations
      * @param string|object $class
      * @param string|null   $name
