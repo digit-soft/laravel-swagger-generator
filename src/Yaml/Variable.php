@@ -112,7 +112,7 @@ class Variable
                 if (DumperYaml::isTypeArray($this->type)) {
                     $simpleType = DumperYaml::normalizeType($this->type, true);
                     $item = DumperYaml::isBasicType($simpleType)
-                        ? static::exampleValue($simpleType)
+                        ? $simpleType
                         : (new static(['type' => $simpleType]))->describe();
                 } else {
                     $item = '';
@@ -217,6 +217,9 @@ class Variable
             $example = $example ?? [];
         } else {
             $example = static::exampleValue($phpType, $this->name);
+        }
+        if ($isArrayOf) {
+            $example = [$example];
         }
         return $example;
     }
