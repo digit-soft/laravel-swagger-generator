@@ -42,6 +42,10 @@ class RoutesParser
      */
     protected $output;
 
+    protected $routeIds = [];
+
+    protected $routeNum = 1;
+
     public $components = [
         'requestBodies' => [],
         'responses' => [],
@@ -75,7 +79,7 @@ class RoutesParser
         $only = config('swagger-generator.routes.only', []);
         $matches = config('swagger-generator.routes.matches', []);
         $documentedMethods = config('swagger-generator.routes.methods', ['GET']);
-        $routeNum = 1;
+        $this->routeNum = 1;
         foreach ($this->routes as $route) {
             if (!$this->checkRoute($route, $matches, $only)) {
                 $this->trigger(static::EVENT_ROUTE_SKIPPED, $route);
@@ -85,11 +89,9 @@ class RoutesParser
             if ($ref instanceof \ReflectionFunction) {
                 $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_ROUTE_CLOSURE, $route);
             }
-            $actionMethod = $route->getActionMethod();
             $routeData = [
                 'summary' => '',
                 'description' => '',
-                'operationId' => $actionMethod === 'Closure' ? 'closure_' . $routeNum : $actionMethod,
             ];
             if (($security = $this->getRouteSecurity($route)) !== null) {
                 $routeData['security'] = $security;
@@ -113,6 +115,8 @@ class RoutesParser
                 $routeData['responses'] = $responses;
             }
 
+            $tag = !empty($routeData['tags']) ? reset($routeData['tags']) : 'default';
+            $routeData['operationId'] = $this->getRouteId($route, $tag);
             $path = $this->normalizeUri($route->uri(), true);
             $paths[$path] = $paths[$path] ?? [];
             foreach ($route->methods as $method) {
@@ -120,11 +124,31 @@ class RoutesParser
                     $paths[$path][strtolower($method)] = $routeData;
                 }
             }
-            ++$routeNum;
+            ++$this->routeNum;
             $this->trigger(static::EVENT_ROUTE_PROCESSED, $route);
         }
         $this->trigger(static::EVENT_FINISH);
         return $paths;
+    }
+
+    protected function getRouteId(Route $route, $tagName = 'default')
+    {
+        $actionMethod = $route->getActionMethod();
+        if ($actionMethod === 'Closure') {
+            return 'closure_' . $this->routeNum;
+        }
+        $id = $actionMethod;
+        $fullId = $tagName . '/' . $id;
+        if (isset($this->routeIds[$fullId])) {
+            $ctrlName = get_class($route->getController());
+            $ctrlNameArr = explode('\\', $ctrlName);
+            $ctrlBaseName = end($ctrlNameArr);
+            $ctrlBaseName = Str::endsWith($ctrlBaseName, 'Controller') ? substr($ctrlBaseName, 0, -10) : $ctrlBaseName;
+            $id = $ctrlBaseName . ucfirst($id);
+            $fullId = $tagName . '/' . $id;
+        }
+        $this->routeIds[$fullId] = true;
+        return $id;
     }
 
     /**
