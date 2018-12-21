@@ -2,6 +2,8 @@
 
 namespace DigitSoft\Swagger\Parser;
 
+use Illuminate\Support\Arr;
+
 /**
  * Trait DescribesVariables
  * @package DigitSoft\Swagger\Parser
@@ -187,5 +189,19 @@ trait DescribesVariables
                 break;
         }
         return null;
+    }
+
+    /**
+     * Describe object properties
+     * @param array $target
+     * @param array $properties
+     */
+    protected static function describeProperties(&$target, $properties = [])
+    {
+        $target['properties'] = $target['properties'] ?? [];
+        $obj = &$target['properties'];
+        foreach ($properties as $key => $row) {
+            $obj[$key] = Arr::only($properties, ['type', 'description', 'example']);
+        }
     }
 }

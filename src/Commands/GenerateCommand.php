@@ -9,8 +9,6 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Arr;
-use Symfony\Component\Console\Output\OutputInterface;
 
 class GenerateCommand extends Command
 {

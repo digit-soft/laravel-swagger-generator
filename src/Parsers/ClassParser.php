@@ -37,9 +37,10 @@ class ClassParser
     /**
      * Get model properties
      * @param bool $onlyVisible
+     * @param bool $describeClasses
      * @return array
      */
-    public function properties($onlyVisible = true)
+    public function properties($onlyVisible = true, $describeClasses = true)
     {
         $appends = [];
         $hidden = null;
@@ -49,8 +50,10 @@ class ClassParser
             $hidden = $onlyVisible ? $instance->getHidden() : null;
             $appends = $this->getModelAppends($instance);
         }
-        $properties = $this->getPropertiesDescribed('property', null, $hidden, true);
-        $properties = !empty($appends) ? DumperYaml::merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, true)) : $properties;
+        $properties = $this->getPropertiesDescribed('property', null, $hidden, $describeClasses);
+        $properties = !empty($appends)
+            ? DumperYaml::merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, $describeClasses))
+            : $properties;
         return $properties;
     }
 
@@ -69,11 +72,12 @@ class ClassParser
     /**
      * @param array|null $only
      * @param array|null $not
+     * @param bool       $describeClasses
      * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    public function propertiesRead($only = null, $not = null)
+    public function propertiesRead($only = null, $not = null, $describeClasses = true)
     {
-        return $this->getPropertiesDescribed('property-read', $only, $not, true);
+        return $this->getPropertiesDescribed('property-read', $only, $not, $describeClasses);
     }
 
     /**

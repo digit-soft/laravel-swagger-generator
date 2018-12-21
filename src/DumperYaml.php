@@ -34,9 +34,13 @@ class DumperYaml
         'string', 'integer', 'float', 'object', 'boolean', 'null', 'array', 'resource',
     ];
 
-    protected static $basicTypesShort = [
+    protected static $basicTypesSyn = [
         'int' => 'integer',
         'bool' => 'boolean',
+    ];
+
+    protected static $classSimpleTypes = [
+        'Illuminate\Support\Carbon' => 'string',
     ];
 
     use WithFaker, DescribesVariables;
@@ -182,13 +186,24 @@ class DumperYaml
             $type = substr($type, 0, -2);
         }
         $typeLower = strtolower($type);
-        if (isset(static::$basicTypesShort[$typeLower])) {
-            return static::$basicTypesShort[$typeLower];
+        if (isset(static::$basicTypesSyn[$typeLower])) {
+            return static::$basicTypesSyn[$typeLower];
         }
         if (strpos($type, '\\') !== false) {
             return ltrim($type, '\\');
         }
         return $typeLower;
+    }
+
+    /**
+     * Simplify class name to basic type
+     * @param string $className
+     * @return mixed|string
+     */
+    public static function simplifyClassName($className)
+    {
+        $className = ltrim($className, '\\');
+        return static::$classSimpleTypes[$className] ?? $className;
     }
 
     /**
