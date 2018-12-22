@@ -3,6 +3,8 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
+use Doctrine\Common\Annotations\Annotation\Attribute;
+use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
@@ -10,12 +12,19 @@ use Doctrine\Common\Annotations\Annotation\Target;
  *
  * @Annotation
  * @Target({"CLASS", "ANNOTATION"})
+ * @Attributes({
+ *   @Attribute("type",type="string"),
+ *   @Attribute("name",type="string"),
+ *   @Attribute("description",type="string"),
+ * })
  */
 class RequestParam extends BaseAnnotation
 {
     public $required = true;
 
     public $type = 'string';
+
+    public $example;
 
     public $name;
 
@@ -58,7 +67,8 @@ class RequestParam extends BaseAnnotation
                 'type' => $this->items,
             ];
         }
-        if (($example = DumperYaml::getExampleValue($this->type, $this->name)) !== null) {
+        $example = $this->example ?? DumperYaml::getExampleValue($this->type, $this->name);
+        if ($example !== null) {
             $data['example'] = $example;
         }
 

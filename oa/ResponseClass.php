@@ -6,6 +6,8 @@ use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Yaml\Variable;
+use Doctrine\Common\Annotations\Annotation\Attribute;
+use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
 use Illuminate\Support\Arr;
 
@@ -15,6 +17,9 @@ use Illuminate\Support\Arr;
  *
  * @Annotation
  * @Target({"METHOD"})
+ * @Attributes({
+ *   @Attribute("with",type="array"),
+ * })
  */
 class ResponseClass extends Response
 {

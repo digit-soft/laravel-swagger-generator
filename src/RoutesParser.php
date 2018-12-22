@@ -295,7 +295,7 @@ class RoutesParser
                 if (isset($schema['schema'])) {
                     $path .= '.schema';
                 }
-                $merged = DumperYaml::merge(Arr::get($result, $path), $rulesData);
+                $merged = DumperYaml::merge($rulesData, Arr::get($result, $path, []));
                 Arr::set($result, $path, $merged);
             }
             $this->setComponent($result, $classKey, static::COMPONENT_REQUESTS);
