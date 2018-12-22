@@ -51,6 +51,8 @@ class ResponseClass extends Response
             $with = implode('_', $this->getWith());
             $key .= '__with_' . $with;
         }
+        $key .= $this->asList || $this->asPagedList ? '__list' : '';
+        $key .= $this->asPagedList ? '_paged' : '';
         return $key;
     }
 
