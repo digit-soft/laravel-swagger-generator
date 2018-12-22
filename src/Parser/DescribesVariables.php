@@ -101,12 +101,14 @@ trait DescribesVariables
             ],
             'token' => [
                 'token',
+                'access_token',
                 'email_token',
                 'remember_token',
                 'service_token',
             ],
             'domain_name' => [
                 'domain',
+                'domain_name',
                 'domainName',
             ],
             'service_name' => [
