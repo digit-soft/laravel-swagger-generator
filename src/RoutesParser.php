@@ -237,10 +237,15 @@ class RoutesParser
                 $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
             }
             $annotationDataRef = ['$ref' => $this->getComponentReference($annKey, static::COMPONENT_RESPONSE)];
+            $annStatus = $annotation->status;
             $data = [
-                $annotation->status => $annKey !== null ? $annotationDataRef : $annotationData,
+                $annStatus => $annKey !== null ? $annotationDataRef : $annotationData,
             ];
-            $result = DumperYaml::merge($result, $data);
+            if (isset($result[$annStatus])) {
+                $result[$annStatus] = DumperYaml::merge($result[$annStatus], $data[$annStatus]);
+            } else {
+                $result = DumperYaml::merge($result, $data);
+            }
         }
         return $result;
     }
