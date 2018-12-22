@@ -2,6 +2,8 @@
 
 namespace DigitSoft\Swagger\Parser;
 
+use DigitSoft\Swagger\DumperYaml;
+use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
 
 /**
@@ -202,6 +204,73 @@ trait DescribesVariables
     }
 
     /**
+     * Get swagger type by example variable
+     * @param mixed $example
+     * @return string|null
+     */
+    protected function swaggerTypeByExample($example)
+    {
+        if (is_null($example)) {
+            return null;
+        }
+        $swType = static::swaggerType(gettype($example));
+        if ($swType === Variable::SW_TYPE_ARRAY && Arr::isAssoc($example)) {
+            $swType = Variable::SW_TYPE_OBJECT;
+        }
+        return $swType;
+    }
+
+    /**
+     * Get swagger type by given PHP type
+     * @param  string $phpType
+     * @return string|null
+     */
+    protected static function swaggerType($phpType)
+    {
+        if (DumperYaml::isTypeArray($phpType)) {
+            $phpType = 'array';
+        }
+        switch ($phpType) {
+            case 'string':
+                return Variable::SW_TYPE_STRING;
+                break;
+            case 'integer':
+                return Variable::SW_TYPE_INTEGER;
+                break;
+            case 'float':
+                return Variable::SW_TYPE_NUMBER;
+                break;
+            case 'object':
+                return Variable::SW_TYPE_OBJECT;
+                break;
+            case 'array':
+                return Variable::SW_TYPE_ARRAY;
+                break;
+            default:
+                return $phpType;
+        }
+    }
+
+    /**
+     * Get PHP type by given Swagger type
+     * @param string $swType
+     * @return string
+     */
+    protected function phpType($swType)
+    {
+        switch($swType) {
+            case Variable::SW_TYPE_OBJECT:
+                return 'array';
+                break;
+            case Variable::SW_TYPE_NUMBER:
+                return 'float';
+                break;
+            default:
+                return $swType;
+        }
+    }
+
+    /**
      * Describe object properties
      * @param array $target
      * @param array $properties
@@ -211,7 +280,7 @@ trait DescribesVariables
         $target['properties'] = $target['properties'] ?? [];
         $obj = &$target['properties'];
         foreach ($properties as $key => $row) {
-            $obj[$key] = Arr::only($properties, ['type', 'description', 'example']);
+            $obj[$key] = Arr::only($properties, ['type', 'format', 'description', 'example']);
         }
     }
 }
