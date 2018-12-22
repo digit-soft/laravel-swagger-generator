@@ -4,6 +4,7 @@ namespace DigitSoft\Swagger;
 
 use DigitSoft\Swagger\Parser\DescribesVariables;
 use DigitSoft\Swagger\Parser\WithFaker;
+use DigitSoft\Swagger\Yaml\Variable;
 use Faker\Factory;
 use Faker\Generator;
 use Illuminate\Database\Eloquent\Builder;
@@ -297,10 +298,15 @@ class DumperYaml
      */
     protected static function describeValue($value, $withExample = true)
     {
-        $type = strtolower(gettype($value));
+        $type = static::swaggerType(gettype($value));
         $type = $type === 'null' ? null : $type;
         $desc = ['type' => $type];
-        $examplable = ['string', 'integer', 'float', 'boolean'];
+        $examplable = [
+            Variable::SW_TYPE_STRING,
+            Variable::SW_TYPE_INTEGER,
+            Variable::SW_TYPE_NUMBER,
+            Variable::SW_TYPE_BOOLEAN,
+        ];
         switch ($type) {
             case 'object':
                 $desc = static::describeObject($value);

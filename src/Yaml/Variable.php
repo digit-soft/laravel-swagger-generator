@@ -21,8 +21,21 @@ class Variable
     const KEY_EXCEPT = 'except';
     const KEY_ONLY = 'only';
 
-    const SW_TYPE_ARRAY = 'array';
-    const SW_TYPE_OBJECT = 'object';
+    const SW_TYPE_STRING    = 'string';
+    const SW_TYPE_INTEGER   = 'integer';
+    const SW_TYPE_NUMBER    = 'number';
+    const SW_TYPE_BOOLEAN   = 'boolean';
+    const SW_TYPE_ARRAY     = 'array';
+    const SW_TYPE_OBJECT    = 'object';
+
+    const SW_FORMAT_INT32       = 'int32';
+    const SW_FORMAT_INT64       = 'int64';
+    const SW_FORMAT_FLOAT       = 'float';
+    const SW_FORMAT_BYTE        = 'byte';
+    const SW_FORMAT_DATE        = 'date';
+    const SW_FORMAT_DATETIME    = 'date-time';
+    const SW_FORMAT_PASSWORD    = 'password';
+    const SW_FORMAT_BINARY      = 'binary';
 
     public $example;
 
@@ -108,6 +121,9 @@ class Variable
                 if (class_exists($className)) {
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
                     $res['properties'] = $res['properties'] ?? [];
+                } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
+                    $describedEx = DumperYaml::describe($this->example);
+                    $res['properties'] = Arr::get($describedEx, 'properties', []);
                 }
                 break;
             case static::SW_TYPE_ARRAY:
