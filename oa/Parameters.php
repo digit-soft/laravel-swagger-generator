@@ -26,4 +26,19 @@ class Parameters extends BaseAnnotation
         }
         return json_encode($params);
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function toArray()
+    {
+        if (!is_array($this->value)) {
+            return [];
+        }
+        $params = [];
+        foreach ($this->value as $parameter) {
+            $params[] = $parameter->toArray();
+        }
+        return $params;
+    }
 }

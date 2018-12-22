@@ -12,24 +12,13 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class RequestParamArray extends RequestParam
 {
-    public $items = 'string';
-
     /**
-     * RequestParam constructor.
+     * RequestParamArray constructor.
      * @param array $values
      */
     public function __construct(array $values)
     {
+        $values['type'] = $values['type'] ?? 'array';
         parent::__construct($values);
-        $this->type = 'array';
-    }
-
-    /**
-     * Get object string representation
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->name;
     }
 }
