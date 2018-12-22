@@ -8,6 +8,11 @@ use phpDocumentor\Reflection\DocBlock\Tags\Property;
 use phpDocumentor\Reflection\DocBlock\Tags\PropertyRead;
 use phpDocumentor\Reflection\DocBlock\Tags\PropertyWrite;
 
+/**
+ * Add PHPDoc parse ability to class
+ *
+ * @package DigitSoft\Swagger\Parser
+ */
 trait WithDocParser
 {
     protected $docFactory;

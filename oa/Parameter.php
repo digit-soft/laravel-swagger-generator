@@ -2,6 +2,7 @@
 
 namespace OA;
 
+use DigitSoft\Swagger\DumperYaml;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
@@ -49,7 +50,7 @@ class Parameter extends BaseAnnotation
             'in' => $this->in,
             'required' => $this->required,
             'schema' => [
-                'type' => $this->type,
+                'type' => DumperYaml::normalizeType($this->type),
             ],
         ];
         if ($this->description !== null) {
