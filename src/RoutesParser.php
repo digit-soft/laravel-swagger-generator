@@ -173,7 +173,14 @@ class RoutesParser
             $paramsAnn = [];
             foreach ($route->parameterNames() as $parameterName) {
                 $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
-                $type = $this->getRouteParamType($route, $parameterName);
+                if (($paramDoc = static::getArrayElemByStrKey($paramsDoc, $parameterName)) !== null
+                    && isset($paramDoc['type'])
+                    && DumperYaml::isBasicType($paramDoc['type'])
+                ) {
+                    $type = $paramDoc['type'];
+                } else {
+                    $type = $this->getRouteParamType($route, $parameterName);
+                }
                 $paramData = [
                     'name' => $parameterName,
                     'type' => $type,
