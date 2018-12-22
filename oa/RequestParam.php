@@ -16,13 +16,18 @@ use Doctrine\Common\Annotations\Annotation\Target;
  *   @Attribute("type",type="string"),
  *   @Attribute("name",type="string"),
  *   @Attribute("description",type="string"),
+ *   @Attribute("format",type="string"),
  * })
  */
 class RequestParam extends BaseAnnotation
 {
+    const FORMAT_BINARY = 'binary';
+
     public $required = true;
 
     public $type = 'string';
+
+    public $format;
 
     public $example;
 
@@ -61,6 +66,13 @@ class RequestParam extends BaseAnnotation
         ];
         if ($this->description !== null) {
             $data['description'] = $this->description;
+        }
+        if ($this->format !== null) {
+            $data['format'] = $this->format;
+            // Example of binary
+            if ($this->format === static::FORMAT_BINARY) {
+                $this->example = $this->example ?? "file_content";
+            }
         }
         if ($this->type === 'array') {
             $data['items'] = [
