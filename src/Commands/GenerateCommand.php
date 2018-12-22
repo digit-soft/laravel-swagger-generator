@@ -55,6 +55,7 @@ class GenerateCommand extends Command
         if ($this->isDiag()) {
             return $this->handleDiagnose();
         }
+        $startTime = microtime();
         $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
@@ -65,6 +66,7 @@ class GenerateCommand extends Command
         $content = $dumper->toYml($arrayContent);
         $this->files->put($filePath, $content);
         $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
+        $this->printTimeSpent($startTime);
     }
 
     /**
@@ -72,6 +74,7 @@ class GenerateCommand extends Command
      */
     protected function handleDiagnose()
     {
+        $startTime = microtime();
         $this->getOutput()->success('Diagnose mode, files will not be generated.');
         $parser = new RoutesParser($this->routes, $this->getOutput());
         $paths = $parser->parse();
@@ -101,6 +104,20 @@ class GenerateCommand extends Command
         if (!$this->getOutput()->isVerbose()) {
             $this->getOutput()->title('To see additional information use option -v.');
         }
+        $this->printTimeSpent($startTime);
+    }
+
+    /**
+     * Print time spent from given point
+     * @param string $startTime
+     */
+    protected function printTimeSpent($startTime)
+    {
+        $finishTime = microtime();
+        $start = \DateTime::createFromFormat('0.u00 U', $startTime);
+        $finish = \DateTime::createFromFormat('0.u00 U', $finishTime);
+        $diff = $finish->diff($start);
+        $this->getOutput()->title('Time spent: ' . $diff->format('%H:%I:%S.%F'));
     }
 
     /**
