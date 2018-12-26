@@ -30,6 +30,7 @@ php artisan swagger:generate --diagnose
 | @OA\RequestParamArray | Describes request body parameter. Shortcut for array type parameter | Used as argument in `@OA\RequestBody` annotation |
 | @OA\Parameter         | Describes route parameter             | Controller method, Controller class |
 | @OA\Property          | Describes class property              | Class used for response |
+| @OA\PropertyIgnore    | Mark class property as ignored        | Class used for response |
 | @OA\Secured           | Describes route as secured            | Controller method |
 | @OA\Tag               | Describes route tags                  | Controller method, Controller class |
 
@@ -139,5 +140,12 @@ or fully describe property if you dont want to place `@property` declaration for
 ```php
 /**
  * @OA\Property("notification_settings",type="object",example={"marketing":false,"user_actions":true},description="User notification settings")
+ */
+```
+### PropertyIgnore
+`@OA\PropertyIgnore` annotation is used to remove given property from object description.
+```php
+/**
+ * @OA\PropertyIgnore("property_name")
  */
 ```
