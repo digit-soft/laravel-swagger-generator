@@ -18,6 +18,8 @@ trait WithAnnotationReader
 
     protected $_classAnnotations;
 
+    protected $_methodAnnotations;
+
     /**
      * Get route controller method annotation
      * @param Route  $route
@@ -45,7 +47,7 @@ trait WithAnnotationReader
         if (!$ref instanceof \ReflectionMethod) {
             return [];
         }
-        $annotations = $this->annotationReader()->getMethodAnnotations($ref);
+        $annotations = $this->methodAnnotations($ref);
         if ($name === null) {
             return $annotations;
         }
@@ -103,6 +105,32 @@ trait WithAnnotationReader
         }
         $result = [];
         foreach ($this->_classAnnotations[$className] as $annotation) {
+            if ($annotation instanceof $name) {
+                $result[] = $annotation;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param \ReflectionMethod|array $ref
+     * @param string|null             $name
+     * @return array
+     */
+    protected function methodAnnotations($ref, $name = null)
+    {
+        if (is_array($ref)) {
+            $ref = $this->reflectionMethod(...$ref);
+        }
+        $methodName = $ref->getName();
+        if (!isset($this->_methodAnnotations[$methodName])) {
+            $this->_methodAnnotations[$methodName] = $this->annotationReader()->getMethodAnnotations($ref);
+        }
+        if ($name === null) {
+            return $this->_methodAnnotations[$methodName];
+        }
+        $result = [];
+        foreach ($this->_methodAnnotations[$methodName] as $annotation) {
             if ($annotation instanceof $name) {
                 $result[] = $annotation;
             }
