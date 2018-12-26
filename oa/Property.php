@@ -2,11 +2,9 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\DumperYaml;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
-use Illuminate\Support\Arr;
 
 /**
  * Used to describe class property.

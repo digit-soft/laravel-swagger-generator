@@ -285,6 +285,11 @@ class Variable
         if (empty($properties)) {
             return null;
         }
+        // Ignore properties
+        $ignored = $this->getIgnoredProperties($className);
+        if (!empty($ignored)) {
+            $properties = array_diff_key($properties, $ignored);
+        }
         $described = [];
         foreach ($properties as $name => $row) {
             $row = DumperYaml::merge(['name' => $name], $row);
@@ -308,6 +313,19 @@ class Variable
             $rowData = $annotation->toArray();
             $result[$annotation->name] = $rowData;
         }
+        return $result;
+    }
+
+    /**
+     * Get ignored properties
+     * @param string $className
+     * @return array
+     */
+    protected function getIgnoredProperties($className)
+    {
+        /** @var \OA\PropertyIgnore[] $annotations */
+        $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
+        $result = Arr::pluck($annotations, 'name', 'name');
         return $result;
     }
 

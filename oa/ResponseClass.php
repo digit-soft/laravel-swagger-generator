@@ -67,27 +67,7 @@ class ResponseClass extends Response
             'with' => $this->getWith(),
             'description' => $this->description,
         ]);
-        $result = $variable->describe();
-        $propertiesAnn = $this->getModelPropertyAnnotations();
-        $result['properties'] = DumperYaml::merge($result['properties'], $propertiesAnn);
-        return $result;
-    }
-
-    /**
-     * Get properties by annotations
-     * @return array
-     */
-    protected function getModelPropertyAnnotations()
-    {
-        /** @var \OA\Property[] $annotations */
-        $annotations = $this->classAnnotations($this->content, 'OA\Property');
-        $result = [];
-        foreach ($annotations as $annotation) {
-            $rowData = $annotation->toArray();
-            Arr::forget($rowData, ['name']);
-            $result[$annotation->name] = $rowData;
-        }
-        return $result;
+        return $variable->describe();
     }
 
     /**
