@@ -1,6 +1,11 @@
 <?php
 namespace OA;
 
+use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Attribute;
+use Doctrine\Common\Annotations\Annotation\Attributes;
+use Doctrine\Common\Annotations\Annotation\Target;
+
 /**
  * Used to mark controller method as secured (with optional security scheme)
  *

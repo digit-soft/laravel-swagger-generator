@@ -3,6 +3,7 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
+use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
 

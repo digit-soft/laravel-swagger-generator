@@ -4,6 +4,7 @@ namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Yaml\Variable;
+use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;

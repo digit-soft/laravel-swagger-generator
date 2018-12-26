@@ -2,14 +2,13 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Yaml\Variable;
+use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
 use Doctrine\Common\Annotations\Annotation\Target;
-use Illuminate\Support\Arr;
 
 /**
  * Used to describe controller action response.

@@ -2,10 +2,14 @@
 
 namespace OA;
 
+use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Target;
+
 /**
  * Used to describe controller action error response (shortcut)
  *
  * @Annotation
+ * @Target({"METHOD"})
  */
 class ResponseError extends Response
 {
