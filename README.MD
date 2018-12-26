@@ -149,7 +149,7 @@ or fully describe property if you dont want to place `@property` declaration for
  * @OA\PropertyIgnore("property_name")
  */
 ```
-You must use full namespace of annotations, ig: `OA\Property`.
+You must use full namespace of annotations, eg: `OA\Property`.
 
 Besides, you can import a namespace for better code completion as in example beyond.
 ```php
