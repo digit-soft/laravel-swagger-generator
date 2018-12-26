@@ -149,3 +149,20 @@ or fully describe property if you dont want to place `@property` declaration for
  * @OA\PropertyIgnore("property_name")
  */
 ```
+You must use full namespace of annotations, ig: `OA\Property`.
+
+Besides, you can import a namespace for better code completion as in example beyond.
+```php
+namespace App\Models;
+
+use OA;
+
+/**
+ * Test model class
+ *
+ * @OA\Property("id",type="integer",description="Primary key")
+ *
+ * @property string $name String name
+ */
+class TestModel {}
+```
