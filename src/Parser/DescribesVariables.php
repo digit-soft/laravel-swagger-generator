@@ -5,6 +5,7 @@ namespace DigitSoft\Swagger\Parser;
 use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 /**
  * Trait DescribesVariables
@@ -13,6 +14,8 @@ use Illuminate\Support\Arr;
  */
 trait DescribesVariables
 {
+    private static $varsCache = [];
+
     /**
      * Get example value
      * @param string      $type
@@ -21,12 +24,16 @@ trait DescribesVariables
      */
     public static function exampleValue(string $type, $varName = null)
     {
+        if (($cachedValue = DescribesVariables::getVarCache($varName, $type)) !== null) {
+            return $cachedValue;
+        }
         $isArray = strpos($type, '[]') !== false;
         $type = $isArray ? substr($type, 0, -2) : $type;
-        if (($example = static::exampleValueInternal($type, $varName)) === null) {
+        if (($example = self::exampleValueInternal($type, $varName)) === null) {
             return null;
         }
-        return $isArray ? [$example] : $example;
+        $example = $isArray ? [$example] : $example;
+        return DescribesVariables::setVarCache($varName, $type, $example);
     }
 
     /**
@@ -97,6 +104,7 @@ trait DescribesVariables
             ],
             'password' => [
                 'password',
+                'password_confirm',
                 'pass',
                 'remember_token',
                 'email_token',
@@ -144,63 +152,69 @@ trait DescribesVariables
         if (in_array($rule, $generalTypes) && $varName !== null && ($typeByName = static::exampleByName($varName)) !== null) {
             return $typeByName;
         }
+        $trueTypes = ['numeric' => 'integer', 'integer' => 'integer', 'boolean' => 'boolean'];
+        $trueType = $trueTypes[$rule] ?? 'string';
+        if (($cached = DescribesVariables::getVarCache($varName, $trueType)) !== null) {
+            return $cached;
+        }
+        $example = null;
         switch ($rule) {
             case 'phone':
-                return static::faker()->phoneNumber;
+                $example = static::faker()->phoneNumber;
                 break;
             case 'url':
-                return static::faker()->url;
+                $example = static::faker()->url;
                 break;
             case 'image':
-                return static::faker()->imageUrl();
+                $example = static::faker()->imageUrl();
                 break;
             case 'email':
-                return static::faker()->email;
+                $example = static::faker()->email;
                 break;
             case 'password':
-                return static::faker()->password(16, 36);
+                $example = static::faker()->password(16, 36);
                 break;
             case 'token':
-                return str_random(64);
+                $example = str_random(64);
                 break;
             case 'service_name':
-                return array_random(['fb', 'google', 'twitter']);
+                $example = array_random(['fb', 'google', 'twitter']);
                 break;
             case 'domain_name':
-                return static::faker()->domainName;
+                $example = static::faker()->domainName;
                 break;
             case 'alpha':
             case 'string':
-                return array_random(['string', 'value', 'str value']);
+                $example = array_random(['string', 'value', 'str value']);
                 break;
             case 'alpha_num':
-                return array_random(['string35', 'value90', 'str20value']);
+                $example = array_random(['string35', 'value90', 'str20value']);
                 break;
             case 'alpha_dash':
-                return array_random(['string_35', 'value-90', 'str_20-value']);
+                $example = array_random(['string_35', 'value-90', 'str_20-value']);
                 break;
             case 'ip':
             case 'ipv4':
-                return static::faker()->ipv4;
+                $example = static::faker()->ipv4;
                 break;
             case 'ipv6':
-                return static::faker()->ipv6;
+                $example = static::faker()->ipv6;
                 break;
             case 'float':
-                return static::faker()->randomFloat(2);
+                $example = static::faker()->randomFloat(2);
                 break;
             case 'date':
-                return static::faker()->date();
+                $example = static::faker()->date();
                 break;
             case 'numeric':
             case 'integer':
-                return static::faker()->numberBetween(1, 99);
+                $example = static::faker()->numberBetween(1, 99);
                 break;
             case 'boolean':
-                return static::faker()->boolean;
+                $example = static::faker()->boolean;
                 break;
         }
-        return null;
+        return DescribesVariables::setVarCache($varName, $trueType, $example);
     }
 
     /**
@@ -282,5 +296,37 @@ trait DescribesVariables
         foreach ($properties as $key => $row) {
             $obj[$key] = Arr::only($properties, ['type', 'format', 'description', 'example']);
         }
+    }
+
+    public static function getVarCache($name, $type)
+    {
+        if (($key = self::getVarCacheKey($name, $type)) === null) {
+            return null;
+        }
+        return Arr::get(self::$varsCache, $key);
+    }
+
+    public static function setVarCache($name, $type, $value)
+    {
+        if ($value !== null && ($key = self::getVarCacheKey($name, $type)) !== null) {
+            Arr::set(self::$varsCache, $key, $value);
+        }
+        return $value;
+    }
+
+    private static function getVarCacheKey($name, $type)
+    {
+        $suffixes = ['_confirm', '_original', '_example'];
+        if ($name === null || $type === null) {
+            return null;
+        }
+        foreach ($suffixes as $suffix) {
+            $len = strlen($suffix);
+            if (substr($name, -$len) === (string) $suffix) {
+                $name = substr($name, 0, -$len);
+                break;
+            }
+        }
+        return $name . '|' . $type;
     }
 }

@@ -4,6 +4,7 @@ namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\DescribesVariables;
+use DigitSoft\Swagger\Parser\WithFaker;
 use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
 
@@ -12,7 +13,7 @@ use Illuminate\Support\Arr;
  */
 abstract class BaseValueDescribed extends BaseAnnotation
 {
-    use DescribesVariables;
+    use WithFaker, DescribesVariables;
 
     /** @var string */
     public $name;
@@ -82,7 +83,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Write example if needed
         if ($this->exampleRequired
             && !isset($data['example'])
-            && ($example = DumperYaml::getExampleValue($this->type, $this->name)) !== null
+            && ($example = static::exampleValue($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
         }
