@@ -36,6 +36,44 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     protected $excludeKeys = [];
 
+    protected $_isNested;
+
+    /**
+     * Check that variable name is nested (with dots)
+     * @return bool
+     */
+    public function isNested()
+    {
+        if ($this->_isNested === null) {
+            $this->_isNested = $this->name !== null && strpos($this->name, '.') !== false;
+        }
+        return $this->_isNested;
+    }
+
+    /**
+     * Sets this array content to target by obtained key
+     * @param array $target
+     */
+    public function toArrayRecursive(&$target)
+    {
+        if (!$this->isNested()) {
+            $target[$this->name] = $this->toArray();
+            return;
+        }
+        $nameArr = explode('.', $this->name);
+        $currentTarget = &$target;
+        while ($key = array_shift($nameArr)) {
+            if (!empty($nameArr)) {
+                if (!isset($currentTarget[$key])) {
+                    $currentTarget[$key] = ['type' => 'object', 'properties' => []];
+                }
+                $currentTarget = &$currentTarget[$key]['properties'];
+            } else {
+                Arr::set($currentTarget, $key, $this->toArray());
+            }
+        }
+    }
+
     /**
      * BaseValueDescribed constructor.
      * @param array $values

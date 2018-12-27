@@ -2,6 +2,7 @@
 
 namespace DigitSoft\Swagger;
 
+use DigitSoft\Swagger\Parser\CleanupsDescribedData;
 use DigitSoft\Swagger\Parser\RoutesParserEvents;
 use DigitSoft\Swagger\Parser\RoutesParserHelpers;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
@@ -55,7 +56,7 @@ class RoutesParser
     public $problems = [];
 
     use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
-        RoutesParserHelpers, RoutesParserEvents;
+        RoutesParserHelpers, RoutesParserEvents, CleanupsDescribedData;
 
     /**
      * RoutesParser constructor.
@@ -303,6 +304,7 @@ class RoutesParser
                     $path .= '.schema';
                 }
                 $merged = DumperYaml::merge($rulesData, Arr::get($result, $path, []));
+                static::handleIncompatibleTypeKeys($merged);
                 Arr::set($result, $path, $merged);
             }
             $this->setComponent($result, $classKey, static::COMPONENT_REQUESTS);

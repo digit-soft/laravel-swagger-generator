@@ -3,6 +3,7 @@
 namespace OA;
 
 use DigitSoft\Swagger\DumperYaml;
+use DigitSoft\Swagger\Parser\CleanupsDescribedData;
 use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
@@ -20,6 +21,8 @@ use Doctrine\Common\Annotations\Annotation\Target;
 class RequestBodyJson extends RequestBody
 {
     public $contentType = 'application/json';
+
+    use CleanupsDescribedData;
 
     /**
      * Get object string representation
@@ -44,7 +47,7 @@ class RequestBodyJson extends RequestBody
                     continue;
                 }
                 if ($row instanceof RequestParam) {
-                    $result[$row->name] = $row->toArray();
+                    $row->toArrayRecursive($result);
                 } else {
                     $result[$key] = DumperYaml::describe($row->toArray());
                 }
@@ -52,6 +55,10 @@ class RequestBodyJson extends RequestBody
                 $result[$key] = $this->processContent($row);
             } else {
                 $result[$key] = $row;
+            }
+            if (isset($result[$key]) && is_array($result[$key])) {
+                $currentRow = &$result[$key];
+                static::handleIncompatibleTypeKeys($currentRow);
             }
         }
         return $result;

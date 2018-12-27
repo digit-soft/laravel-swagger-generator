@@ -131,7 +131,25 @@ trait DescribesVariables
                 'phone_numbers',
                 'phones',
             ],
+            'first_name' => [
+                'first_name',
+                'firstName',
+            ],
+            'last_name' => [
+                'last_name',
+                'lastName',
+            ],
+            'address' => [
+                'address',
+                'post_address',
+                'postAddress',
+            ],
         ];
+        // Name is nested
+        if (strpos($name, '.') !== false) {
+            $nameExp = explode('.', $name);
+            $name = last($nameExp);
+        }
         foreach ($subTypes as $subType => $names) {
             if (in_array($name, $names)) {
                 return static::exampleByRule($subType);
@@ -212,6 +230,15 @@ trait DescribesVariables
                 break;
             case 'boolean':
                 $example = static::faker()->boolean;
+                break;
+            case 'first_name':
+                $example = static::faker()->firstName;
+                break;
+            case 'last_name':
+                $example = static::faker()->firstName;
+                break;
+            case 'address':
+                $example = trim(static::faker()->address);
                 break;
         }
         return DescribesVariables::setVarCache($varName, $trueType, $example);
