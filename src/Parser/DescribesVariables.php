@@ -106,8 +106,8 @@ trait DescribesVariables
                 'password',
                 'password_confirm',
                 'pass',
-                'remember_token',
-                'email_token',
+                'new_password',
+                'password_new',
             ],
             'token' => [
                 'token',
@@ -343,7 +343,7 @@ trait DescribesVariables
 
     private static function getVarCacheKey($name, $type)
     {
-        $suffixes = ['_confirm', '_original', '_example'];
+        $suffixes = ['_confirm', '_original', '_example', '_new'];
         if ($name === null || $type === null) {
             return null;
         }
