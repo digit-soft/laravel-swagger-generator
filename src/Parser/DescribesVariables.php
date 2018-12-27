@@ -325,6 +325,12 @@ trait DescribesVariables
         }
     }
 
+    /**
+     * Get variable value from cache
+     * @param  string $name
+     * @param  string $type
+     * @return mixed|null
+     */
     public static function getVarCache($name, $type)
     {
         if (($key = self::getVarCacheKey($name, $type)) === null) {
@@ -333,6 +339,13 @@ trait DescribesVariables
         return Arr::get(self::$varsCache, $key);
     }
 
+    /**
+     * Set variable value to cache
+     * @param  string $name
+     * @param  string $type
+     * @param  mixed $value
+     * @return mixed|null
+     */
     public static function setVarCache($name, $type, $value)
     {
         if ($value !== null && ($key = self::getVarCacheKey($name, $type)) !== null) {
@@ -341,6 +354,12 @@ trait DescribesVariables
         return $value;
     }
 
+    /**
+     * Create variable cache string key
+     * @param  string $name
+     * @param  string $type
+     * @return string|null
+     */
     private static function getVarCacheKey($name, $type)
     {
         $suffixes = ['_confirm', '_original', '_example', '_new'];
