@@ -331,8 +331,8 @@ class RoutesParser
             $rulesRaw = [];
         }
         $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
-        $exampleData = $this->processFormRequestRules($rulesRaw);
-        return DumperYaml::describe($exampleData);
+        list($exampleData) = $this->processFormRequestRules($rulesRaw);
+        return $exampleData;
     }
 
     /**
@@ -372,20 +372,24 @@ class RoutesParser
      * Process rules obtained from FromRequest class and return data examples.
      *
      * @param array $rules
+     * @param bool  $describe
      * @return array
      */
-    protected function processFormRequestRules(array $rules)
+    protected function processFormRequestRules(array $rules, $describe = true)
     {
         $result = [];
+        $required = [];
         foreach ($rules as $key => $row) {
+            $required[$key] = false;
             if (Arr::isAssoc($row)) {
-                $result[$key] = $this->processFormRequestRules($row);
+                list($result[$key], $required[$key]) = $this->processFormRequestRules($row, false);
                 continue;
             }
             foreach ($row as $ruleName) {
                 if (strpos($ruleName, ':')) {
                     $ruleName = explode(':', $ruleName)[0];
                 }
+                $required[$key] = $ruleName === 'required' ? true : $required[$key];
                 if (($example = DumperYaml::getExampleValueByRule($ruleName, $key)) !== null) {
                     if ($key === '*') {
                         $result = [$example];
@@ -396,7 +400,32 @@ class RoutesParser
                 }
             }
         }
-        return $result;
+        if ($describe) {
+            $result = DumperYaml::describe($result);
+            $this->applyFormRequestRequiredRules($result, $required);
+        }
+        return [$result, $required];
+    }
+
+    /**
+     * Apply required rules to parsed and described rules
+     * @param array $rules
+     * @param array $required
+     */
+    protected function applyFormRequestRequiredRules(&$rules, $required)
+    {
+        foreach ($required as $key => $value) {
+            if (is_array($value) && isset($rules['properties'][$key])) {
+                $this->applyFormRequestRequiredRules($rules['properties'][$key], $value);
+            } elseif (is_bool($value) && $value) {
+                if ($key === '*') {
+                    $rules['required'] = $value;
+                } elseif(isset($rules['properties'][$key])) {
+                    $keyToSet = 'properties.' . $key . '.required';
+                    Arr::set($rules, $keyToSet, $value);
+                }
+            }
+        }
     }
 
     /**
