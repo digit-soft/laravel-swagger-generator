@@ -178,7 +178,7 @@ trait DescribesVariables
         $example = null;
         switch ($rule) {
             case 'phone':
-                $example = static::faker()->phoneNumber;
+                $example = array_random(['+380971234567', '+380441234567', '+15411234567', '+4901511234567']);
                 break;
             case 'url':
                 $example = static::faker()->url;
@@ -190,7 +190,7 @@ trait DescribesVariables
                 $example = static::faker()->email;
                 break;
             case 'password':
-                $example = static::faker()->password(16, 36);
+                $example = str_random(16);
                 break;
             case 'token':
                 $example = str_random(64);
