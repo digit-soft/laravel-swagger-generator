@@ -287,7 +287,7 @@ class DumperYaml
      */
     protected static function describeValue($value, $withExample = true)
     {
-        $type = static::swaggerType(gettype($value));
+        $type = static::swaggerType(strtolower(gettype($value)));
         $type = $type === 'null' ? null : $type;
         $desc = ['type' => $type];
         $examplable = [
