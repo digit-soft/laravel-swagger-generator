@@ -371,18 +371,19 @@ class RoutesParser
     /**
      * Process rules obtained from FromRequest class and return data examples.
      *
-     * @param array $rules
-     * @param bool  $describe
+     * @param array       $rules
+     * @param bool        $describe
+     * @param string|null $parent
      * @return array
      */
-    protected function processFormRequestRules(array $rules, $describe = true)
+    protected function processFormRequestRules(array $rules, $describe = true, $parent = null)
     {
         $result = [];
         $required = [];
         foreach ($rules as $key => $row) {
             $required[$key] = false;
             if (Arr::isAssoc($row)) {
-                list($result[$key], $required[$key]) = $this->processFormRequestRules($row, false);
+                list($result[$key], $required[$key]) = $this->processFormRequestRules($row, false, $key);
                 continue;
             }
             foreach ($row as $ruleName) {
@@ -390,7 +391,9 @@ class RoutesParser
                     $ruleName = explode(':', $ruleName)[0];
                 }
                 $required[$key] = $ruleName === 'required' ? true : $required[$key];
-                if (($example = DumperYaml::getExampleValueByRule($ruleName, $key)) !== null) {
+                $type = null;
+                $keyForExample = $key === '*' && $parent !== null ? $parent : $key;
+                if (($example = DumperYaml::example($type, $keyForExample, $ruleName)) !== null) {
                     if ($key === '*') {
                         $result = [$example];
                     } else {

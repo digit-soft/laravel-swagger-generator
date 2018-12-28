@@ -234,7 +234,7 @@ class Variable
             $example = $this->getExampleByPHPDocTypeClass($phpType);
             $example = $example ?? [];
         } else {
-            $example = static::exampleValue($phpType, $this->name);
+            $example = static::example($phpType, $this->name);
         }
         if ($isArrayOf) {
             $example = [$example];
@@ -260,7 +260,7 @@ class Variable
         }
         $example = [];
         foreach ($properties as $name => $row) {
-            $ex = static::exampleValue($row['type']);
+            $ex = static::example($row['type']);
             $example[$name] = $ex;
         }
         return $example;

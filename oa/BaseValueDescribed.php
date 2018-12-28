@@ -6,6 +6,7 @@ use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\DescribesVariables;
 use DigitSoft\Swagger\Parser\WithFaker;
 use DigitSoft\Swagger\Yaml\Variable;
+use Doctrine\Common\Annotations\Annotation\Enum;
 use Illuminate\Support\Arr;
 
 /**
@@ -15,21 +16,40 @@ abstract class BaseValueDescribed extends BaseAnnotation
 {
     use WithFaker, DescribesVariables;
 
-    /** @var string */
+    /**
+     * @var string Variable name
+     */
     public $name;
-    /** @var string */
+    /**
+     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @var string Swagger or PHP type
+     */
     public $type;
-    /** @var string */
+    /**
+     * @Enum({"int32", "int64", "float", "byte", "date", "date-time", "password", "binary"})
+     * @var string Format for swagger
+     */
     public $format;
-    /** @var string */
+    /**
+     * @var string Text description
+     */
     public $description;
-    /** @var mixed Example of variable */
+    /**
+     * @var mixed Example of variable
+     */
     public $example;
-    /** @var mixed Array item type */
+    /**
+     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @var mixed Array item type
+     */
     public $items;
-    /** @var bool Flag that value is required */
+    /**
+     * @var bool Flag that value is required
+     */
     public $required;
-    /** @var string */
+    /**
+     * @var string
+     */
     protected $_phpType;
 
     /**
@@ -112,7 +132,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Write example if needed
         if ($this->isExampleRequired()
             && !isset($data['example'])
-            && ($example = static::exampleValue($this->type, $this->name)) !== null
+            && ($example = static::example($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
         }

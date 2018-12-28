@@ -127,18 +127,7 @@ class DumperYaml
      */
     public static function getExampleValue(string $type, $varName = null)
     {
-        return static::exampleValue($type, $varName);
-    }
-
-    /**
-     * Get example value by validation rule
-     * @param string      $rule
-     * @param string|null $varName
-     * @return mixed
-     */
-    public static function getExampleValueByRule(string $rule, $varName = null)
-    {
-        return static::exampleByRule($rule, $varName);
+        return static::example($type, $varName);
     }
 
     /**
@@ -190,7 +179,7 @@ class DumperYaml
         if (isset(static::$basicTypesSyn[$typeLower])) {
             return static::$basicTypesSyn[$typeLower];
         }
-        if (strpos($type, '\\') !== false) {
+        if (strpos($type, '\\') !== false || class_exists($type)) {
             return ltrim($type, '\\');
         }
         return $typeLower;
