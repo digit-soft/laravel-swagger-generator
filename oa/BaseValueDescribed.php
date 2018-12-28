@@ -32,24 +32,13 @@ abstract class BaseValueDescribed extends BaseAnnotation
     /** @var string */
     protected $_phpType;
 
-    protected $_exampleRequired = false;
-
-    protected $_excludeKeys = [];
-
-    protected $_excludeEmptyKeys = [];
-
-    protected $_isNested;
-
     /**
      * Check that variable name is nested (with dots)
      * @return bool
      */
     public function isNested()
     {
-        if ($this->_isNested === null) {
-            $this->_isNested = $this->name !== null && strpos($this->name, '.') !== false;
-        }
-        return $this->_isNested;
+        return $this->name !== null && strpos($this->name, '.') !== false;
     }
 
     /**
@@ -121,23 +110,25 @@ abstract class BaseValueDescribed extends BaseAnnotation
             $data['items'] = ['type' => $this->items];
         }
         // Write example if needed
-        if ($this->_exampleRequired
+        if ($this->isExampleRequired()
             && !isset($data['example'])
             && ($example = static::exampleValue($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
         }
 
+        $excludeKeys = $this->getExcludedKeys();
+        $excludeEmptyKeys = $this->getExcludedEmptyKeys();
+
         // Exclude undesirable keys
-        if (!empty($this->_excludeKeys)) {
-            $data = Arr::except($data, $this->_excludeKeys);
+        if (!empty($excludeKeys)) {
+            $data = Arr::except($data, $excludeKeys);
         }
 
         // Exclude undesirable keys those are empty
-        if (!empty($this->_excludeEmptyKeys)) {
-            $excludeEmpty = $this->_excludeEmptyKeys;
-            $data = array_filter($data, function ($value, $key) use ($excludeEmpty) {
-                return !in_array($key, $excludeEmpty) || !empty($value);
+        if (!empty($excludeEmptyKeys)) {
+            $data = array_filter($data, function ($value, $key) use ($excludeEmptyKeys) {
+                return !in_array($key, $excludeEmptyKeys) || !empty($value);
             }, ARRAY_FILTER_USE_BOTH);
         }
 
@@ -203,5 +194,32 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         $swType = static::swaggerType($type);
         return $swType !== $type;
+    }
+
+    /**
+     * Example required for this annotation
+     * @return bool
+     */
+    protected function isExampleRequired()
+    {
+        return false;
+    }
+
+    /**
+     * Get keys that must be excluded
+     * @return array
+     */
+    protected function getExcludedKeys()
+    {
+        return [];
+    }
+
+    /**
+     * Get keys that must be excluded if they are empty
+     * @return array
+     */
+    protected function getExcludedEmptyKeys()
+    {
+        return [];
     }
 }

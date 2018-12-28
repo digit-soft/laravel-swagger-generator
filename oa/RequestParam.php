@@ -25,9 +25,27 @@ class RequestParam extends BaseValueDescribed
 
     public $type = 'string';
 
-    protected $_exampleRequired = true;
+    /**
+     * @inheritdoc
+     */
+    protected function isExampleRequired()
+    {
+        return true;
+    }
 
-    protected $_excludeKeys = ['name'];
+    /**
+     * @inheritdoc
+     */
+    protected function getExcludedKeys()
+    {
+        return ['name'];
+    }
 
-    protected $_excludeEmptyKeys = ['required'];
+    /**
+     * @inheritdoc
+     */
+    protected function getExcludedEmptyKeys()
+    {
+        return ['required'];
+    }
 }

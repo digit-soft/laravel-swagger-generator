@@ -20,7 +20,19 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class Property extends BaseValueDescribed
 {
-    protected $_exampleRequired = true;
+    /**
+     * @inheritdoc
+     */
+    protected function isExampleRequired()
+    {
+        return true;
+    }
 
-    protected $_excludeKeys = ['required'];
+    /**
+     * @inheritdoc
+     */
+    protected function getExcludedKeys()
+    {
+        return ['required'];
+    }
 }
