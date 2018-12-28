@@ -183,8 +183,8 @@ class Response extends BaseAnnotation
      */
     protected static function getPagerExample()
     {
-        $pager = new LengthAwarePaginator([], 100, 10, 1);
-        return Arr::except($pager->toArray(), ['items']);
+        $pager = new LengthAwarePaginator([], 100, 10, 2);
+        return Arr::except($pager->toArray(), ['items', 'data']);
     }
 
     /**
