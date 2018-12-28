@@ -21,8 +21,11 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class RequestParam extends BaseValueDescribed
 {
-    public $required = true;
-
+    public $required = false;
+    /**
+     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @var string Swagger or PHP type
+     */
     public $type = 'string';
 
     /**

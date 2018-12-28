@@ -22,8 +22,15 @@ use Illuminate\Support\Arr;
  */
 class Parameter extends BaseValueDescribed
 {
+    /**
+     * @Enum({"path", "query"})
+     * @var string Swagger parameter position
+     */
     public $in = 'path';
-
+    /**
+     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @var string Swagger or PHP type
+     */
     public $type = 'integer';
 
     public $required = true;
