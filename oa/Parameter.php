@@ -12,7 +12,7 @@ use Illuminate\Support\Arr;
  * Used to declare controller action parameter
  *
  * @Annotation
- * @Target("METHOD", "CLASS")
+ * @Target({"METHOD", "CLASS"})
  * @Attributes({
  *   @Attribute("name",type="string"),
  *   @Attribute("type",type="string"),

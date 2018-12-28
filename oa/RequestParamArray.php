@@ -9,7 +9,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used in annotations (RequestBody) to describe request body array parameter
  *
  * @Annotation
- * @Target("CLASS", "ANNOTATION", "METHOD")
+ * @Target({"CLASS", "ANNOTATION", "METHOD"})
  */
 class RequestParamArray extends RequestParam
 {

@@ -15,7 +15,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Data will be gathered from given class PHPDoc block.
  *
  * @Annotation
- * @Target({"METHOD"})
+ * @Target("METHOD")
  * @Attributes({
  *   @Attribute("with",type="array"),
  * })

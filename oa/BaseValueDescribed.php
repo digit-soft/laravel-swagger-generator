@@ -36,6 +36,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     protected $_excludeKeys = [];
 
+    protected $_excludeEmptyKeys = [];
+
     protected $_isNested;
 
     /**
@@ -129,6 +131,14 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Exclude undesirable keys
         if (!empty($this->_excludeKeys)) {
             $data = Arr::except($data, $this->_excludeKeys);
+        }
+
+        // Exclude undesirable keys those are empty
+        if (!empty($this->_excludeEmptyKeys)) {
+            $excludeEmpty = $this->_excludeEmptyKeys;
+            $data = array_filter($data, function ($value, $key) use ($excludeEmpty) {
+                return !in_array($key, $excludeEmpty) || !empty($value);
+            }, ARRAY_FILTER_USE_BOTH);
         }
 
         return $data;

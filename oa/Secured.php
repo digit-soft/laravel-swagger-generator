@@ -10,7 +10,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used to mark controller method as secured (with optional security scheme)
  *
  * @Annotation
- * @Target({"METHOD"})
+ * @Target("METHOD")
  * @Attributes({
  *   @Attribute("scheme",type="string"),
  * })

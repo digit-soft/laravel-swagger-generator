@@ -15,7 +15,7 @@ use Illuminate\Support\Arr;
  * Used to describe controller action response (content, content-type, status etc.)
  *
  * @Annotation
- * @Target({"METHOD"})
+ * @Target("METHOD")
  * @Attributes({
  *   @Attribute("status",type="integer"),
  *   @Attribute("contentType",type="string"),
