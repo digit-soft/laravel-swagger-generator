@@ -35,7 +35,7 @@ class ResponseClass extends Response
             throw new \Exception("Class '{$this->content}' not found");
         }
         $properties = $this->getModelProperties();
-        $this->hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->hasNoData;
+        $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
         return $properties;
     }
 

@@ -13,7 +13,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target({"METHOD", "CLASS"})
  * @Attributes({
- *   @Attribute("name", type = "string"),
+ *   @Attribute("name",type="string"),
  * })
  */
 class Tag extends BaseAnnotation

@@ -25,7 +25,7 @@ class ResponseError extends Response
      */
     public function __construct(array $values)
     {
-        $this->setProperties = $this->configureSelf($values, 'status');
+        $this->_setProperties = $this->configureSelf($values, 'status');
     }
 
     /**

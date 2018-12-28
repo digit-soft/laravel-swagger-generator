@@ -30,11 +30,11 @@ abstract class BaseValueDescribed extends BaseAnnotation
     /** @var bool Flag that value is required */
     public $required;
     /** @var string */
-    protected $phpType;
+    protected $_phpType;
 
-    protected $exampleRequired = false;
+    protected $_exampleRequired = false;
 
-    protected $excludeKeys = [];
+    protected $_excludeKeys = [];
 
     protected $_isNested;
 
@@ -119,7 +119,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
             $data['items'] = ['type' => $this->items];
         }
         // Write example if needed
-        if ($this->exampleRequired
+        if ($this->_exampleRequired
             && !isset($data['example'])
             && ($example = static::exampleValue($this->type, $this->name)) !== null
         ) {
@@ -127,8 +127,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
 
         // Exclude undesirable keys
-        if (!empty($this->excludeKeys)) {
-            $data = Arr::except($data, $this->excludeKeys);
+        if (!empty($this->_excludeKeys)) {
+            $data = Arr::except($data, $this->_excludeKeys);
         }
 
         return $data;
@@ -167,17 +167,17 @@ abstract class BaseValueDescribed extends BaseAnnotation
         if ($this->type === null) {
             return;
         }
-        $this->phpType = $this->type;
+        $this->_phpType = $this->type;
         // int[], string[] etc.
         if (($isArray = DumperYaml::isTypeArray($this->type)) === true) {
-            $this->phpType = $this->type;
+            $this->_phpType = $this->type;
             $this->items = $this->items ?? DumperYaml::normalizeType($this->type, true);
         }
         // Convert PHP type to Swagger and vise versa
         if ($this->isPhpType($this->type)) {
             $this->type = static::swaggerType($this->type);
         } else {
-            $this->phpType = static::phpType($this->type);
+            $this->_phpType = static::phpType($this->type);
         }
     }
 

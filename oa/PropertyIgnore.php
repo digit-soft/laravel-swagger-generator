@@ -11,7 +11,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used to ignore class property by name.
  *
  * @Annotation
- * @Target({"CLASS"})
+ * @Target("CLASS")
  * @Attributes({
  *   @Attribute("name",type="string"),
  * })

@@ -12,7 +12,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target({"METHOD"})
  * @Attributes({
- *   @Attribute("scheme", type = "string"),
+ *   @Attribute("scheme",type="string"),
  * })
  */
 class Secured extends BaseAnnotation

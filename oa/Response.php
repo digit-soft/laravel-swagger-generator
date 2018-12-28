@@ -33,8 +33,8 @@ class Response extends BaseAnnotation
     public $asList = false;
     public $asPagedList = false;
 
-    protected $hasNoData = false;
-    public $setProperties = [];
+    protected $_hasNoData = false;
+    protected $_setProperties = [];
 
     use CleanupsDescribedData;
 
@@ -44,7 +44,7 @@ class Response extends BaseAnnotation
      */
     public function __construct(array $values)
     {
-        $this->setProperties = $this->configureSelf($values, 'content');
+        $this->_setProperties = $this->configureSelf($values, 'content');
     }
 
     /**
@@ -86,7 +86,7 @@ class Response extends BaseAnnotation
      */
     public function hasData()
     {
-        return !$this->hasNoData;
+        return !$this->_hasNoData;
     }
 
     /**
@@ -95,8 +95,8 @@ class Response extends BaseAnnotation
      */
     protected function getContent()
     {
-        $this->hasNoData = !in_array('content', $this->setProperties) && empty($this->content)
-            ? true : $this->hasNoData;
+        $this->_hasNoData = !in_array('content', $this->_setProperties) && empty($this->content)
+            ? true : $this->_hasNoData;
         return DumperYaml::describe($this->content);
     }
 

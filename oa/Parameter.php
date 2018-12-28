@@ -12,12 +12,12 @@ use Illuminate\Support\Arr;
  * Used to declare controller action parameter
  *
  * @Annotation
- * @Target({"METHOD", "CLASS"})
+ * @Target("METHOD", "CLASS")
  * @Attributes({
- *   @Attribute("name", type="string"),
- *   @Attribute("type", type="string"),
- *   @Attribute("in", type="string"),
- *   @Attribute("description", type="string"),
+ *   @Attribute("name",type="string"),
+ *   @Attribute("type",type="string"),
+ *   @Attribute("in",type="string"),
+ *   @Attribute("description",type="string"),
  * })
  */
 class Parameter extends BaseValueDescribed

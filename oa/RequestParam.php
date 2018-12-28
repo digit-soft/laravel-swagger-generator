@@ -11,7 +11,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used in annotations (RequestBody) to describe request body parameter
  *
  * @Annotation
- * @Target({"CLASS", "ANNOTATION"})
+ * @Target("CLASS", "ANNOTATION", "METHOD")
  * @Attributes({
  *   @Attribute("type",type="string"),
  *   @Attribute("name",type="string"),
@@ -25,7 +25,7 @@ class RequestParam extends BaseValueDescribed
 
     public $type = 'string';
 
-    protected $exampleRequired = true;
+    protected $_exampleRequired = true;
 
-    protected $excludeKeys = ['name'];
+    protected $_excludeKeys = ['name'];
 }
