@@ -1,0 +1,23 @@
+{
+    "registrar": [
+        {
+            "signatures": [
+                {
+                    "class": "OA\\ResponseClass",
+                    "type": "annotation"
+                }
+            ],
+            "provider": "model_subclasses",
+            "language": "php"
+        }
+    ],
+    "providers": [
+        {
+            "name": "model_subclasses",
+            "source": {
+                "contributor": "sub_classes",
+                "parameter": "Illuminate\\Database\\Eloquent\\Model"
+            }
+        }
+    ]
+}
