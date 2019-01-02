@@ -2,12 +2,9 @@
 
 namespace DigitSoft\Swagger\Yaml;
 
-
-use DigitSoft\Swagger\DumperYaml;
-use DigitSoft\Swagger\Parser\DescribesVariables;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
-use DigitSoft\Swagger\Parser\WithFaker;
 use DigitSoft\Swagger\Parser\WithReflections;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use DigitSoft\Swagger\Parsers\ClassParser;
 use Illuminate\Support\Arr;
 
@@ -68,7 +65,7 @@ class Variable
 
     protected $swaggerType;
 
-    use WithFaker, WithReflections, WithAnnotationReader, DescribesVariables;
+    use WithReflections, WithAnnotationReader, WithVariableDescriber;
 
     /**
      * Variable constructor.
@@ -116,20 +113,20 @@ class Variable
         $res = [];
         switch ($result['type']) {
             case static::SW_TYPE_OBJECT:
-                $className = DumperYaml::normalizeType($this->type);
+                $className = $this->describer()->normalizeType($this->type);
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
                 if (class_exists($className)) {
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
                     $res['properties'] = $res['properties'] ?? [];
                 } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
-                    $describedEx = DumperYaml::describe($this->example);
+                    $describedEx = $this->describer()->describe($this->example);
                     $res['properties'] = Arr::get($describedEx, 'properties', []);
                 }
                 break;
             case static::SW_TYPE_ARRAY:
-                if (DumperYaml::isTypeArray($this->type)) {
-                    $simpleType = DumperYaml::normalizeType($this->type, true);
-                    $item = DumperYaml::isBasicType($simpleType)
+                if ($this->describer()->isTypeArray($this->type)) {
+                    $simpleType = $this->describer()->normalizeType($this->type, true);
+                    $item = $this->describer()->isBasicType($simpleType)
                         ? $simpleType
                         : (new static(['type' => $simpleType]))->describe();
                 } else {
@@ -140,13 +137,13 @@ class Variable
                 ];
                 break;
         }
-        $result = DumperYaml::merge($res, $result);
+        $result = $this->describer()->merge($res, $result);
         return $result;
     }
 
     protected function describeAsClass()
     {
-        $className = DumperYaml::normalizeType($this->type);
+        $className = $this->describer()->normalizeType($this->type);
         $result = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
         if (class_exists($className)) {
             $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
@@ -162,14 +159,14 @@ class Variable
     {
         if ($this->swaggerType === null) {
             $phpType = $this->type !== null
-                ? DumperYaml::normalizeType($this->type)
+                ? $this->describer()->normalizeType($this->type)
                 : $this->getPHPDocType($this->example);
-            $simplifiedType = DumperYaml::isTypeClassName($phpType) ? DumperYaml::simplifyClassName($phpType) : $phpType;
+            $simplifiedType = $this->describer()->isTypeClassName($phpType) ? $this->describer()->simplifyClassName($phpType) : $phpType;
             if ($phpType === 'array' && is_array($this->example) && Arr::isAssoc($this->example)) {
                 $swType = static::SW_TYPE_OBJECT;
-            } elseif (DumperYaml::isTypeArray($phpType)) {
+            } elseif ($this->describer()->isTypeArray($phpType)) {
                 $swType = static::SW_TYPE_ARRAY;
-            } elseif (DumperYaml::isTypeClassName($phpType)) {
+            } elseif ($this->describer()->isTypeClassName($phpType)) {
                 $swType = $simplifiedType === $phpType
                     ? static::SW_TYPE_OBJECT
                     : $simplifiedType;
@@ -186,10 +183,10 @@ class Variable
      */
     protected function fillMissingProperties()
     {
-        $type = $this->type !== null && DumperYaml::isTypeClassName($this->type) ? DumperYaml::simplifyClassName($this->type) : $this->type;
+        $type = $this->type !== null && $this->describer()->isTypeClassName($this->type) ? $this->describer()->simplifyClassName($this->type) : $this->type;
         if ($this->type === null && $this->example !== null) {
             $this->type = $this->getPHPDocType($this->example);
-        } elseif ($this->type !== null && $this->example === null && DumperYaml::isBasicType($type)) {
+        } elseif ($this->type !== null && $this->example === null && $this->describer()->isBasicType($type)) {
             $this->example = $this->getExampleByPHPDocType($this->type);
         }
     }
@@ -225,16 +222,16 @@ class Variable
      */
     protected function getExampleByPHPDocType($phpType)
     {
-        $phpType = DumperYaml::normalizeType($phpType);
-        $phpTypeSimplified = DumperYaml::simplifyClassName($phpType);
-        if (($isArrayOf = DumperYaml::isTypeArray($phpType)) !== false) {
+        $phpType = $this->describer()->normalizeType($phpType);
+        $phpTypeSimplified = $this->describer()->simplifyClassName($phpType);
+        if (($isArrayOf = $this->describer()->isTypeArray($phpType)) !== false) {
             $phpType = substr($phpType, 0, -2);
         }
-        if (DumperYaml::isTypeClassName($phpType) && $phpTypeSimplified === $phpType) {
+        if ($this->describer()->isTypeClassName($phpType) && $phpTypeSimplified === $phpType) {
             $example = $this->getExampleByPHPDocTypeClass($phpType);
             $example = $example ?? [];
         } else {
-            $example = static::example($phpType, $this->name);
+            $example = $this->describer()->example($phpType, $this->name);
         }
         if ($isArrayOf) {
             $example = [$example];
@@ -253,14 +250,14 @@ class Variable
         $properties = $parser->properties(true, false);
         if (!empty($this->with)) {
             $propertiesRead = $parser->propertiesRead($this->with);
-            $properties = DumperYaml::merge($properties, $propertiesRead);
+            $properties = $this->describer()->merge($properties, $propertiesRead);
         }
         if (empty($properties)) {
             return null;
         }
         $example = [];
         foreach ($properties as $name => $row) {
-            $ex = static::example($row['type']);
+            $ex = $this->describer()->example($row['type']);
             $example[$name] = $ex;
         }
         return $example;
@@ -278,10 +275,10 @@ class Variable
         $properties = $parser->properties(true, false);
         if (!empty($with)) {
             $propertiesRead = $parser->propertiesRead($with, null, false);
-            $properties = DumperYaml::merge($properties, $propertiesRead);
+            $properties = $this->describer()->merge($properties, $propertiesRead);
         }
         $propertiesByAnn = $this->getDescriptionByPropertyAnnotations($className);
-        $properties = DumperYaml::merge($properties, $propertiesByAnn);
+        $properties = $this->describer()->merge($properties, $propertiesByAnn);
         if (empty($properties)) {
             return null;
         }
@@ -292,7 +289,7 @@ class Variable
         }
         $described = [];
         foreach ($properties as $name => $row) {
-            $row = DumperYaml::merge(['name' => $name], $row);
+            $row = $this->describer()->merge(['name' => $name], $row);
             $nested = static::fromDescription($row);
             $described[$name] = $nested->describe();
         }

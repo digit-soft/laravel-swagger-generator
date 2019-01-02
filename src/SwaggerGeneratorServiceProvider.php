@@ -34,11 +34,15 @@ class SwaggerGeneratorServiceProvider extends ServiceProvider
         $this->registerComponents();
     }
 
+    /**
+     * Register package components
+     */
     protected function registerComponents()
     {
-        $this->app->bind(DumperYaml::class, function ($app) {
-            return new DumperYaml($app['files']);
+        $this->app->singleton('swagger.describer', function ($app) {
+            return new VariableDescriberService($app['files']);
         });
+        $this->app->alias('swagger-describer', VariableDescriberService::class);
     }
 
     /**

@@ -2,15 +2,15 @@
 
 namespace DigitSoft\Swagger\Parsers;
 
-use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\WithDocParser;
 use DigitSoft\Swagger\Parser\WithReflections;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
 class ClassParser
 {
-    use WithReflections, WithDocParser;
+    use WithReflections, WithDocParser, WithVariableDescriber;
 
     /**
      * @var string
@@ -52,7 +52,7 @@ class ClassParser
         }
         $properties = $this->getPropertiesDescribed('property', null, $hidden, $describeClasses);
         $properties = !empty($appends)
-            ? DumperYaml::merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, $describeClasses))
+            ? $this->describer()->merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, $describeClasses))
             : $properties;
         return $properties;
     }
@@ -100,13 +100,13 @@ class ClassParser
         }
         // Describe only first level class objects
         foreach ($properties as $key => $row) {
-            $row['type'] = DumperYaml::normalizeType($row['type']);
-            if (DumperYaml::isTypeClassName($row['type'])) {
-                $properties[$key] = DumperYaml::describe([]);
-                $classDescription = (new static(DumperYaml::normalizeType($row['type'], true)))->properties();
+            $row['type'] = $this->describer()->normalizeType($row['type']);
+            if ($this->describer()->isTypeClassName($row['type'])) {
+                $properties[$key] = $this->describer()->describe([]);
+                $classDescription = (new static($this->describer()->normalizeType($row['type'], true)))->properties();
                 Arr::set($properties[$key], 'properties', $classDescription);
-                if (DumperYaml::isTypeArray($row['type'])) {
-                    $propertyArray = DumperYaml::describe([""]);
+                if ($this->describer()->isTypeArray($row['type'])) {
+                    $propertyArray = $this->describer()->describe([""]);
                     Arr::set($propertyArray, 'items', $properties[$key]);
                     $properties[$key] = $propertyArray;
                 }

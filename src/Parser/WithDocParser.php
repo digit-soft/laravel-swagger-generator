@@ -2,7 +2,6 @@
 
 namespace DigitSoft\Swagger\Parser;
 
-use DigitSoft\Swagger\DumperYaml;
 use phpDocumentor\Reflection\DocBlock\Tags\Param;
 use phpDocumentor\Reflection\DocBlock\Tags\Property;
 use phpDocumentor\Reflection\DocBlock\Tags\PropertyRead;
@@ -12,6 +11,7 @@ use phpDocumentor\Reflection\DocBlock\Tags\PropertyWrite;
  * Add PHPDoc parse ability to class
  *
  * @package DigitSoft\Swagger\Parser
+ * @mixin WithVariableDescriber
  */
 trait WithDocParser
 {
@@ -65,7 +65,7 @@ trait WithDocParser
             $type = (string)$tag->getType();
             $name = $tag->getVariableName();
             $description = $tag->getDescription();
-            $type = DumperYaml::normalizeType($type);
+            $type = $this->describer()->normalizeType($type);
             $result[$name] = [
                 'type' => $type,
                 'description' => $description !== null ? $description->render() : null,

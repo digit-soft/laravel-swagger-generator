@@ -2,8 +2,8 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\CleanupsDescribedData;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
@@ -22,7 +22,7 @@ class RequestBodyJson extends RequestBody
 {
     public $contentType = 'application/json';
 
-    use CleanupsDescribedData;
+    use CleanupsDescribedData, WithVariableDescriber;
 
     /**
      * Get object string representation
@@ -49,7 +49,7 @@ class RequestBodyJson extends RequestBody
                 if ($row instanceof RequestParam) {
                     $row->toArrayRecursive($result);
                 } else {
-                    $result[$key] = DumperYaml::describe($row->toArray());
+                    $result[$key] = $this->describer()->describe($row->toArray());
                 }
             } elseif (is_array($row)) {
                 $result[$key] = $this->processContent($row);

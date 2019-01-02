@@ -9,6 +9,7 @@ use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithDocParser;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithRouteReflections;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use Illuminate\Console\OutputStyle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
@@ -56,7 +57,7 @@ class RoutesParser
     public $problems = [];
 
     use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
-        RoutesParserHelpers, RoutesParserEvents, CleanupsDescribedData;
+        RoutesParserHelpers, RoutesParserEvents, CleanupsDescribedData, WithVariableDescriber;
 
     /**
      * RoutesParser constructor.
@@ -171,7 +172,7 @@ class RoutesParser
                 $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
                 if (($paramDoc = static::getArrayElemByStrKey($paramsDoc, $parameterName)) !== null
                     && isset($paramDoc['type'])
-                    && DumperYaml::isBasicType($paramDoc['type'])
+                    && $this->describer()->isBasicType($paramDoc['type'])
                 ) {
                     $type = $paramDoc['type'];
                 } else {
@@ -238,9 +239,9 @@ class RoutesParser
                 $annStatus => $annKey !== null ? $annotationDataRef : $annotationData,
             ];
             if (isset($result[$annStatus])) {
-                $result[$annStatus] = DumperYaml::merge($result[$annStatus], $data[$annStatus]);
+                $result[$annStatus] = $this->describer()->merge($result[$annStatus], $data[$annStatus]);
             } else {
-                $result = DumperYaml::merge($result, $data);
+                $result = $this->describer()->merge($result, $data);
             }
         }
         return $result;
@@ -274,7 +275,7 @@ class RoutesParser
             if (!empty($requestAnn)) {
                 $request = [];
                 foreach ($requestAnn as $annotation) {
-                    $request = DumperYaml::merge($request, $annotation->toArray());
+                    $request = $this->describer()->merge($request, $annotation->toArray());
                 }
             }
         }
@@ -288,7 +289,7 @@ class RoutesParser
      */
     protected function getParamsFromFormRequest($className)
     {
-        $classKey = DumperYaml::shortenClass($className);
+        $classKey = $this->describer()->shortenClass($className);
         if (($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
             $rulesData = $this->parseFormRequestRules($className);
             $annotationsData = $this->parseFormRequestAnnotations($className);
@@ -303,7 +304,7 @@ class RoutesParser
                 if (isset($schema['schema'])) {
                     $path .= '.schema';
                 }
-                $merged = DumperYaml::merge($rulesData, Arr::get($result, $path, []));
+                $merged = $this->describer()->merge($rulesData, Arr::get($result, $path, []));
                 static::handleIncompatibleTypeKeys($merged);
                 Arr::set($result, $path, $merged);
             }
@@ -393,7 +394,7 @@ class RoutesParser
                 $required[$key] = $ruleName === 'required' ? true : $required[$key];
                 $type = null;
                 $keyForExample = $key === '*' && $parent !== null ? $parent : $key;
-                if (($example = DumperYaml::example($type, $keyForExample, $ruleName)) !== null) {
+                if (($example = $this->describer()->example($type, $keyForExample, $ruleName)) !== null) {
                     if ($key === '*') {
                         $result = [$example];
                     } else {
@@ -404,7 +405,7 @@ class RoutesParser
             }
         }
         if ($describe) {
-            $result = DumperYaml::describe($result);
+            $result = $this->describer()->describe($result);
             $this->applyFormRequestRequiredRules($result, $required);
         }
         return [$result, $required];
@@ -445,7 +446,7 @@ class RoutesParser
         $request = [];
         /** @var \OA\RequestBody $annotation */
         foreach ($annotations as $annotation) {
-            $request = DumperYaml::merge($request, $annotation->toArray());
+            $request = $this->describer()->merge($request, $annotation->toArray());
         }
         return $request;
     }
@@ -495,7 +496,7 @@ class RoutesParser
         if ($methodRef instanceof \ReflectionMethod) {
             $annotationsClass = $this->classAnnotations($methodRef->class, 'OA\Tag');
             $annotations = $this->routeAnnotations($route, 'OA\Tag');
-            $annotations = DumperYaml::merge($annotationsClass, $annotations);
+            $annotations = $this->describer()->merge($annotationsClass, $annotations);
             foreach ($annotations as $annotation) {
                 $tags[] = $annotation->name;
             }

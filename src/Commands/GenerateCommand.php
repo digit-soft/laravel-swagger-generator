@@ -2,14 +2,13 @@
 
 namespace DigitSoft\Swagger\Commands;
 
-use DigitSoft\Swagger\DumperYaml;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use DigitSoft\Swagger\RoutesParser;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Routing\Route;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Str;
 
 class GenerateCommand extends Command
 {
@@ -34,6 +33,8 @@ class GenerateCommand extends Command
      */
     protected $routes;
 
+    use WithVariableDescriber;
+
     /**
      * CreateMigrationCommand constructor.
      * @param  Router     $router
@@ -56,14 +57,13 @@ class GenerateCommand extends Command
             return $this->handleDiagnose();
         }
         $startTime = microtime();
-        $dumper = $this->getDumper();
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
         $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesBefore', []));
         $routesData = $this->getRoutesData();
-        $arrayContent = DumperYaml::merge($arrayContent, $routesData);
+        $arrayContent = $this->describer()->merge($arrayContent, $routesData);
         $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesAfter', []));
-        $content = $dumper->toYml($arrayContent);
+        $content = $this->describer()->toYml($arrayContent);
         $this->files->put($filePath, $content);
         $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
         $this->printTimeSpent($startTime);
@@ -157,16 +157,15 @@ class GenerateCommand extends Command
             return $data;
         }
         $filesContent = [];
-        $dumper = $this->getDumper();
         foreach ($fileList as $fileName) {
-            if ($this->files->exists($fileName) && ($row = $dumper->fromYml($fileName)) !== null) {
+            if ($this->files->exists($fileName) && ($row = $this->describer()->fromYml($fileName)) !== null) {
                 $filesContent[] = $row;
             }
         }
         if (empty($filesContent)) {
             return $data;
         }
-        return DumperYaml::merge($data, ...$filesContent);
+        return $this->describer()->merge($data, ...$filesContent);
     }
 
     /**
@@ -218,7 +217,7 @@ class GenerateCommand extends Command
         // Rewrite paths array
         $paths = [];
         foreach ($byTags as $tag => $routes) {
-            $paths = DumperYaml::merge($paths, $routes);
+            $paths = $this->describer()->merge($paths, $routes);
         }
     }
 
@@ -237,14 +236,5 @@ class GenerateCommand extends Command
             $this->files->makeDirectory($path, 0755, true);
         }
         return $path . DIRECTORY_SEPARATOR . config('swagger-generator.output.file_name');
-    }
-
-    /**
-     * Get yml dumper
-     * @return DumperYaml
-     */
-    protected function getDumper()
-    {
-        return app()->make(DumperYaml::class);
     }
 }

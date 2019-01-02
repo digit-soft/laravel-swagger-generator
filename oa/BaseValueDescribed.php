@@ -2,9 +2,7 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\DumperYaml;
-use DigitSoft\Swagger\Parser\DescribesVariables;
-use DigitSoft\Swagger\Parser\WithFaker;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation\Enum;
 use Illuminate\Support\Arr;
@@ -14,7 +12,7 @@ use Illuminate\Support\Arr;
  */
 abstract class BaseValueDescribed extends BaseAnnotation
 {
-    use WithFaker, DescribesVariables;
+    use WithVariableDescriber;
 
     /**
      * @var string Variable name
@@ -132,7 +130,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Write example if needed
         if ($this->isExampleRequired()
             && !isset($data['example'])
-            && ($example = static::example($this->type, $this->name)) !== null
+            && ($example = $this->describer()->example($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
         }
@@ -175,7 +173,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
     protected function guessType()
     {
         if ($this->example !== null) {
-            return static::swaggerTypeByExample($this->example);
+            return $this->describer()->swaggerTypeByExample($this->example);
         }
         return $this->type;
     }
@@ -190,15 +188,15 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         $this->_phpType = $this->type;
         // int[], string[] etc.
-        if (($isArray = DumperYaml::isTypeArray($this->type)) === true) {
+        if (($isArray = $this->describer()->isTypeArray($this->type)) === true) {
             $this->_phpType = $this->type;
-            $this->items = $this->items ?? DumperYaml::normalizeType($this->type, true);
+            $this->items = $this->items ?? $this->describer()->normalizeType($this->type, true);
         }
         // Convert PHP type to Swagger and vise versa
         if ($this->isPhpType($this->type)) {
-            $this->type = static::swaggerType($this->type);
+            $this->type = $this->describer()->swaggerType($this->type);
         } else {
-            $this->_phpType = static::phpType($this->type);
+            $this->_phpType = $this->describer()->phpType($this->type);
         }
     }
 
@@ -209,10 +207,10 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     protected function isPhpType($type)
     {
-        if (DumperYaml::isTypeArray($type)) {
+        if ($this->describer()->isTypeArray($type)) {
             return true;
         }
-        $swType = static::swaggerType($type);
+        $swType = $this->describer()->swaggerType($type);
         return $swType !== $type;
     }
 

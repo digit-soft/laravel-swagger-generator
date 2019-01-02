@@ -2,8 +2,8 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\DumperYaml;
 use DigitSoft\Swagger\Parser\CleanupsDescribedData;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
@@ -36,7 +36,7 @@ class Response extends BaseAnnotation
     protected $_hasNoData = false;
     protected $_setProperties = [];
 
-    use CleanupsDescribedData;
+    use CleanupsDescribedData, WithVariableDescriber;
 
     /**
      * Response constructor.
@@ -54,7 +54,7 @@ class Response extends BaseAnnotation
     {
         $asList = $this->asList || $this->asPagedList;
         if ($asList) {
-            $contentRaw = DumperYaml::describe([""]);
+            $contentRaw = $this->describer()->describe([""]);
             Arr::set($contentRaw, 'items', $this->getContent());
         } else {
             $contentRaw = $this->getContent();
@@ -97,7 +97,7 @@ class Response extends BaseAnnotation
     {
         $this->_hasNoData = !in_array('content', $this->_setProperties) && empty($this->content)
             ? true : $this->_hasNoData;
-        return DumperYaml::describe($this->content);
+        return $this->describer()->describe($this->content);
     }
 
     /**
@@ -125,7 +125,7 @@ class Response extends BaseAnnotation
         if ($this->asPagedList && static::isSuccessStatus($this->status)) {
             $responseRaw['pagination'] = static::getPagerExample();
         }
-        $response = DumperYaml::describe($responseRaw);
+        $response = $this->describer()->describe($responseRaw);
         Arr::set($response, $resultKey, $content);
         return $response;
     }
