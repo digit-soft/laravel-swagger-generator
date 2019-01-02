@@ -33,6 +33,7 @@ php artisan swagger:generate --diagnose
 | @OA\PropertyIgnore    | Mark class property as ignored        | Class used for response |
 | @OA\Secured           | Describes route as secured            | Controller method |
 | @OA\Tag               | Describes route tags                  | Controller method, Controller class |
+| @OA\Symlink           | Describes symlink to another class    | Class used for response |
 
 ### Responses
 Responses are parsed only if explicitly documented by `@Annotation`. It must be placed in PHPDoc of **controller method** that route use.
@@ -149,6 +150,9 @@ or fully describe property if you dont want to place `@property` declaration for
  * @OA\PropertyIgnore("property_name")
  */
 ```
+### Symlink
+This annotation can be used to describe symlink to another class (e.g. for response). All data in class PHPDoc in which it appears will be ignored.
+
 You must use full namespace of annotations, e.g. `OA\Property`.
 
 Besides, you can import a namespace for better code completion as in example beyond.

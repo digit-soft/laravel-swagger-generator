@@ -26,7 +26,7 @@ class RequestParam extends BaseValueDescribed
      * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
      * @var string Swagger or PHP type
      */
-    public $type = 'string';
+    public $type;
 
     /**
      * @inheritdoc
@@ -49,6 +49,6 @@ class RequestParam extends BaseValueDescribed
      */
     protected function getExcludedEmptyKeys()
     {
-        return ['required'];
+        return ['required', 'type'];
     }
 }

@@ -29,6 +29,31 @@ class ResponseClass extends Response
     /**
      * @inheritdoc
      */
+    public function toArray()
+    {
+        /** @var Symlink $symlink */
+        $symlink = $this->classAnnotation($this->content, 'OA\Symlink');
+        if ($symlink && $symlink->class !== $this->content) {
+            return ($this->withClass($symlink->class))->toArray();
+        }
+        return parent::toArray();
+    }
+
+    /**
+     * Get clone with another class
+     * @param  string $className
+     * @return ResponseClass
+     */
+    protected function withClass($className)
+    {
+        $object = clone $this;
+        $object->content = $className;
+        return $object;
+    }
+
+    /**
+     * @inheritdoc
+     */
     protected function getContent()
     {
         if ($this->content === null || !class_exists($this->content)) {

@@ -7,6 +7,7 @@ use Doctrine\Common\Annotations\AnnotationRegistry;
 use Doctrine\Common\Annotations\Reader;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Arr;
+use OA\BaseAnnotation;
 
 /**
  * Trait WithAnnotationReader
@@ -86,9 +87,21 @@ trait WithAnnotationReader
     }
 
     /**
+     * Get class annotation
+     * @param  string|object $class
+     * @param  string        $name
+     * @return BaseAnnotation|null
+     */
+    protected function classAnnotation($class, $name)
+    {
+        $annotations = $this->classAnnotations($class, $name);
+        return !empty($annotations) ? reset($annotations) : null;
+    }
+
+    /**
      * Get class annotations
-     * @param string|object $class
-     * @param string|null   $name
+     * @param  string|object $class
+     * @param  string|null   $name
      * @return array
      */
     protected function classAnnotations($class, $name = null)
@@ -109,6 +122,18 @@ trait WithAnnotationReader
             }
         }
         return $result;
+    }
+
+    /**
+     * Get class method annotations
+     * @param  \ReflectionMethod|array $ref
+     * @param  string                  $name
+     * @return BaseAnnotation|null
+     */
+    protected function methodAnnotation($ref, $name)
+    {
+        $annotations = $this->methodAnnotations($ref, $name);
+        return !empty($annotations) ? reset($annotations) : null;
     }
 
     /**
