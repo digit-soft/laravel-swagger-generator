@@ -5,7 +5,6 @@ namespace DigitSoft\Swagger;
 use DigitSoft\Swagger\Parser\DescribesVariables;
 use DigitSoft\Swagger\Parser\WithFaker;
 use DigitSoft\Swagger\Yaml\Variable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Symfony\Component\Yaml\Yaml;
