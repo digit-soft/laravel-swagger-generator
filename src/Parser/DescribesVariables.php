@@ -403,21 +403,6 @@ trait DescribesVariables
     }
 
     /**
-     * Describe object properties
-     * @param array $target
-     * @param array $properties
-     * @deprecated
-     */
-    protected static function describeProperties(&$target, $properties = [])
-    {
-        $target['properties'] = $target['properties'] ?? [];
-        $obj = &$target['properties'];
-        foreach ($properties as $key => $row) {
-            $obj[$key] = Arr::only($properties, ['type', 'format', 'description', 'example']);
-        }
-    }
-
-    /**
      * Get variable value from cache
      * @param  string $name
      * @param  string $type

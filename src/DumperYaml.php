@@ -5,11 +5,7 @@ namespace DigitSoft\Swagger;
 use DigitSoft\Swagger\Parser\DescribesVariables;
 use DigitSoft\Swagger\Parser\WithFaker;
 use DigitSoft\Swagger\Yaml\Variable;
-use Faker\Factory;
-use Faker\Generator;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Symfony\Component\Yaml\Yaml;
@@ -26,10 +22,6 @@ class DumperYaml
      * @var \ReflectionClass[]
      */
     protected static $reflections = [];
-    /**
-     * @var Model[]
-     */
-    protected static $_models;
 
     protected static $basicTypes = [
         'string', 'integer', 'float', 'object', 'boolean', 'null', 'array', 'resource',
@@ -197,39 +189,6 @@ class DumperYaml
     }
 
     /**
-     * Make eloquent model
-     * @param string $className
-     * @param bool   $create
-     * @param array  $requiredRelations
-     * @return Model|null
-     * @internal
-     */
-    public static function makeModel($className, $create = true, $requiredRelations = [])
-    {
-        /** @var Builder $modelQuery */
-        $modelQuery = $className::query();
-        if (!empty($requiredRelations)) {
-            foreach ($requiredRelations as $requiredRelation) {
-                $modelQuery->whereHas($requiredRelation);
-            }
-        }
-        /** @var Model $model */
-        $model = $modelQuery->first();
-        if ($model === null && $create) {
-            $model = \factory($className)->create()->refresh();
-            if (!empty($requiredRelations)) {
-                foreach ($requiredRelations as $requiredRelation) {
-                    static::fillModelRelation($model, $requiredRelation);
-                }
-            }
-        }
-        if ($model !== null) {
-            static::$_models[$className] = $model;
-        }
-        return static::$_models[$className] ?? null;
-    }
-
-    /**
      * Merge arrays
      * @param array $a
      * @param array $b
@@ -256,27 +215,6 @@ class DumperYaml
         }
 
         return $res;
-    }
-
-    protected static function fillModelRelation(Model $model, $relationName)
-    {
-        /** @var HasOneOrMany $relation */
-        $relation = $model->{$relationName}();
-        $attributes = \factory(get_class($relation->getRelated()))->make()->toArray();
-        $relation->create($attributes);
-        $model->refresh();
-    }
-
-    /**
-     * Get faker instance
-     * @return Generator
-     */
-    protected static function faker()
-    {
-        if (static::$faker === null) {
-            static::$faker = Factory::create();
-        }
-        return static::$faker;
     }
 
     /**

@@ -2,8 +2,6 @@
 
 namespace DigitSoft\Swagger\Parser;
 
-use Illuminate\Routing\Route;
-
 /**
  * Trait WithRouteReflections
  * @package DigitSoft\Swagger\Parser
