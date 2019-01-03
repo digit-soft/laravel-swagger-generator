@@ -40,6 +40,8 @@ trait WithTypeParser
                 'logo',
                 'avatar',
                 'image',
+                'attachment_url',
+                'file_url',
             ],
         ],
         'email' => [
@@ -106,6 +108,18 @@ trait WithTypeParser
             'names' => [
                 'last_name',
                 'lastName',
+            ],
+        ],
+        'text' => [
+            'type' => 'string',
+            'names' => [
+                'description',
+            ],
+        ],
+        'textShort' => [
+            'type' => 'string',
+            'names' => [
+                'title',
             ],
         ],
         'address' => [

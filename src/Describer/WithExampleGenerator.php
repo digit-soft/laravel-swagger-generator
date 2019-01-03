@@ -130,6 +130,12 @@ trait WithExampleGenerator
             case 'string':
                 $example = array_random(['string', 'value', 'str value']);
                 break;
+            case 'text':
+                $example = $this->faker()->text(100);
+                break;
+            case 'textShort':
+                $example = $this->faker()->text(50);
+                break;
             case 'alpha_num':
                 $example = array_random(['string35', 'value90', 'str20value']);
                 break;
