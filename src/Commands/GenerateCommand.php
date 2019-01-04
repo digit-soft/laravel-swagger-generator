@@ -132,6 +132,7 @@ class GenerateCommand extends Command
             RoutesParser::PROBLEM_ROUTE_CLOSURE => 'Route is handled by closure. Closure not supports annotations.',
             RoutesParser::PROBLEM_NO_DOC_CLASS => 'There is not PHPDoc for class.',
             RoutesParser::PROBLEM_MISSING_TAG => 'Route "Tags" are not set.',
+            RoutesParser::PROBLEM_MISSING_PARAM => 'Route "Parameter" not described.',
         ];
         return $labels[$key] ?? ucfirst(str_replace(['-', '_'], ' ', $key));
     }

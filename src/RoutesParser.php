@@ -34,6 +34,7 @@ class RoutesParser
     const PROBLEM_ROUTE_CLOSURE = 'route_closure';
     const PROBLEM_NO_DOC_CLASS = 'route_no_doc_class';
     const PROBLEM_MISSING_TAG = 'route_tag_missing';
+    const PROBLEM_MISSING_PARAM = 'route_param_missing';
 
     /**
      * @var Route[]|RouteCollection
@@ -190,6 +191,9 @@ class RoutesParser
         foreach ($paramsAnn as $param) {
             if (empty($param->description) && ($paramDoc = static::getArrayElemByStrKey($paramsDoc, $param->name)) !== null) {
                 $param->description = $paramDoc['description'];
+            }
+            if ($param->description === null || $param->description === '') {
+                $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_MISSING_PARAM, $route, $param->name);
             }
             $params[] = $param->toArray();
         }
