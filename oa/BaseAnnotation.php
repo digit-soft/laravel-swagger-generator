@@ -2,12 +2,13 @@
 
 namespace OA;
 
+use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
 
 /**
  * Basic annotation class to extend
  */
-abstract class BaseAnnotation
+abstract class BaseAnnotation implements Arrayable
 {
     /**
      * BaseAnnotation constructor.

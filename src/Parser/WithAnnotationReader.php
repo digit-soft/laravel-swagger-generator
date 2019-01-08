@@ -26,7 +26,7 @@ trait WithAnnotationReader
      * Get route controller method annotation
      * @param Route  $route
      * @param string $name
-     * @return object|null
+     * @return BaseAnnotation|null
      */
     protected function routeAnnotation(Route $route, $name = 'OA\Tag')
     {
@@ -38,7 +38,7 @@ trait WithAnnotationReader
      * Get route controller method annotations
      * @param Route       $route
      * @param string|null $name
-     * @return array
+     * @return BaseAnnotation[]
      */
     protected function routeAnnotations(Route $route, $name = null)
     {
@@ -64,7 +64,7 @@ trait WithAnnotationReader
      * Get route controller annotations
      * @param  Route       $route
      * @param  string|null $name
-     * @return array
+     * @return BaseAnnotation[]
      */
     protected function controllerAnnotations(Route $route, $name = null)
     {
@@ -102,7 +102,7 @@ trait WithAnnotationReader
      * Get class annotations
      * @param  string|object $class
      * @param  string|null   $name
-     * @return array
+     * @return BaseAnnotation[]
      */
     protected function classAnnotations($class, $name = null)
     {
@@ -140,7 +140,7 @@ trait WithAnnotationReader
      * Get class method annotations
      * @param  \ReflectionMethod|array $ref
      * @param  string|null             $name
-     * @return array
+     * @return BaseAnnotation[]
      */
     protected function methodAnnotations($ref, $name = null)
     {

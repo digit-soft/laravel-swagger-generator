@@ -556,11 +556,20 @@ class RoutesParser
     protected function getRouteDescription($route)
     {
         $methodRef = $this->routeReflection($route);
+        $description = '';
         if (($docComment = $methodRef->getDocComment()) !== false) {
             $docblock = $this->getDocFactory()->create($docComment);
-            return $docblock->getDescription()->__toString();
+            $description = $docblock->getDescription()->__toString();
         }
-        return null;
+        // Parse description extenders
+        $annotations = $this->methodAnnotations($methodRef, 'OA\DescriptionExtender');
+        foreach ($annotations as $annotation) {
+            if (($descriptionAnn = $annotation->__toString()) === '') {
+                continue;
+            }
+            $description .= "\n\n" . $descriptionAnn;
+        }
+        return $description !== '' ? $description : null;
     }
 
     /**
