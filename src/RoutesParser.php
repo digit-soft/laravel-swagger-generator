@@ -182,9 +182,10 @@ class RoutesParser
                 $paramData = [
                     'name' => $parameterName,
                     'type' => $type,
-                    'required' => $required,
                 ];
                 $annotation = $paramsAnnCtrl[$parameterName] ?? (new \OA\Parameter([]))->fill($paramData);
+                // Overwrite required property of annotation
+                $annotation->required = $required;
                 $paramsAnn[] = $annotation;
             }
         }
