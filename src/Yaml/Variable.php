@@ -115,12 +115,14 @@ class Variable
             case static::SW_TYPE_OBJECT:
                 $className = $this->describer()->normalizeType($this->type);
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
-                if (class_exists($className)) {
+                if (class_exists($className) || interface_exists($className)) {
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
                     $res['properties'] = $res['properties'] ?? [];
                 } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
                     $describedEx = $this->describer()->describe($this->example);
                     $res['properties'] = Arr::get($describedEx, 'properties', []);
+                    // Remove already described example
+                    Arr::forget($result, 'example');
                 }
                 break;
             case static::SW_TYPE_ARRAY:

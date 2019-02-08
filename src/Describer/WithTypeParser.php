@@ -162,7 +162,7 @@ trait WithTypeParser
     public function isTypeClassName($type)
     {
         $type = $this->normalizeType($type, true);
-        return !in_array($type, $this->basicTypes) && class_exists($type);
+        return !in_array($type, $this->basicTypes) && (class_exists($type) || interface_exists($type));
     }
 
     /**

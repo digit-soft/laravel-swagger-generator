@@ -36,7 +36,7 @@ trait WithRecursiveDescriber
                 $desc = $this->describeObject($value);
                 break;
             case 'array':
-                $desc = $this->describeArray($value);
+                $desc = $this->describeArray($value, $withExample);
                 break;
         }
         if ($withExample && in_array($type, $examplable)) {
@@ -48,9 +48,10 @@ trait WithRecursiveDescriber
     /**
      * Describe object
      * @param  object $value
+     * @param  bool   $withExample
      * @return array
      */
-    protected function describeObject($value)
+    protected function describeObject($value, $withExample = true)
     {
         $data = [
             'type' => 'object',
@@ -71,7 +72,7 @@ trait WithRecursiveDescriber
             }
         }
         foreach ($objProperties as $key => $val) {
-            $data['properties'][$key] = $this->describeValue($val);
+            $data['properties'][$key] = $this->describeValue($val, $withExample);
         }
         return $data;
     }
@@ -79,9 +80,10 @@ trait WithRecursiveDescriber
     /**
      * Describe array
      * @param  array $value
+     * @param  bool  $withExample
      * @return array
      */
-    protected function describeArray($value)
+    protected function describeArray($value, $withExample = true)
     {
         if (empty($value)) {
             $data = [
@@ -93,7 +95,7 @@ trait WithRecursiveDescriber
                 'properties' => [],
             ];
             foreach ($value as $key => $val) {
-                $data['properties'][$key] = $this->describeValue($val);
+                $data['properties'][$key] = $this->describeValue($val, $withExample);
             }
         } else {
             $data = [
