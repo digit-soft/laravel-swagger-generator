@@ -49,7 +49,7 @@ class VariableDescriberService
         if ($describe) {
             $arrayContent = static::describe($arrayContent);
         }
-        $yamlContent = Yaml::dump($arrayContent, 20, 2);
+        $yamlContent = Yaml::dump($arrayContent, 20, 2, Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE);
         if ($filePath !== null) {
             $this->files->put($filePath, $yamlContent);
         }
