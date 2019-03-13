@@ -108,7 +108,7 @@ trait WithExampleGenerator
      */
     protected function exampleByTypeSequential($type, $iteration = 1)
     {
-        $dateStr = '2000-01-01 00:00:00';
+        $dateStr = '2019-01-01 00:00:00';
         switch ($type) {
             case 'int':
             case 'integer':
