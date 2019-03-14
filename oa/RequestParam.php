@@ -23,7 +23,7 @@ class RequestParam extends BaseValueDescribed
 {
     public $required = false;
     /**
-     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @Enum({"string", "integer", "number", "boolean", "array", "object"})
      * @var string Swagger or PHP type
      */
     public $type;
