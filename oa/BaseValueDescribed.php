@@ -126,6 +126,10 @@ abstract class BaseValueDescribed extends BaseAnnotation
         if ($swType === Variable::SW_TYPE_ARRAY) {
             $this->items = $this->items ?? 'string';
             $data['items'] = ['type' => $this->items];
+            if (isset($data['format'])) {
+                $data['items']['format'] = $data['format'];
+                Arr::forget($data, ['format']);
+            }
         }
         // Write example if needed
         if ($this->isExampleRequired()
@@ -148,6 +152,17 @@ abstract class BaseValueDescribed extends BaseAnnotation
             $data = array_filter($data, function ($value, $key) use ($excludeEmptyKeys) {
                 return !in_array($key, $excludeEmptyKeys) || !empty($value);
             }, ARRAY_FILTER_USE_BOTH);
+        }
+        // Remap schema children keys
+        if ($this->isSchemaTypeUsed()) {
+            $schemaKeys = ['type', 'items', 'example', 'format'];
+            foreach ($schemaKeys as $schemaKey) {
+                if (!isset($data[$schemaKey])) {
+                    continue;
+                }
+                Arr::set($data, 'schema.' . $schemaKey, $data[$schemaKey]);
+                Arr::forget($data, $schemaKey);
+            }
         }
 
         return $data;
@@ -212,6 +227,15 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         $swType = $this->describer()->swaggerType($type);
         return $swType !== $type;
+    }
+
+    /**
+     * Definition must include `schema` key and type, items... keys must be present under that key.
+     * @return bool
+     */
+    protected function isSchemaTypeUsed()
+    {
+        return false;
     }
 
     /**

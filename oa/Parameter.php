@@ -42,8 +42,11 @@ class Parameter extends BaseValueDescribed
     {
         $data = parent::toArray();
         $data['in'] = $this->in;
-        Arr::set($data, 'schema.type', $data['type']);
-        Arr::forget($data, 'type');
         return $data;
+    }
+
+    protected function isSchemaTypeUsed()
+    {
+        return true;
     }
 }
