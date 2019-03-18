@@ -34,6 +34,10 @@ trait WithTypeParser
                 'site',
             ],
         ],
+        'numeric' => [
+            'type' => 'float',
+            'names' => [],
+        ],
         'image' => [
             'type' => 'string',
             'names' => [
@@ -224,6 +228,7 @@ trait WithTypeParser
                 return Variable::SW_TYPE_INTEGER;
                 break;
             case 'float':
+            case 'double':
                 return Variable::SW_TYPE_NUMBER;
                 break;
             case 'object':
