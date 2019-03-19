@@ -173,7 +173,7 @@ class Variable
                     ? static::SW_TYPE_OBJECT
                     : $simplifiedType;
             } else {
-                $swType = $phpType;
+                $swType = $this->describer()->swaggerType($phpType);
             }
             return $this->swaggerType = $swType;
         }
