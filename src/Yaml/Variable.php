@@ -40,6 +40,8 @@ class Variable
 
     public $type;
 
+    public $items;
+
     public $name;
 
     public $with = [];
@@ -129,10 +131,11 @@ class Variable
                 if ($this->describer()->isTypeArray($this->type)) {
                     $simpleType = $this->describer()->normalizeType($this->type, true);
                     $item = $this->describer()->isBasicType($simpleType)
-                        ? $simpleType
+                        ? ['type' => $simpleType]
                         : (new static(['type' => $simpleType]))->describe();
                 } else {
-                    $item = '';
+                    $thatItems = $this->items ?? 'string';
+                    $item = is_array($thatItems) ? $thatItems : ['type' => $thatItems];
                 }
                 $res = [
                     'items' => $item,
@@ -293,7 +296,12 @@ class Variable
         foreach ($properties as $name => $row) {
             $row = $this->describer()->merge(['name' => $name], $row);
             $nested = static::fromDescription($row);
-            $described[$name] = $nested->describe();
+            try {
+                $described[$name] = $nested->describe();
+            } catch (\Throwable $exception) {
+                dump($row);
+                throw $exception;
+            }
         }
         return $described;
     }
