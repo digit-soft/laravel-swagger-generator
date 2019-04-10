@@ -294,6 +294,10 @@ class Variable
         }
         $described = [];
         foreach ($properties as $name => $row) {
+            if (isset($propertiesByAnn[$name])) {
+                $described[$name] = Arr::except($row, ['name']);
+                continue;
+            }
             $row = $this->describer()->merge(['name' => $name], $row);
             $nested = static::fromDescription($row);
             try {
