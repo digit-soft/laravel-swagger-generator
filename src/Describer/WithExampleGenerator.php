@@ -267,6 +267,7 @@ trait WithExampleGenerator
             case 'float':
                 $example = $iteration * 1.65;
                 break;
+            case 'date_format':
             case 'date':
                 $date = Date::createFromFormat('Y-m-d H:i:s', $dateStr);
                 $date->addSeconds($iteration * 800636);

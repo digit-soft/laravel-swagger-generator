@@ -25,6 +25,7 @@ trait WithTypeParser
     protected $classSimpleTypes = [
         'Illuminate\Support\Carbon' => 'string',
     ];
+    //TODO: Combine rules description and example generation
     /** @var array Rules data (with PHP type and variable names) */
     protected $varRules = [
         'url' => [
@@ -133,6 +134,14 @@ trait WithTypeParser
                 'post_address',
                 'postAddress',
             ],
+        ],
+        'date' => [
+            'type' => 'string',
+            'names' => [],
+        ],
+        'date_format' => [
+            'type' => 'string',
+            'names' => [],
         ],
     ];
 

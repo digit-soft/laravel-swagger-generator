@@ -389,7 +389,9 @@ class RoutesParser
         foreach ($rules as $key => $row) {
             $required[$key] = false;
             if (Arr::isAssoc($row)) {
-                list($result[$key], $required[$key]) = $this->processFormRequestRules($row, false, $key);
+                // Replace KEY for nested rules
+                $keyToPlace = $key === "*" ? 0 : $key;
+                list($result[$keyToPlace], $required[$keyToPlace]) = $this->processFormRequestRules($row, false, $key);
                 continue;
             }
             foreach ($row as $ruleName) {
