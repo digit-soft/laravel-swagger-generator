@@ -177,6 +177,9 @@ abstract class BaseValueDescribed extends BaseAnnotation
         if ($this->example !== null) {
             $described = Variable::fromExample($this->example, $this->name, $this->description)->describe();
             return !empty($described['properties']) ? $described['properties'] : [];
+        } elseif ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
+            $described = Variable::fromDescription(['type' => $this->_phpType])->describe();
+            return !empty($described['properties']) ? $described['properties'] : [];
         }
         return [];
     }
@@ -210,6 +213,9 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Convert PHP type to Swagger and vise versa
         if ($this->isPhpType($this->type)) {
             $this->type = $this->describer()->swaggerType($this->type);
+        } elseif($this->describer()->isTypeClassName($this->type)) {
+            $this->_phpType = $this->type;
+            $this->type = Variable::SW_TYPE_OBJECT;
         } else {
             $this->_phpType = $this->describer()->phpType($this->type);
         }
