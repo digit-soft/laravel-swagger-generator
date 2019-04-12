@@ -5,6 +5,10 @@
                 {
                     "class": "OA\\ResponseClass",
                     "type": "annotation"
+                },
+                {
+                    "class": "OA\\Symlink",
+                    "type": "annotation"
                 }
             ],
             "provider": "model_subclasses",
