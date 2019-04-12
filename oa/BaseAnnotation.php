@@ -4,6 +4,7 @@ namespace OA;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 
 /**
  * Basic annotation class to extend
@@ -67,6 +68,21 @@ abstract class BaseAnnotation implements Arrayable
             }
         }
         return $setParams;
+    }
+
+    /**
+     * Magic getter
+     * @param  string $name
+     * @return mixed
+     * @throws \ErrorException
+     */
+    public function __get($name)
+    {
+        $getter = 'get' . ucfirst(Str::camel($name));
+        if (!method_exists($this, $getter)) {
+            throw new \ErrorException("Undefined property: " . __CLASS__ . "::\${$name}");
+        }
+        return $this->{$getter}();
     }
 
     /**

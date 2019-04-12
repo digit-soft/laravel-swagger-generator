@@ -8,6 +8,7 @@ use Doctrine\Common\Annotations\Annotation\Enum;
 use Illuminate\Support\Arr;
 
 /**
+ * @property-read mixed|null $exampleProcessed Processed example
  * @package OA
  */
 abstract class BaseValueDescribed extends BaseAnnotation
@@ -28,6 +29,10 @@ abstract class BaseValueDescribed extends BaseAnnotation
      * @var string Format for swagger
      */
     public $format;
+    /**
+     * @var array Array of possible values
+     */
+    public $enum;
     /**
      * @var string Text description
      */
@@ -111,11 +116,12 @@ abstract class BaseValueDescribed extends BaseAnnotation
         $data = [
             'type' => $swType,
         ];
-        $optional = ['format', 'name', 'required', 'example', 'description'];
-        foreach ($optional as $optKey) {
+        $optional = ['format', 'name', 'required', 'example' => 'exampleProcessed', 'description', 'enum'];
+        foreach ($optional as $arrKey => $optKey) {
+            $arrKey = is_numeric($arrKey) ? $optKey : $arrKey;
             $optValue = $this->{$optKey};
             if ($optValue !== null) {
-                $data[$optKey] = $optValue;
+                $data[$arrKey] = $optValue;
             }
         }
         // Add properties to object
@@ -169,13 +175,36 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
+     * Check that object has enum set
+     * @return bool
+     */
+    protected function hasEnum()
+    {
+        return is_array($this->enum) && !empty($this->enum);
+    }
+
+    /**
+     * Get example with check by enum
+     * @return mixed
+     */
+    protected function getExampleProcessed()
+    {
+        $example = $this->example;
+        if ($this->hasEnum()) {
+            $example = in_array($this->example, $this->enum) ? $this->example : reset($this->enum);
+        }
+        return $example;
+    }
+
+    /**
      * Guess object properties key
      * @return array|null
      */
     protected function guessProperties()
     {
-        if ($this->example !== null) {
-            $described = Variable::fromExample($this->example, $this->name, $this->description)->describe();
+        $example = $this->getExampleProcessed();
+        if ($example !== null) {
+            $described = Variable::fromExample($example, $this->name, $this->description)->describe();
             return !empty($described['properties']) ? $described['properties'] : [];
         } elseif ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
             $described = Variable::fromDescription(['type' => $this->_phpType])->describe();
@@ -190,8 +219,9 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     protected function guessType()
     {
-        if ($this->example !== null) {
-            return $this->describer()->swaggerTypeByExample($this->example);
+        $example = $this->getExampleProcessed();
+        if ($example !== null) {
+            return $this->describer()->swaggerTypeByExample($example);
         }
         return $this->type;
     }
