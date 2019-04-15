@@ -29,9 +29,9 @@ trait CleanupsDescribedData
         switch ($type) {
             case Variable::SW_TYPE_OBJECT:
                 Arr::forget($target, ['items']);
-                if (!isset($target['properties']) && !isset($target['example'])) {
-                    $target['properties'] = [];
-                }
+                // if (!isset($target['properties']) && !isset($target['example'])) {
+                //     $target['properties'] = [];
+                // }
                 break;
             case Variable::SW_TYPE_ARRAY:
                 Arr::forget($target, ['properties']);
