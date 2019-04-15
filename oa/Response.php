@@ -95,9 +95,25 @@ class Response extends BaseAnnotation
      */
     protected function getContent()
     {
-        $this->_hasNoData = !in_array('content', $this->_setProperties) && empty($this->content)
+        $this->_hasNoData = !$this->wasSetInConstructor('content') && empty($this->content)
             ? true : $this->_hasNoData;
-        return $this->describer()->describe($this->content);
+        return $this->content !== null ? $this->describer()->describe($this->content) : null;
+    }
+
+    /**
+     * Check that properties was set in construction
+     * @param  array|string $properties Properties list
+     * @param  bool         $any        Check if any of given properties was set, otherwise checks all given properties list
+     * @return bool
+     */
+    protected function wasSetInConstructor($properties, $any = false)
+    {
+        $properties = (array)$properties;
+        if (count($properties) === 1) {
+            return in_array(reset($properties), $this->_setProperties);
+        }
+        $intersection = array_intersect($this->_setProperties, $properties);
+        return ($any && !empty($intersection)) || count($intersection) === count($properties);
     }
 
     /**
@@ -126,7 +142,7 @@ class Response extends BaseAnnotation
             $responseRaw['pagination'] = static::getPagerExample();
         }
         $response = $this->describer()->describe($responseRaw);
-        Arr::set($response, $resultKey, $content);
+        $content !== null ? Arr::set($response, $resultKey, $content) : Arr::forget($response, $resultKey);
         return $response;
     }
 
@@ -183,7 +199,7 @@ class Response extends BaseAnnotation
      */
     protected static function getPagerExample()
     {
-        $pager = new LengthAwarePaginator([], 100, 10, 2);
+        $pager = new LengthAwarePaginator(array_fill(0, 10, null), 100, 10, 2);
         return Arr::except($pager->toArray(), ['items', 'data']);
     }
 

@@ -14,9 +14,9 @@ use Doctrine\Common\Annotations\Annotation\Target;
 class ResponseError extends Response
 {
     public $status = 400;
-    public $content = [];
+    public $content;
 
-    protected $defaultContent = [];
+    protected $usedDefaultContent = false;
     protected $defaultDescription;
 
     /**
@@ -26,6 +26,10 @@ class ResponseError extends Response
     public function __construct(array $values)
     {
         $this->_setProperties = $this->configureSelf($values, 'status');
+        if (!$this->wasSetInConstructor('content')) {
+            $this->content = $this->getDefaultContentByStatus();
+            $this->usedDefaultContent = true;
+        }
     }
 
     /**
@@ -33,7 +37,7 @@ class ResponseError extends Response
      */
     public function getComponentKey()
     {
-        $isDefault = $this->content === $this->defaultContent && $this->description === $this->defaultDescription;
+        $isDefault = $this->usedDefaultContent && $this->description === $this->defaultDescription;
         if (!$isDefault) {
             return null;
         }
@@ -46,5 +50,26 @@ class ResponseError extends Response
     public function hasData()
     {
         return true;
+    }
+
+    /**
+     * Get default content for given error code
+     * @return mixed|null
+     */
+    protected function getDefaultContentByStatus()
+    {
+        $content = static::defaultContentList();
+        return $content[$this->status] ?? null;
+    }
+
+    /**
+     * Get default content list by status
+     * @return array
+     */
+    protected static function defaultContentList()
+    {
+        return [
+            422 => ['request_attribute' => ['Error message #1', 'Error message #2']],
+        ];
     }
 }
