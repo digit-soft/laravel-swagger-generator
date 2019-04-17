@@ -165,6 +165,12 @@ class RoutesParser
         /** @var \OA\Parameter[] $paramsAnn */
         /** @var \OA\Parameter[] $paramsAnnCtrl */
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
+        if (!empty($paramsAnnGroup = $this->routeAnnotations($route, 'OA\Parameters'))) {
+            foreach ($paramsAnnGroup as $paramsGroup) {
+                /** @var \OA\Parameters $paramsGroup */
+                $paramsAnn = $this->describer()->merge($paramsAnn, $paramsGroup->parameters);
+            }
+        }
         $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, 'OA\Parameter'), null, 'name');
         $paramsDoc = $this->getRouteDocParams($route);
         if (empty($paramsAnn)) {

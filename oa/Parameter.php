@@ -11,7 +11,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * Used to declare controller action parameter
  *
  * @Annotation
- * @Target({"METHOD", "CLASS"})
+ * @Target({"METHOD", "CLASS", "ANNOTATION"})
  * @Attributes({
  *   @Attribute("name",type="string"),
  *   @Attribute("type",type="string"),
