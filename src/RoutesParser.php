@@ -174,9 +174,14 @@ class RoutesParser
         }
         $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, 'OA\Parameter'), null, 'name');
         $paramsDoc = $this->getRouteDocParams($route);
-        if (empty($paramsAnn)) {
-            $paramsAnn = [];
+        $paramsAnnInPath = array_filter($paramsAnn, function ($param) { return $param->in === 'path'; });
+        if (empty($paramsAnnInPath)) {
+            $paramsAnn = Arr::pluck($paramsAnn, null, 'name');
+
             foreach ($route->parameterNames() as $parameterName) {
+                if (isset($paramsAnn[$parameterName])) {
+                    continue;
+                }
                 $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
                 if (($paramDoc = static::getArrayElemByStrKey($paramsDoc, $parameterName)) !== null
                     && isset($paramDoc['type'])
