@@ -113,10 +113,9 @@ class GenerateCommand extends Command
      */
     protected function printTimeSpent($startTime)
     {
-        $finishTime = microtime();
         $start = \DateTime::createFromFormat('0.u00 U', $startTime);
-        $finish = \DateTime::createFromFormat('0.u00 U', $finishTime);
-        $diff = $finish->diff($start);
+        $finish = \DateTime::createFromFormat('0.u00 U', microtime());
+        $diff = $start->diff($finish);
         $this->getOutput()->title('Time spent: ' . $diff->format('%H:%I:%S.%F'));
     }
 
