@@ -75,10 +75,7 @@ class RequestBodyJson extends RequestBody
             'required' => true,
             'content' => [
                 $this->contentType => [
-                    'schema' => [
-                        'type' => 'object',
-                        'properties' => $content,
-                    ],
+                    'schema' => $content,
                 ],
             ],
         ];

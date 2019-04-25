@@ -71,19 +71,36 @@ abstract class BaseValueDescribed extends BaseAnnotation
     public function toArrayRecursive(&$target)
     {
         if (!$this->isNested()) {
-            $target[$this->name] = $this->toArray();
+            if (!isset($target['properties'])) {
+                $target['type'] = 'object';
+                $target['properties'] = [];
+            }
+            $target['properties'][$this->name] = empty($target['properties'][$this->name])
+                ? $this->toArray()
+                : $this->describer()->merge($target['properties'][$this->name], $this->toArray());
             return;
         }
         $nameArr = explode('.', $this->name);
         $currentTarget = &$target;
         while ($key = array_shift($nameArr)) {
-            if (!empty($nameArr)) {
-                if (!isset($currentTarget[$key])) {
-                    $currentTarget[$key] = ['type' => 'object', 'properties' => []];
+            $isArray = $key === '*';
+            $hasNested = !empty($nameArr);
+            if ($isArray) {
+                if (!isset($currentTarget['items'])) {
+                    $currentTarget['type'] = 'array';
+                    $currentTarget['items'] = [];
                 }
-                $currentTarget = &$currentTarget[$key]['properties'];
+                $currentTarget = &$currentTarget['items'];
             } else {
-                Arr::set($currentTarget, $key, $this->toArray());
+                if (!isset($currentTarget['properties'])) {
+                    $currentTarget = ['type' => 'object', 'properties' => []];
+                }
+                $currentTarget['properties'][$key] = isset($currentTarget['properties'][$key]) ? $currentTarget['properties'][$key] : [];
+                $currentTarget = &$currentTarget['properties'][$key];
+            }
+
+            if (!$hasNested) {
+                $currentTarget = empty($currentTarget) ? $this->toArray() : $this->describer()->merge($currentTarget, $this->toArray());
             }
         }
     }
