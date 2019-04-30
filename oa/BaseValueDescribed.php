@@ -70,16 +70,6 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public function toArrayRecursive(&$target)
     {
-        if (!$this->isNested()) {
-            if (!isset($target['properties'])) {
-                $target['type'] = 'object';
-                $target['properties'] = [];
-            }
-            $target['properties'][$this->name] = empty($target['properties'][$this->name])
-                ? $this->toArray()
-                : $this->describer()->merge($target['properties'][$this->name], $this->toArray());
-            return;
-        }
         $nameArr = explode('.', $this->name);
         $currentTarget = &$target;
         while ($key = array_shift($nameArr)) {
