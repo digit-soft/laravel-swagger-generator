@@ -471,6 +471,19 @@ class RoutesParser
     }
 
     /**
+     * Check if route is ignored by annotation
+     * @param  Route $route
+     * @return bool
+     */
+    protected function isRouteIgnored(Route $route)
+    {
+        if ($this->routeAnnotation($route, 'OA\Ignore') !== null || !empty($this->controllerAnnotations($route, 'OA\Ignore'))) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
      * Check that route must be processed
      * @param Route      $route
      * @param array      $matches
@@ -479,6 +492,9 @@ class RoutesParser
      */
     protected function checkRoute(Route $route, $matches = [], $only = null)
     {
+        if ($this->isRouteIgnored($route)) {
+            return false;
+        }
         $uri = '/' . ltrim($route->uri, '/');
         $only = $only ?? config('swagger-generator.routes.only', []);
         $not = $not ?? config('swagger-generator.routes.not', []);
