@@ -2,8 +2,8 @@
 
 namespace DigitSoft\Swagger\Describer;
 
-use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
+use DigitSoft\Swagger\Yaml\Variable;
 
 /**
  * Trait WithTypeParser
@@ -23,7 +23,7 @@ trait WithTypeParser
     ];
     /** @var array List of simplified class types */
     protected $classSimpleTypes = [
-        'Illuminate\Support\Carbon' => 'string',
+        \Illuminate\Support\Carbon::class => 'string',
     ];
     //TODO: Combine rules description and example generation
     /** @var array Rules data (with PHP type and variable names) */
@@ -153,7 +153,8 @@ trait WithTypeParser
     public function isBasicType($type)
     {
         $type = $this->normalizeType($type, true);
-        return in_array($type, $this->basicTypes);
+
+        return in_array($type, $this->basicTypes, true);
     }
 
     /**
@@ -164,6 +165,7 @@ trait WithTypeParser
     public function isTypeArray($type)
     {
         $type = $this->normalizeType($type);
+
         return strpos($type, '[]') !== false;
     }
 
@@ -175,7 +177,8 @@ trait WithTypeParser
     public function isTypeClassName($type)
     {
         $type = $this->normalizeType($type, true);
-        return !in_array($type, $this->basicTypes) && (class_exists($type) || interface_exists($type));
+
+        return ! in_array($type, $this->basicTypes, true) && (class_exists($type) || interface_exists($type));
     }
 
     /**
@@ -197,23 +200,25 @@ trait WithTypeParser
         if (strpos($type, '\\') !== false || class_exists($type)) {
             return ltrim($type, '\\');
         }
+
         return $typeLower;
     }
 
     /**
      * Get swagger type by example variable
-     * @param mixed $example
+     * @param  mixed $example
      * @return string|null
      */
     public function swaggerTypeByExample($example)
     {
-        if (is_null($example)) {
+        if ($example === null) {
             return null;
         }
         $swType = $this->swaggerType(gettype($example));
         if ($swType === Variable::SW_TYPE_ARRAY && Arr::isAssoc($example)) {
             $swType = Variable::SW_TYPE_OBJECT;
         }
+
         return $swType;
     }
 
@@ -253,12 +258,12 @@ trait WithTypeParser
 
     /**
      * Get PHP type by given Swagger type
-     * @param string $swType
+     * @param  string $swType
      * @return string
      */
     public function phpType($swType)
     {
-        switch($swType) {
+        switch ($swType) {
             case Variable::SW_TYPE_OBJECT:
                 return 'array';
                 break;
@@ -272,12 +277,13 @@ trait WithTypeParser
 
     /**
      * Simplify class name to basic type
-     * @param string $className
+     * @param  string $className
      * @return mixed|string
      */
     public function simplifyClassName($className)
     {
         $className = ltrim($className, '\\');
+
         return $this->classSimpleTypes[$className] ?? $className;
     }
 
@@ -296,11 +302,12 @@ trait WithTypeParser
         $varNames = $cleanName !== null && $cleanName !== $varName ? [$varName, $cleanName] : [$varName];
         foreach ($varNames as $name) {
             foreach ($this->varRules as $rule => $ruleData) {
-                if (in_array($name, $ruleData['names'])) {
+                if (in_array($name, $ruleData['names'], true)) {
                     return $rule;
                 }
             }
         }
+
         return $default;
     }
 
@@ -317,6 +324,7 @@ trait WithTypeParser
         if ($this->isBasicType($rule)) {
             return $rule;
         }
+
         return null;
     }
 
@@ -329,7 +337,7 @@ trait WithTypeParser
     {
         $suffixes = ['_confirm', '_original', '_example', '_new', '_old'];
         // Name is not a string
-        if (!is_string($name)) {
+        if (! is_string($name)) {
             return null;
         }
         // Name is nested
@@ -344,6 +352,7 @@ trait WithTypeParser
                 break;
             }
         }
+
         return $name;
     }
 }

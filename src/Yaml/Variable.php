@@ -2,11 +2,11 @@
 
 namespace DigitSoft\Swagger\Yaml;
 
-use DigitSoft\Swagger\Parser\WithAnnotationReader;
-use DigitSoft\Swagger\Parser\WithReflections;
-use DigitSoft\Swagger\Parser\WithVariableDescriber;
-use DigitSoft\Swagger\Parsers\ClassParser;
 use Illuminate\Support\Arr;
+use DigitSoft\Swagger\Parsers\ClassParser;
+use DigitSoft\Swagger\Parser\WithReflections;
+use DigitSoft\Swagger\Parser\WithAnnotationReader;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 
 class Variable
 {
@@ -18,21 +18,21 @@ class Variable
     const KEY_EXCEPT = 'except';
     const KEY_ONLY = 'only';
 
-    const SW_TYPE_STRING    = 'string';
-    const SW_TYPE_INTEGER   = 'integer';
-    const SW_TYPE_NUMBER    = 'number';
-    const SW_TYPE_BOOLEAN   = 'boolean';
-    const SW_TYPE_ARRAY     = 'array';
-    const SW_TYPE_OBJECT    = 'object';
+    const SW_TYPE_STRING = 'string';
+    const SW_TYPE_INTEGER = 'integer';
+    const SW_TYPE_NUMBER = 'number';
+    const SW_TYPE_BOOLEAN = 'boolean';
+    const SW_TYPE_ARRAY = 'array';
+    const SW_TYPE_OBJECT = 'object';
 
-    const SW_FORMAT_INT32       = 'int32';
-    const SW_FORMAT_INT64       = 'int64';
-    const SW_FORMAT_FLOAT       = 'float';
-    const SW_FORMAT_BYTE        = 'byte';
-    const SW_FORMAT_DATE        = 'date';
-    const SW_FORMAT_DATETIME    = 'date-time';
-    const SW_FORMAT_PASSWORD    = 'password';
-    const SW_FORMAT_BINARY      = 'binary';
+    const SW_FORMAT_INT32 = 'int32';
+    const SW_FORMAT_INT64 = 'int64';
+    const SW_FORMAT_FLOAT = 'float';
+    const SW_FORMAT_BYTE = 'byte';
+    const SW_FORMAT_DATE = 'date';
+    const SW_FORMAT_DATETIME = 'date-time';
+    const SW_FORMAT_PASSWORD = 'password';
+    const SW_FORMAT_BINARY = 'binary';
 
     public $example;
 
@@ -73,7 +73,7 @@ class Variable
 
     /**
      * Variable constructor.
-     * @param array $config
+     * @param  array $config
      */
     public function __construct($config = [])
     {
@@ -95,6 +95,7 @@ class Variable
             }
             $result[$paramName] = $value;
         }
+
         return $result;
     }
 
@@ -102,14 +103,18 @@ class Variable
      * Get cache key for objects.
      *
      * @param  string $className
-     * @return string
+     * @return string|null
      */
-    protected function generateObjKey($className)
+    protected function generateObjectCacheKey($className)
     {
+        if (! class_exists($className) && ! interface_exists($className)) {
+            return null;
+        }
+
         return $className
-            . '::'.  (!empty($this->with) ? implode(',', $this->with) : '-')
-            . '::' . (!empty($this->except) ? implode(',', $this->except) : '-')
-            . '::' . (!empty($this->only) ? implode(',', $this->only) : '-');
+            . '::' . (! empty($this->with) ? implode(',', $this->with) : '-')
+            . '::' . (! empty($this->except) ? implode(',', $this->except) : '-')
+            . '::' . (! empty($this->only) ? implode(',', $this->only) : '-');
     }
 
     /**
@@ -129,16 +134,17 @@ class Variable
             $result['example'] = $this->example;
         }
         $res = [];
-        $objCacheKey = '';
         switch ($result['type']) {
             case static::SW_TYPE_OBJECT:
                 $className = $this->describer()->normalizeType($this->type);
-                // Look for a cache
-                if (isset(static::$_cache_objects[$objCacheKey = $this->generateObjKey($className)])) {
-                    return static::$_cache_objects[$objCacheKey];
-                }
+                $objCacheKey = $this->generateObjectCacheKey($className);
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
-                if (class_exists($className) || interface_exists($className)) {
+                // If class does not exists then $objCacheKey will be NULL
+                if ($objCacheKey !== null) {
+                    // Look for a cache
+                    if (isset(static::$_cache_objects[$objCacheKey])) {
+                        return static::$_cache_objects[$objCacheKey];
+                    }
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
                     $res['properties'] = $res['properties'] ?? [];
                 } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
@@ -165,9 +171,10 @@ class Variable
         }
         $result = $this->describer()->merge($res, $result);
         // Write object data to cache
-        if ($result['type'] === static::SW_TYPE_OBJECT) {
+        if (isset($objCacheKey) && $result['type'] === static::SW_TYPE_OBJECT) {
             static::$_cache_objects[$objCacheKey] = $result;
         }
+
         return $result;
     }
 
@@ -178,6 +185,7 @@ class Variable
         if (class_exists($className)) {
             $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
         }
+
         return $result;
     }
 
@@ -203,8 +211,10 @@ class Variable
             } else {
                 $swType = $this->describer()->swaggerType($phpType);
             }
+
             return $this->swaggerType = $swType;
         }
+
         return $this->swaggerType;
     }
 
@@ -223,15 +233,15 @@ class Variable
 
     /**
      * Get PHPDoc type of value
-     * @param mixed $value
+     * @param  mixed $value
      * @return string|null
      */
     protected function getPHPDocType($value)
     {
-        $baseType = $phpType = !is_null($value) ? gettype($value) : null;
+        $baseType = $phpType = $value !== null ? gettype($value) : null;
         switch ($baseType) {
             case 'array':
-                if (!Arr::isAssoc($value)) {
+                if (! Arr::isAssoc($value)) {
                     $firstValue = reset($value);
                     if (($mainType = $this->getPHPDocType($firstValue)) !== null) {
                         $phpType = $mainType . '[]';
@@ -242,12 +252,13 @@ class Variable
                 $phpType = get_class($value);
                 break;
         }
+
         return $phpType;
     }
 
     /**
      * Get example value by PHPDoc type
-     * @param string $phpType
+     * @param  string $phpType
      * @return array|mixed|null
      */
     protected function getExampleByPHPDocType($phpType)
@@ -257,7 +268,7 @@ class Variable
         if (($isArrayOf = $this->describer()->isTypeArray($phpType)) !== false) {
             $phpType = substr($phpType, 0, -2);
         }
-        if ($this->describer()->isTypeClassName($phpType) && $phpTypeSimplified === $phpType) {
+        if ($phpTypeSimplified === $phpType && $this->describer()->isTypeClassName($phpType)) {
             $example = $this->getExampleByPHPDocTypeClass($phpType);
             $example = $example ?? [];
         } else {
@@ -266,19 +277,20 @@ class Variable
         if ($isArrayOf) {
             $example = [$example];
         }
+
         return $example;
     }
 
     /**
      * Get example by class name
-     * @param string $className
+     * @param  string $className
      * @return array|null
      */
     protected function getExampleByPHPDocTypeClass($className)
     {
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
-        if (!empty($this->with)) {
+        if (! empty($this->with)) {
             $propertiesRead = $parser->propertiesRead($this->with);
             $properties = $this->describer()->merge($properties, $propertiesRead);
         }
@@ -290,13 +302,14 @@ class Variable
             $ex = $this->describer()->example($row['type']);
             $example[$name] = $ex;
         }
+
         return $example;
     }
 
     /**
      * Get description by class name
-     * @param string $className
-     * @param array  $with
+     * @param  string $className
+     * @param  array  $with
      * @return array|null
      */
     protected function getDescriptionByPHPDocTypeClass($className, $with = [])
@@ -314,7 +327,7 @@ class Variable
         }
         // Ignore properties
         $ignored = $this->getIgnoredProperties($className);
-        if (!empty($ignored)) {
+        if (! empty($ignored)) {
             $properties = array_diff_key($properties, $ignored);
         }
         $described = [];
@@ -332,12 +345,13 @@ class Variable
                 throw $exception;
             }
         }
+
         return $described;
     }
 
     /**
      * Get properties by annotations
-     * @param string $className
+     * @param  string $className
      * @return array
      */
     protected function getDescriptionByPropertyAnnotations($className)
@@ -349,25 +363,26 @@ class Variable
             $rowData = $annotation->toArray();
             $result[$annotation->name] = $rowData;
         }
+
         return $result;
     }
 
     /**
      * Get ignored properties
-     * @param string $className
+     * @param  string $className
      * @return array
      */
     protected function getIgnoredProperties($className)
     {
         /** @var \OA\PropertyIgnore[] $annotations */
         $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
-        $result = Arr::pluck($annotations, 'name', 'name');
-        return $result;
+
+        return Arr::pluck($annotations, 'name', 'name');
     }
 
     /**
      * Configure object itself
-     * @param array $config
+     * @param  array $config
      */
     protected function configureSelf($config = [])
     {
@@ -389,7 +404,7 @@ class Variable
 
     /**
      * Getter
-     * @param string $name
+     * @param  string $name
      * @return mixed
      * @throws \Exception
      */
@@ -397,15 +412,15 @@ class Variable
     {
         $method = 'get' . ucfirst($name);
         if (method_exists($this, $method)) {
-            return call_user_func([$this, $method]);
+            return $this->{$method}();
         }
         throw new \Exception("Property {$name} does not exist or is not readable");
     }
 
     /**
      * Setter
-     * @param string $name
-     * @param mixed $value
+     * @param  string $name
+     * @param  mixed  $value
      * @return mixed
      * @throws \Exception
      */
@@ -413,14 +428,30 @@ class Variable
     {
         $method = 'set' . ucfirst($name);
         if (method_exists($this, $method)) {
-            return call_user_func([$this, $method], $value);
+            return $this->{$method}($value);
         }
         throw new \Exception("Property {$name} does not exist or is not writable");
     }
 
     /**
+     * ISSET magic.
+     *
+     * @param  string $name
+     * @return bool
+     */
+    public function __isset($name)
+    {
+        $method = 'get' . ucfirst($name);
+        if (method_exists($this, $method)) {
+            return $this->{$method}() !== null;
+        }
+
+        return false;
+    }
+
+    /**
      * Create object from array description
-     * @param array $config
+     * @param  array $config
      * @return Variable
      */
     public static function fromDescription($config)
@@ -430,9 +461,9 @@ class Variable
 
     /**
      * Create object from example
-     * @param mixed       $example
-     * @param string|null $name
-     * @param string|null $description
+     * @param  mixed       $example
+     * @param  string|null $name
+     * @param  string|null $description
      * @return Variable
      */
     public static function fromExample($example, $name = null, $description = null)
@@ -442,6 +473,7 @@ class Variable
             'name' => $name,
             'description' => $description,
         ];
+
         return new static($config);
     }
 }
