@@ -143,7 +143,11 @@ class Variable
                 if ($objCacheKey !== null) {
                     // Look for a cache
                     if (isset(static::$_cache_objects[$objCacheKey])) {
-                        return static::$_cache_objects[$objCacheKey];
+                        $cached = static::$_cache_objects[$objCacheKey];
+                        if ($this->description) {
+                            $cached['description'] = $this->description;
+                        }
+                        return $cached;
                     }
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
                     $res['properties'] = $res['properties'] ?? [];
