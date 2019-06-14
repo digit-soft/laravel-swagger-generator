@@ -67,6 +67,8 @@ class Variable
 
     protected $swaggerType;
 
+    protected static $_cache_objects = [];
+
     use WithReflections, WithAnnotationReader, WithVariableDescriber;
 
     /**
@@ -88,12 +90,26 @@ class Variable
         $this->fillMissingProperties();
         foreach ($this->getFillable() as $paramName) {
             $value = $this->{$paramName};
-            if ($value === null && !in_array($paramName, [static::KEY_TYPE])) {
+            if ($value === null && ! in_array($paramName, [static::KEY_TYPE], true)) {
                 continue;
             }
             $result[$paramName] = $value;
         }
         return $result;
+    }
+
+    /**
+     * Get cache key for objects.
+     *
+     * @param  string $className
+     * @return string
+     */
+    protected function generateObjKey($className)
+    {
+        return $className
+            . '::'.  (!empty($this->with) ? implode(',', $this->with) : '-')
+            . '::' . (!empty($this->except) ? implode(',', $this->except) : '-')
+            . '::' . (!empty($this->only) ? implode(',', $this->only) : '-');
     }
 
     /**
@@ -113,9 +129,14 @@ class Variable
             $result['example'] = $this->example;
         }
         $res = [];
+        $objCacheKey = '';
         switch ($result['type']) {
             case static::SW_TYPE_OBJECT:
                 $className = $this->describer()->normalizeType($this->type);
+                // Look for a cache
+                if (isset(static::$_cache_objects[$objCacheKey = $this->generateObjKey($className)])) {
+                    return static::$_cache_objects[$objCacheKey];
+                }
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
                 if (class_exists($className) || interface_exists($className)) {
                     $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
@@ -143,6 +164,10 @@ class Variable
                 break;
         }
         $result = $this->describer()->merge($res, $result);
+        // Write object data to cache
+        if ($result['type'] === static::SW_TYPE_OBJECT) {
+            static::$_cache_objects[$objCacheKey] = $result;
+        }
         return $result;
     }
 
@@ -278,7 +303,7 @@ class Variable
     {
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
-        if (!empty($with)) {
+        if (! empty($with)) {
             $propertiesRead = $parser->propertiesRead($with, null, false);
             $properties = $this->describer()->merge($properties, $propertiesRead);
         }

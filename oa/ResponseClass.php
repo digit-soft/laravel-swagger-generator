@@ -34,7 +34,7 @@ class ResponseClass extends Response
         /** @var Symlink $symlink */
         $symlink = $this->classAnnotation($this->content, 'OA\Symlink');
         if ($symlink && $symlink->class !== $this->content) {
-            return ($this->withClass($symlink->class))->toArray();
+            return $this->withClass($symlink->class)->toArray();
         }
         return parent::toArray();
     }
