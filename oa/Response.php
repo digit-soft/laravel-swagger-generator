@@ -189,8 +189,7 @@ class Response extends BaseAnnotation
      */
     protected static function isSuccessStatus($status)
     {
-        $status = intval($status);
-        return in_array($status, [200, 201]);
+        return in_array((int)$status, [200, 201, 202, 204], true);
     }
 
     /**
