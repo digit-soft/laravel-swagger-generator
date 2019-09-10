@@ -2,13 +2,13 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\Parser\WithAnnotationReader;
-use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation;
+use DigitSoft\Swagger\Parser\WithReflections;
+use DigitSoft\Swagger\Parser\WithAnnotationReader;
+use Doctrine\Common\Annotations\Annotation\Target;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
-use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used to describe controller action response.
@@ -91,6 +91,7 @@ class ResponseClass extends Response
             'with' => $this->getWith(),
             'description' => $this->description,
         ]);
+
         return $variable->describe();
     }
 

@@ -2,11 +2,10 @@
 
 namespace DigitSoft\Swagger\Parsers;
 
+use Illuminate\Support\Arr;
 use DigitSoft\Swagger\Parser\WithDocParser;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
 
 class ClassParser
 {
@@ -20,10 +19,18 @@ class ClassParser
      * @var array
      */
     public $constructorParams = [];
+    /**
+     * Model class names list
+     * @var array
+     */
+    public $modelClasses = [
+        'Illuminate\Database\Eloquent\Model',
+        'DigitSoft\StaticModels\Model',
+    ];
 
     protected $instance;
 
-    protected $isModel;
+    protected $_isModel;
 
     /**
      * ModelParser constructor.
@@ -45,31 +52,36 @@ class ClassParser
         $appends = [];
         $hidden = null;
         if ($this->isModel()) {
-            /** @var Model $instance */
+            /** @var \Illuminate\Database\Eloquent\Model|\DigitSoft\StaticModels\Model $instance */
             $instance = $this->instantiate();
             $hidden = $onlyVisible ? $instance->getHidden() : null;
             $appends = $this->getModelAppends($instance);
         }
         $properties = $this->getPropertiesDescribed('property', null, $hidden, $describeClasses);
-        $properties = !empty($appends)
+        $properties = ! empty($appends)
             ? $this->describer()->merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, $describeClasses))
             : $properties;
+
         return $properties;
     }
 
     /**
-     * Get model appends attribute
-     * @param Model $model
+     * Get model appends attribute.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $model
      * @return array
      */
     protected function getModelAppends($model)
     {
         $ref = $this->reflectionProperty($model, 'appends');
         $ref->setAccessible(true);
+
         return $ref->getValue($model);
     }
 
     /**
+     * Get `property-read` tags.
+     *
      * @param array|null $only
      * @param array|null $not
      * @param bool       $describeClasses
@@ -81,11 +93,12 @@ class ClassParser
     }
 
     /**
-     * Get described properties
-     * @param string     $tag
-     * @param array|null $only
-     * @param array|null $not
-     * @param bool       $describeClasses
+     * Get described properties.
+     *
+     * @param  string     $tag
+     * @param  array|null $only
+     * @param  array|null $not
+     * @param  bool       $describeClasses
      * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
      */
     protected function getPropertiesDescribed($tag = 'property', $only = null, $not = null, $describeClasses = false)
@@ -94,10 +107,12 @@ class ClassParser
         if ($docStr === null) {
             return [];
         }
+
         $properties = $this->getDocTagsPropertiesDescribed($docStr, $tag, $only, $not);
-        if (!$describeClasses) {
+        if (! $describeClasses) {
             return $properties;
         }
+
         // Describe only first level class objects
         foreach ($properties as $key => $row) {
             $row['type'] = $this->describer()->normalizeType($row['type']);
@@ -106,12 +121,13 @@ class ClassParser
                 $classDescription = (new static($this->describer()->normalizeType($row['type'], true)))->properties();
                 Arr::set($properties[$key], 'properties', $classDescription);
                 if ($this->describer()->isTypeArray($row['type'])) {
-                    $propertyArray = $this->describer()->describe([""]);
+                    $propertyArray = $this->describer()->describe(['']);
                     Arr::set($propertyArray, 'items', $properties[$key]);
                     $properties[$key] = $propertyArray;
                 }
             }
         }
+
         return $properties;
     }
 
@@ -121,11 +137,11 @@ class ClassParser
      */
     protected function isModel()
     {
-        if ($this->isModel === null) {
-            $className = $this->className;
-            $this->isModel = is_subclass_of($className, Model::class);
+        if ($this->_isModel === null) {
+            $this->_isModel = ! empty(array_intersect($this->modelClasses, class_parents($this->className)));
         }
-        return $this->isModel;
+
+        return $this->_isModel;
     }
 
     /**
