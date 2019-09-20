@@ -145,6 +145,9 @@ trait WithTypeParser
         ],
     ];
 
+    protected $varRuleNames;
+    protected $varRuleNamesSortedRegex;
+
     /**
      * Check that given type is basic
      * @param  string $type
@@ -353,6 +356,73 @@ trait WithTypeParser
             }
         }
 
+        // Check for ending
+        $regex = $this->getRulesPossibleVarNamesRegex();
+        if (preg_match($regex, $name, $matches)) {
+            return end($matches);
+        }
+
         return $name;
+    }
+
+    /**
+     * Get regEx for matching var name with possible var names in rules.
+     *
+     * @return string
+     */
+    protected function getRulesPossibleVarNamesRegex()
+    {
+        if ($this->varRuleNamesSortedRegex !== null) {
+            return $this->varRuleNamesSortedRegex;
+        }
+
+        $names = array_keys($this->getRulesPossibleVarNames());
+        sort($names);
+        usort($names, function ($a, $b) {
+            $al = mb_strlen($a);
+            $bl = mb_strlen($b);
+
+            if ($al === $bl) {
+                return 0;
+            }
+
+            return $al > $bl ? -1 : 1;
+        });
+
+        array_walk($names, function (&$name) {
+            $name = "_({$name})";
+        });
+        $regex = '/(?:' . implode('|', $names) . ')$/';
+
+        return $this->varRuleNamesSortedRegex = $regex;
+    }
+
+    /**
+     * Get possible variable names for rules.
+     *
+     * @return array
+     */
+    protected function getRulesPossibleVarNames()
+    {
+        if ($this->varRuleNames !== null) {
+            return $this->varRuleNames;
+        }
+        $names = [];
+        foreach ($this->varRules as $ruleName => $data) {
+            $dataShort = ['rule' => $ruleName, 'type' => $data['type']];
+            $names[$ruleName] = $dataShort;
+            if (empty($data['names'])) {
+                continue;
+            }
+            foreach ($data['names'] as $name) {
+                // Throw an error if duplicates occur
+                if (isset($names[$name]) && $names[$name]['type'] !== $dataShort['type']) {
+                    throw new \RuntimeException(sprintf("Duplicate name '%s' in variable rules.", $name));
+                }
+                $names[$name] = $dataShort;
+            }
+        }
+
+        return $this->varRuleNames = $names;
     }
 }

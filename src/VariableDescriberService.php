@@ -93,7 +93,7 @@ class VariableDescriberService
         $classNameArray = explode('\\', $className);
         $classNameShort = $classNameShortBase = end($classNameArray);
         $num = 0;
-        while (in_array($classNameShort, $this->classShortcuts)) {
+        while (in_array($classNameShort, $this->classShortcuts, true)) {
             $classNameShort = $classNameShortBase . '_' . $num;
             $num++;
         }
