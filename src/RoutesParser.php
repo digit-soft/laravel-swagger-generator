@@ -485,22 +485,24 @@ class RoutesParser
 
     /**
      * Check that route must be processed
-     * @param Route      $route
-     * @param array      $matches
-     * @param array|null $only
+     *
+     * @param  Route      $route
+     * @param  array      $matches
+     * @param  array|null $only
+     * @param  null       $except
      * @return bool
      */
-    protected function checkRoute(Route $route, $matches = [], $only = null)
+    protected function checkRoute(Route $route, $matches = [], $only = null, $except = null)
     {
         if ($this->isRouteIgnored($route)) {
             return false;
         }
         $uri = '/' . ltrim($route->uri, '/');
         $only = $only ?? config('swagger-generator.routes.only', []);
-        $not = $not ?? config('swagger-generator.routes.not', []);
+        $except = $except ?? config('swagger-generator.routes.not', []);
         $matches = $matches ?? config('swagger-generator.routes.matches', []);
         $matchesNot = $matchesNot ?? config('swagger-generator.routes.notMatches', []);
-        if (!empty($not) && in_array($uri, $not)) {
+        if (!empty($except) && in_array($uri, $except)) {
             return false;
         }
         if (!empty($only) && in_array($uri, $only)) {
