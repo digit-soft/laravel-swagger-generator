@@ -35,6 +35,6 @@ class Tag extends BaseAnnotation
      */
     public function __toString()
     {
-        return $this->name;
+        return preg_replace('/[\s_]+/u', '-', (string)$this->name);
     }
 }

@@ -535,7 +535,7 @@ class RoutesParser
             $annotations = $this->routeAnnotations($route, 'OA\Tag');
             $annotations = $this->describer()->merge($annotationsClass, $annotations);
             foreach ($annotations as $annotation) {
-                $tags[] = $annotation->name;
+                $tags[] = (string)$annotation;
             }
             if (empty($tags)) {
                 $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_MISSING_TAG, $route);
