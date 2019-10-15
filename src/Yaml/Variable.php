@@ -311,7 +311,8 @@ class Variable
     }
 
     /**
-     * Get description by class name
+     * Get description by class name.
+     *
      * @param  string $className
      * @param  array  $with
      * @return array|null
@@ -321,6 +322,7 @@ class Variable
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
         if (! empty($with)) {
+            $this->setWithToPropertiesRecursively($properties, $with);
             $propertiesRead = $parser->propertiesRead($with, null, false);
             $properties = $this->describer()->merge($properties, $propertiesRead);
         }
@@ -382,6 +384,25 @@ class Variable
         $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
 
         return Arr::pluck($annotations, 'name', 'name');
+    }
+
+    /**
+     * Set `with` key to describable properties recursively.
+     *
+     * @param  array $properties
+     * @param  array $with
+     */
+    protected function setWithToPropertiesRecursively(array &$properties, $with = [])
+    {
+        foreach ($with as $key) {
+            if (($pos  = strpos($key, '.')) === false) {
+                continue;
+            }
+            if (($keyBase = mb_substr($key, 0, $pos)) && isset($properties, $keyBase)) {
+                $keyWith = mb_substr($key, $pos + 1);
+                $properties[$keyBase]['with'] = [$keyWith];
+            }
+        }
     }
 
     /**
