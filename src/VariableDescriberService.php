@@ -2,13 +2,13 @@
 
 namespace DigitSoft\Swagger;
 
-use DigitSoft\Swagger\Describer\WithExampleGenerator;
-use DigitSoft\Swagger\Describer\WithRecursiveDescriber;
-use DigitSoft\Swagger\Describer\WithTypeParser;
+use Symfony\Component\Yaml\Yaml;
+use Illuminate\Filesystem\Filesystem;
 use DigitSoft\Swagger\Describer\WithFaker;
 use DigitSoft\Swagger\Parser\WithReflections;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Yaml\Yaml;
+use DigitSoft\Swagger\Describer\WithTypeParser;
+use DigitSoft\Swagger\Describer\WithExampleGenerator;
+use DigitSoft\Swagger\Describer\WithRecursiveDescriber;
 
 /**
  * Service made to describe variables in swagger format
@@ -58,20 +58,22 @@ class VariableDescriberService
 
     /**
      * Parse Yaml file
-     * @param string $filePath
+     *
+     * @param  string $filePath
      * @return array
      */
     public function fromYml($filePath)
     {
         $contentStr = $this->files->get($filePath);
-        $content = Yaml::parse($contentStr);
-        return $content;
+
+        return Yaml::parse($contentStr);
     }
 
     /**
      * Describe variable
-     * @param mixed $variable
-     * @param bool $withExample
+     *
+     * @param  mixed $variable
+     * @param  bool  $withExample
      * @return array
      */
     public function describe($variable, $withExample = true)

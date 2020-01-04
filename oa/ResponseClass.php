@@ -36,6 +36,7 @@ class ResponseClass extends Response
         if ($symlink && $symlink->class !== $this->content) {
             return $this->withClass($symlink->class)->toArray();
         }
+
         return parent::toArray();
     }
 
@@ -56,7 +57,7 @@ class ResponseClass extends Response
      */
     protected function getContent()
     {
-        if ($this->content === null || !class_exists($this->content)) {
+        if ($this->content === null || ! class_exists($this->content)) {
             throw new \Exception("Class '{$this->content}' not found");
         }
         $properties = $this->getModelProperties();

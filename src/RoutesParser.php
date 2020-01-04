@@ -2,20 +2,20 @@
 
 namespace DigitSoft\Swagger;
 
-use DigitSoft\Swagger\Parser\CleanupsDescribedData;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Routing\Route;
+use Illuminate\Console\OutputStyle;
+use Illuminate\Routing\RouteCollection;
+use DigitSoft\Swagger\Parser\WithDocParser;
+use Illuminate\Foundation\Http\FormRequest;
+use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\RoutesParserEvents;
 use DigitSoft\Swagger\Parser\RoutesParserHelpers;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
-use DigitSoft\Swagger\Parser\WithDocParser;
-use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithRouteReflections;
+use DigitSoft\Swagger\Parser\CleanupsDescribedData;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
-use Illuminate\Console\OutputStyle;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Routing\Route;
-use Illuminate\Routing\RouteCollection;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 
 class RoutesParser
 {
@@ -349,7 +349,7 @@ class RoutesParser
             $rulesRaw = [];
         }
         $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
-        list($exampleData) = $this->processFormRequestRules($rulesRaw);
+        [$exampleData] = $this->processFormRequestRules($rulesRaw);
         return $exampleData;
     }
 
@@ -383,15 +383,16 @@ class RoutesParser
             }
             $result[$key] = $row;
         }
+
         return $result;
     }
 
     /**
      * Process rules obtained from FromRequest class and return data examples.
      *
-     * @param array       $rules
-     * @param bool        $describe
-     * @param string|null $parent
+     * @param  array       $rules
+     * @param  bool        $describe
+     * @param  string|null $parent
      * @return array
      */
     protected function processFormRequestRules(array $rules, $describe = true, $parent = null)
@@ -403,7 +404,7 @@ class RoutesParser
             if (Arr::isAssoc($row)) {
                 // Replace KEY for nested rules
                 $keyToPlace = $key === "*" ? 0 : $key;
-                list($result[$keyToPlace], $required[$keyToPlace]) = $this->processFormRequestRules($row, false, $key);
+                [$result[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, false, $key);
                 continue;
             }
             foreach ($row as $ruleName) {
@@ -427,13 +428,15 @@ class RoutesParser
             $result = $this->describer()->describe($result);
             $this->applyFormRequestRequiredRules($result, $required);
         }
+
         return [$result, $required];
     }
 
     /**
      * Apply required rules to parsed and described rules
-     * @param array $rules
-     * @param array $required
+     *
+     * @param  array $rules
+     * @param  array $required
      */
     protected function applyFormRequestRequiredRules(&$rules, $required)
     {

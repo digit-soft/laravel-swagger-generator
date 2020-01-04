@@ -2,16 +2,22 @@
 
 namespace DigitSoft\Swagger\Commands;
 
-use DigitSoft\Swagger\Parser\WithVariableDescriber;
-use DigitSoft\Swagger\RoutesParser;
-use Illuminate\Console\Command;
-use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Arr;
 use Illuminate\Routing\Route;
-use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
+use Illuminate\Console\Command;
+use DigitSoft\Swagger\RoutesParser;
+use DigitSoft\Swagger\Yaml\Variable;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Routing\RouteCollection;
+use DigitSoft\Swagger\Parser\WithDocParser;
+use DigitSoft\Swagger\Parser\WithReflections;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 
 class GenerateCommand extends Command
 {
+    use WithVariableDescriber, WithReflections, WithDocParser;
+
     public $diagnose = false;
 
     protected $name = 'swagger:generate';
@@ -33,10 +39,9 @@ class GenerateCommand extends Command
      */
     protected $routes;
 
-    use WithVariableDescriber;
-
     /**
      * CreateMigrationCommand constructor.
+     *
      * @param  Router     $router
      * @param  Filesystem $files
      */
@@ -49,7 +54,7 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Handle command
+     * Handle command.
      */
     public function handle()
     {
@@ -63,14 +68,16 @@ class GenerateCommand extends Command
         $routesData = $this->getRoutesData();
         $arrayContent = $this->describer()->merge($arrayContent, $routesData);
         $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesAfter', []));
+        $definitions = $this->generateAdditionalDefinitions();
+        $arrayContent = $this->describer()->merge($arrayContent, $definitions);
         $content = $this->describer()->toYml($arrayContent);
         $this->files->put($filePath, $content);
-        $this->getOutput()->success(strtr("Swagger YML file generated to {file}", ['{file}' => $filePath]));
+        $this->getOutput()->success(sprintf("Swagger YML file generated to '%s'", $filePath));
         $this->printTimeSpent($startTime);
     }
 
     /**
-     * Handle request in diagnose mode
+     * Handle request in diagnose mode.
      */
     protected function handleDiagnose()
     {
@@ -101,15 +108,18 @@ class GenerateCommand extends Command
                 $this->getOutput()->table(['URI', 'Controller', 'Additional'], $table);
             }
         }
-        if (!$this->getOutput()->isVerbose()) {
+
+        if (! $this->getOutput()->isVerbose()) {
             $this->getOutput()->title('To see additional information use option -v.');
         }
+
         $this->printTimeSpent($startTime);
     }
 
     /**
-     * Print time spent from given point
-     * @param string $startTime
+     * Print time spent from given point.
+     *
+     * @param  string $startTime
      */
     protected function printTimeSpent($startTime)
     {
@@ -120,8 +130,9 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Get problem label
-     * @param string $key
+     * Get problem label.
+     *
+     * @param  string $key
      * @return mixed|string
      */
     protected function getProblemLabel($key)
@@ -133,11 +144,13 @@ class GenerateCommand extends Command
             RoutesParser::PROBLEM_MISSING_TAG => 'Route "Tags" are not set.',
             RoutesParser::PROBLEM_MISSING_PARAM => 'Route "Parameter" not described.',
         ];
+
         return $labels[$key] ?? ucfirst(str_replace(['-', '_'], ' ', $key));
     }
 
     /**
-     * Check that diagnose mode enabled
+     * Check that diagnose mode enabled.
+     *
      * @return bool
      */
     protected function isDiag()
@@ -146,9 +159,10 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Merge data with content of YML files
-     * @param array $data
-     * @param array $fileList
+     * Merge data with content of YML files.
+     *
+     * @param  array $data
+     * @param  array $fileList
      * @return array
      */
     protected function mergeWithFilesContent($data = [], $fileList = [])
@@ -169,7 +183,8 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Get data from routes parser
+     * Get data from routes parser.
+     *
      * @return array
      */
     protected function getRoutesData()
@@ -192,8 +207,59 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Sort router paths
-     * @param array $paths
+     * Generate additional definitions.
+     *
+     * @return array
+     */
+    protected function generateAdditionalDefinitions()
+    {
+        $classes = config('swagger-generator.generateDefinitions', []);
+        $definitions = [];
+        foreach ($classes as $item) {
+            [$className, $classBaseName, $classDescription, $classWith] = $this->normalizeModelDefinitionConfigItem($item);
+            $classBaseName = $classBaseName ?? class_basename($className);
+            if ($classDescription === null) {
+                $docStr = $this->docBlockClass($className);
+                $classDescription = is_string($docStr) ? $this->getDocSummary($docStr) : null;
+            }
+            $variable = Variable::fromDescription([
+                'type' => $className,
+                'with' => $classWith,
+                'description' => $classDescription,
+            ]);
+            $classDefinition = $variable->describe();
+            $definitions[$classBaseName] = $classDefinition;
+        }
+
+        return ! empty($definitions) ? ['components' => ['schemas' => $definitions]] : [];
+    }
+
+    /**
+     * Generate additional definitions.
+     *
+     * @param  string|array $itemRaw
+     * @return array
+     */
+    private function normalizeModelDefinitionConfigItem($itemRaw)
+    {
+        $item = ['', null, null, []];
+
+        if (is_string($itemRaw)) {
+            $item[0] = $itemRaw;
+        } elseif (is_array($itemRaw)) {
+            if (isset($itemRaw[3])) {
+                $itemRaw[3] = Arr::wrap($itemRaw[3]);
+            }
+            $item = $itemRaw + $item;
+        }
+
+        return $item;
+    }
+
+    /**
+     * Sort router paths.
+     *
+     * @param  array $paths
      */
     protected function sortPaths(&$paths)
     {
@@ -204,8 +270,9 @@ class GenerateCommand extends Command
             // Sort by method in same path
             uksort($route, function ($a, $b) {
                 $methods = ['head', 'get', 'post', 'patch', 'put', 'delete'];
-                $aPos = array_search($a, $methods);
-                $bPos = array_search($b, $methods);
+                $aPos = array_search($a, $methods, true);
+                $bPos = array_search($b, $methods, true);
+
                 return $aPos < $bPos ? -1 : 1;
             });
             $firstMethod = reset($route);
@@ -222,7 +289,8 @@ class GenerateCommand extends Command
     }
 
     /**
-     * Get path to main yml file
+     * Get path to main yml file.
+     *
      * @return string
      */
     protected function getMainFile()
@@ -232,9 +300,10 @@ class GenerateCommand extends Command
         if (strpos($path, '/') !== 0) {
             $path = app()->basePath($path);
         }
-        if (!$this->files->exists($path)) {
+        if (! $this->files->exists($path)) {
             $this->files->makeDirectory($path, 0755, true);
         }
+
         return $path . DIRECTORY_SEPARATOR . config('swagger-generator.output.file_name');
     }
 }

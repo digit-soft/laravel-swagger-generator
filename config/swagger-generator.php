@@ -75,4 +75,19 @@ return [
     |---------------------------------------------------------
     */
     'ignoredAnnotationNames' => ['mixin'],
+    /*
+    |---------------------------------------------------------
+    | List of classes to additionally generate definitions
+    |---------------------------------------------------------
+    |
+    | Item can be string, like 'App\Models\Product'
+    | Or an array: [
+    |       \App\Models\Product::class, // Class name
+    |       'my_product',               // Key for array and title, if NULL class name will be used
+    |       'Class description',        // Text description of a class, if NULL PHPDoc summary will be used
+    |       ['currency']                // Additional properties
+    |   ]
+    |
+     */
+    'generateDefinitions' => [],
 ];
