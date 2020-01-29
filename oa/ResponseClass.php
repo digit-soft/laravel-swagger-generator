@@ -57,8 +57,8 @@ class ResponseClass extends Response
      */
     protected function getContent()
     {
-        if ($this->content === null || ! class_exists($this->content)) {
-            throw new \Exception("Class '{$this->content}' not found");
+        if ($this->content === null || (! class_exists($this->content) && ! interface_exists($this->content))) {
+            throw new \RuntimeException("Class or interface '{$this->content}' not found");
         }
         $properties = $this->getModelProperties();
         $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;

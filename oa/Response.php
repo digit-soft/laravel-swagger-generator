@@ -54,7 +54,7 @@ class Response extends BaseAnnotation
     {
         $asList = $this->asList || $this->asPagedList;
         if ($asList) {
-            $contentRaw = $this->describer()->describe([""]);
+            $contentRaw = $this->describer()->describe(['']);
             Arr::set($contentRaw, 'items', $this->getContent());
         } else {
             $contentRaw = $this->getContent();
