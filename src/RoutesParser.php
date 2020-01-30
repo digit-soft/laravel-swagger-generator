@@ -92,6 +92,7 @@ class RoutesParser
             if ($ref instanceof \ReflectionFunction) {
                 $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_ROUTE_CLOSURE, $route);
             }
+            $routeWoBody = ! empty(array_intersect(['GET', 'HEAD'], $route->methods));
             $routeData = [
                 'summary' => '',
                 'description' => '',
@@ -111,8 +112,12 @@ class RoutesParser
             if (($params = $this->getRouteParams($route)) !== null) {
                 $routeData['parameters'] = $params;
             }
-            if (($request = $this->getRouteRequest($route)) !== null) {
-                $routeData['requestBody'] = $request;
+            if (($request = $this->getRouteRequest($route, $routeWoBody)) !== null) {
+                if ($routeWoBody) {
+                    $routeData['parameters'] = isset($routeData['parameters']) ? array_merge($routeData['parameters'], $request) : $request;
+                } else {
+                    $routeData['requestBody'] = $request;
+                }
             }
             if (($responses = $this->getRouteResponses($route)) !== null) {
                 $routeData['responses'] = $responses;
@@ -267,10 +272,12 @@ class RoutesParser
 
     /**
      * Get request body for route
-     * @param Route $route
+     *
+     * @param  Route $route         Route to get request data
+     * @param  bool  $asQueryParams Return request body as query parameters
      * @return array|null
      */
-    protected function getRouteRequest(Route $route)
+    protected function getRouteRequest(Route $route, $asQueryParams = false)
     {
         $ref = $this->routeReflection($route);
         $request = null;
@@ -280,7 +287,7 @@ class RoutesParser
                 if (
                     class_exists($type)
                     && isset(class_parents($type)[FormRequest::class])
-                    && ($request = $this->getParamsFromFormRequest($type)) !== null
+                    && ($request = $this->getParamsFromFormRequest($type, $asQueryParams)) !== null
                 ) {
                     break;
                 }
@@ -298,18 +305,24 @@ class RoutesParser
             }
         }
 
+        if ($asQueryParams) {
+            return $request !== null ? $this->convertRequestBodyIntoQueryParams($request) : $request;
+        }
+
         return $request;
     }
 
     /**
      * Get and process FormRequest annotations and rules
-     * @param string $className
+     *
+     * @param  string $className
+     * @param  bool   $asRaw
      * @return array
      */
-    protected function getParamsFromFormRequest($className)
+    protected function getParamsFromFormRequest($className, $asRaw = false)
     {
         $classKey = $this->describer()->shortenClass($className);
-        if (($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
+        if ($asRaw || ($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
             $rulesData = $this->parseFormRequestRules($className);
             $annotationsData = $this->parseFormRequestAnnotations($className);
             if (empty($annotationsData['description'])) {
@@ -327,9 +340,53 @@ class RoutesParser
                 static::handleIncompatibleTypeKeys($merged);
                 Arr::set($result, $path, $merged);
             }
-            $this->setComponent($result, $classKey, static::COMPONENT_REQUESTS);
+            // Do not set component if `asRaw` is true
+            if (! $asRaw) {
+                $this->setComponent($result, $classKey, static::COMPONENT_REQUESTS);
+            }
         }
-        return !empty($result) ? ['$ref' => $this->getComponentReference($classKey, static::COMPONENT_REQUESTS)] : [];
+
+        if ($asRaw) {
+            return $result ?? [];
+        }
+
+        return ! empty($result) ? ['$ref' => $this->getComponentReference($classKey, static::COMPONENT_REQUESTS)] : [];
+    }
+
+    /**
+     * Convert request body array into query parameters.
+     *
+     * @param  array $body Request body array
+     * @return array|null
+     */
+    protected function convertRequestBodyIntoQueryParams(array $body)
+    {
+        if (! isset($body['content'])) {
+            return null;
+        }
+
+        $params = [];
+
+        foreach ($body['content'] as $contentType => $bodyByContentType) {
+            if (empty($bodyByContentType['schema']['properties'])) {
+                continue;
+            }
+
+            $properties = $bodyByContentType['schema']['properties'];
+
+            foreach ($properties as $property => $row) {
+                $row['in'] = 'query';
+                $row['name'] = $property;
+                $inSchemaData = Arr::only($row, ['type', 'enum']);
+                if (! empty($inSchemaData)) {
+                    $row['schema'] = $inSchemaData;
+                    unset($row['type'], $row['enum']);
+                }
+                $params[$property] = $row;
+            }
+        }
+
+        return ! empty($params) ? array_values($params) : null;
     }
 
     /**
