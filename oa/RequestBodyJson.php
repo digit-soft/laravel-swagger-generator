@@ -2,11 +2,11 @@
 
 namespace OA;
 
+use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Target;
 use DigitSoft\Swagger\Parser\CleanupsDescribedData;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
-use Doctrine\Common\Annotations\Annotation;
 use Doctrine\Common\Annotations\Annotation\Attribute;
-use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used to describe request body FormRequest class
@@ -25,7 +25,8 @@ class RequestBodyJson extends RequestBody
     use CleanupsDescribedData, WithVariableDescriber;
 
     /**
-     * Get object string representation
+     * Get object string representation.
+     *
      * @return string
      */
     public function __toString()
@@ -34,7 +35,8 @@ class RequestBodyJson extends RequestBody
     }
 
     /**
-     * Process content row by row recursively
+     * Process content row by row recursively.
+     *
      * @param array $content
      * @return array
      */
@@ -61,6 +63,7 @@ class RequestBodyJson extends RequestBody
                 static::handleIncompatibleTypeKeys($currentRow);
             }
         }
+
         return $result;
     }
 
@@ -70,7 +73,8 @@ class RequestBodyJson extends RequestBody
     public function toArray()
     {
         $content = $this->processContent($this->content);
-        $data = [
+
+        return [
             'description' => $this->description ?? '',
             'required' => true,
             'content' => [
@@ -79,6 +83,5 @@ class RequestBodyJson extends RequestBody
                 ],
             ],
         ];
-        return $data;
     }
 }

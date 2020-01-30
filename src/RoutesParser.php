@@ -84,7 +84,7 @@ class RoutesParser
         $documentedMethods = config('swagger-generator.routes.methods', ['GET']);
         $this->routeNum = 1;
         foreach ($this->routes as $route) {
-            if (!$this->checkRoute($route, $matches, $only)) {
+            if (! $this->checkRoute($route, $matches, $only)) {
                 $this->trigger(static::EVENT_ROUTE_SKIPPED, $route);
                 continue;
             }
@@ -123,7 +123,7 @@ class RoutesParser
             $path = $this->normalizeUri($route->uri(), true);
             $paths[$path] = $paths[$path] ?? [];
             foreach ($route->methods as $method) {
-                if (in_array($method, $documentedMethods)) {
+                if (in_array($method, $documentedMethods, true)) {
                     $paths[$path][strtolower($method)] = $routeData;
                 }
             }
@@ -131,6 +131,7 @@ class RoutesParser
             $this->trigger(static::EVENT_ROUTE_PROCESSED, $route);
         }
         $this->trigger(static::EVENT_FINISH);
+
         return $paths;
     }
 
@@ -275,7 +276,7 @@ class RoutesParser
         $request = null;
         $stdTypes = ['int', 'integer', 'string', 'float', 'array', 'bool', 'boolean'];
         foreach ($ref->getParameters() as $parameter) {
-            if ($parameter->hasType() && ($type = $parameter->getType()->getName()) && !in_array($type, $stdTypes)) {
+            if ($parameter->hasType() && ($type = $parameter->getType()->getName()) && ! in_array($type, $stdTypes, true)) {
                 if (
                     class_exists($type)
                     && isset(class_parents($type)[FormRequest::class])
@@ -289,13 +290,14 @@ class RoutesParser
         if ($request === null) {
             /** @var \OA\RequestBody[] $requestAnn */
             $requestAnn = $this->routeAnnotations($route, 'OA\RequestBody');
-            if (!empty($requestAnn)) {
+            if (! empty($requestAnn)) {
                 $request = [];
                 foreach ($requestAnn as $annotation) {
                     $request = $this->describer()->merge($request, $annotation->toArray());
                 }
             }
         }
+
         return $request;
     }
 
