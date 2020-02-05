@@ -1,4 +1,5 @@
 <?php
+
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;

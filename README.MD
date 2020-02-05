@@ -22,6 +22,7 @@ php artisan swagger:generate --diagnose
 | Name                  | Description                           | Places to use |
 |-----------------------|---------------------------------------|---------------|
 | @OA\Response          | Describes raw response                | Controller method |
+| @OA\ResponseParam     | Describes response parameter in `Response` | Inside `{}` of `Response` annotation |
 | @OA\ResponseClass     | Describes response as class object    | Controller method |
 | @OA\ResponseError     | Describes error response (shortcut)   | Controller method |
 | @OA\RequestBody       | Describes request body                | `FormRequest` class |
@@ -33,6 +34,7 @@ php artisan swagger:generate --diagnose
 | @OA\PropertyIgnore    | Mark class property as ignored        | Class used for response |
 | @OA\Secured           | Describes route as secured            | Controller method |
 | @OA\Tag               | Describes route tags                  | Controller method, Controller class |
+| @OA\Ignore            | Marks whole controller or it's action as ignored | Controller method, Controller class |
 | @OA\Symlink           | Describes symlink to another class    | Class used for response |
 
 ### Responses
@@ -53,7 +55,20 @@ JSON RAW response:
 /**
  * Controller method PHPDoc
  *
- * @OA\ResponseJson({"key":"value"},contentType="application/json",status=201,description="User data response")
+ * @OA\ResponseJson({"key":"value"},status=201,description="User data response")
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+```
+or
+```php
+/**
+ * Controller method PHPDoc
+ *
+ * @OA\ResponseJson({
+ *      @OA\ResponseParam("key",type="string",example="value",description="Some parameter"),
+ * },status=201,description="User data response")
  *
  * @param Request $request
  * @return \Illuminate\Http\JsonResponse
@@ -75,7 +90,7 @@ In example above response data will be parsed from `App\User` PHPDoc.
 2. `@property-read` descriptions (if set `with` property in `ResponseClass` annotation)
 3. `@OA\Property` annotations (property name, type, description, example etc.)
 
-`@OA\ResponseClass` use cases, 
+`@OA\ResponseClass` use cases,
 first is standard use but with additional properties
 ```php
 /**
@@ -105,7 +120,7 @@ Error responses
 ```
 ### Request bodies
 Request data is parsed from `::rules()` method of `FormRequest` class, that used in controller method for the route and it's annotations (`@OA\RequestBody`, `@OA\RequestBodyJson`,  `@OA\RequestParam`).
-From `::rules()` method we can obtain only name and type of parameter and suggest some example, 
+From `::rules()` method we can obtain only name and type of parameter and suggest some example,
 but if you want fully describe parameters of request body you must place appropriate annotations in `FormRequest` class for route.
 #### Examples
 ```php
@@ -136,7 +151,7 @@ Place it in controller method.
 ```
 ### Property
 `@OA\Property` annotation is used to describe class properties as an alternative or addition to PHPDoc `@property`.
-You can place example of property (if property is an associative array for example) 
+You can place example of property (if property is an associative array for example)
 or fully describe property if you dont want to place `@property` declaration for it.
 ```php
 /**
@@ -169,4 +184,60 @@ use OA;
  * @property string $name String name
  */
 class TestModel {}
+```
+
+### More
+There is abstract annotation class `OA\DescriptionExtender`, you can use it for your own annotations, those must add some information to route's description.
+
+Example is bellow.
+
+```php
+<?php
+
+namespace App\Components\Annotations\Swagger;
+
+use OA\DescriptionExtender;
+use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\{Attribute, Attributes};
+
+/**
+ * Describes needed permission
+ * @Annotation
+ * @Attributes({
+ *  @Attribute("value",type="string"),
+ * })
+ * @package App\Components\Annotations\Swagger
+ */
+class Permission extends DescriptionExtender
+{
+    /**
+     * @inheritdoc
+     */
+    public function __toString()
+    {
+        return '**Permission:** `' . $this->value . '`';
+    }
+}
+```
+You can use annotation from example:
+```php
+<?php
+use App\Components\Annotations\Swagger as SWA;
+
+
+/**
+ * Controller method PHPDoc
+ *
+ * @OA\ResponseClass("App\User",description="User model response")
+ * @SWA\Permission("articles.can-update")
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+```
+and it will add following text into route's description
+```
+Description for route goes here...bla-bla-bla...
+
+**Permission:** `articles.can-update`
 ```
