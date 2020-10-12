@@ -162,7 +162,8 @@ class RoutesParser
 
     /**
      * Get params for route
-     * @param Route $route
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return array|null
      */
     protected function getRouteParams(Route $route)
@@ -171,7 +172,7 @@ class RoutesParser
         /** @var \OA\Parameter[] $paramsAnn */
         /** @var \OA\Parameter[] $paramsAnnCtrl */
         $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
-        if (!empty($paramsAnnGroup = $this->routeAnnotations($route, 'OA\Parameters'))) {
+        if (! empty($paramsAnnGroup = $this->routeAnnotations($route, 'OA\Parameters'))) {
             foreach ($paramsAnnGroup as $paramsGroup) {
                 /** @var \OA\Parameters $paramsGroup */
                 $paramsAnn = array_merge($paramsAnn, $paramsGroup->parameters);
@@ -180,7 +181,9 @@ class RoutesParser
         }
         $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, 'OA\Parameter'), null, 'name');
         $paramsDoc = $this->getRouteDocParams($route);
-        $paramsAnnInPath = array_filter($paramsAnn, function ($param) { return $param->in === 'path'; });
+        $paramsAnnInPath = array_filter($paramsAnn, function ($param) {
+            return $param->in === 'path';
+        });
         if (empty($paramsAnnInPath)) {
             $paramsAnn = Arr::pluck($paramsAnn, null, 'name');
 
@@ -195,7 +198,7 @@ class RoutesParser
                 ) {
                     $type = $paramDoc['type'];
                 } else {
-                    $type = $this->getRouteParamType($route, $parameterName);
+                    $type = $this->getRouteParamType($route, $parameterName, 'string');
                 }
                 $paramData = [
                     'name' => $parameterName,
@@ -216,12 +219,14 @@ class RoutesParser
             }
             $params[] = $param->toArray();
         }
-        return !empty($params) ? $params : null;
+
+        return ! empty($params) ? $params : null;
     }
 
     /**
      * Get PHPDoc 'params' for route
-     * @param Route $route
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return array
      */
     protected function getRouteDocParams(Route $route)
@@ -236,7 +241,8 @@ class RoutesParser
 
     /**
      * Get responses for route
-     * @param Route $route
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return array
      */
     protected function getRouteResponses(Route $route)
@@ -251,7 +257,7 @@ class RoutesParser
             $annKey = $annotation->getComponentKey();
             if (($annotationData = $this->getComponent($annKey, static::COMPONENT_RESPONSE)) === null) {
                 $annotationData = $annotation->toArray();
-                if (!$annotation->hasData()) {
+                if (! $annotation->hasData()) {
                     $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_NO_DOC_CLASS, $route, $annotation->content);
                 }
                 $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
@@ -267,14 +273,15 @@ class RoutesParser
                 $result = $this->describer()->merge($result, $data);
             }
         }
+
         return $result;
     }
 
     /**
      * Get request body for route
      *
-     * @param  Route $route         Route to get request data
-     * @param  bool  $asQueryParams Return request body as query parameters
+     * @param  \Illuminate\Routing\Route $route         Route to get request data
+     * @param  bool                      $asQueryParams Return request body as query parameters
      * @return array|null
      */
     protected function getRouteRequest(Route $route, $asQueryParams = false)
@@ -668,10 +675,11 @@ class RoutesParser
 
     /**
      * Get route param type by matching to regex
-     * @param Route  $route
-     * @param string $paramName
-     * @param string $default
-     * @return mixed|string
+     *
+     * @param  \Illuminate\Routing\Route $route
+     * @param  string                    $paramName
+     * @param  string                    $default
+     * @return string|mixed
      */
     protected function getRouteParamType(Route $route, $paramName, $default = 'integer')
     {
@@ -689,6 +697,8 @@ class RoutesParser
                 $types[] = $type;
             }
         }
-        return count($types) > 1 ? $default : reset($types);
+        $typesCount = count($types);
+
+        return $typesCount !== 1 ? $default : reset($types);
     }
 }

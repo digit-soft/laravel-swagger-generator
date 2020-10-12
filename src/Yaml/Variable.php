@@ -357,6 +357,7 @@ class Variable
 
     /**
      * Get properties by annotations
+     *
      * @param  string $className
      * @return array
      */
@@ -367,6 +368,10 @@ class Variable
         $result = [];
         foreach ($annotations as $annotation) {
             $rowData = $annotation->toArray();
+            // Skip annotations w/o name
+            if (empty($annotation->name)) {
+                continue;
+            }
             $result[$annotation->name] = $rowData;
         }
 

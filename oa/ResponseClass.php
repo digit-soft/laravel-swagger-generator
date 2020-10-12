@@ -62,6 +62,7 @@ class ResponseClass extends Response
         }
         $properties = $this->getModelProperties();
         $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
+
         return $properties;
     }
 
