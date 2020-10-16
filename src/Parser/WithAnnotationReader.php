@@ -2,12 +2,12 @@
 
 namespace DigitSoft\Swagger\Parser;
 
+use OA\BaseAnnotation;
+use Illuminate\Support\Arr;
+use Illuminate\Routing\Route;
+use Doctrine\Common\Annotations\Reader;
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
-use Doctrine\Common\Annotations\Reader;
-use Illuminate\Routing\Route;
-use Illuminate\Support\Arr;
-use OA\BaseAnnotation;
 
 /**
  * Trait WithAnnotationReader
@@ -62,17 +62,37 @@ trait WithAnnotationReader
 
     /**
      * Get route controller annotations
+     *
      * @param  Route       $route
      * @param  string|null $name
+     * @param  bool        $checkExtending
+     * @param  bool        $mergeExtended
      * @return BaseAnnotation[]
      */
-    protected function controllerAnnotations(Route $route, $name = null)
+    protected function controllerAnnotations(Route $route, $name = null, $checkExtending = false, $mergeExtended = false)
     {
         $ref = $this->routeReflection($route);
-        if (!$ref instanceof \ReflectionMethod) {
+        if (! $ref instanceof \ReflectionMethod) {
             return [];
         }
-        $annotations = $this->classAnnotations($ref->class);
+
+        $controllerNames = [
+            $checkExtending && is_object($route->getController()) ? get_class($route->getController()) : null, // Class from route definition
+            $ref->class, // Class from reflection, where real method written
+        ];
+        $controllerNames = array_unique(array_filter($controllerNames));
+        $annotationsClass = [];
+        foreach ($controllerNames as $controllerName) {
+            $annotationsClass[] = $this->classAnnotations($controllerName);
+        }
+
+        $annotationsClass = array_filter($annotationsClass);
+        if (empty($annotationsClass)) {
+            return [];
+        }
+
+        $annotations = $mergeExtended ? array_merge([], ...$annotationsClass) : reset($annotationsClass);
+
         if ($name === null) {
             return $annotations;
         }
@@ -83,6 +103,7 @@ trait WithAnnotationReader
                 $result[] = $annotation;
             }
         }
+
         return $result;
     }
 
@@ -187,7 +208,7 @@ trait WithAnnotationReader
      */
     private function getCachedAnnotations($ref)
     {
-        list($property, $key) = $this->getRefAnnotationsCacheKeys($ref);
+        [$property, $key] = $this->getRefAnnotationsCacheKeys($ref);
         return Arr::get($this->{$property}, $key, null);
     }
 
@@ -198,7 +219,7 @@ trait WithAnnotationReader
      */
     private function setCachedAnnotations($ref, array $annotations)
     {
-        list($property, $key) = $this->getRefAnnotationsCacheKeys($ref);
+        [$property, $key] = $this->getRefAnnotationsCacheKeys($ref);
         Arr::set($this->{$property}, $key, $annotations);
     }
 

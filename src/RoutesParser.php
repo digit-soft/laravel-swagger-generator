@@ -600,9 +600,19 @@ class RoutesParser
         $methodRef = $this->routeReflection($route);
         $tags = [];
         if ($methodRef instanceof \ReflectionMethod) {
-            $annotationsClass = $this->classAnnotations($methodRef->class, 'OA\Tag');
-            $annotations = $this->routeAnnotations($route, 'OA\Tag');
-            $annotations = $this->describer()->merge($annotationsClass, $annotations);
+            $controllerNames = [
+                is_object($route->getController()) ? get_class($route->getController()) : null, // Class from route definition
+                $methodRef->class, // Class from reflection, where real method written
+            ];
+            $controllerNames = array_unique(array_filter($controllerNames));
+            $annotationsClass = [];
+            $annotationsMethod = [];
+            foreach ($controllerNames as $controllerName) {
+                // Get annotation only if previously not found any
+                $annotationsClass = empty($annotationsClass) ? $this->classAnnotations($controllerName, 'OA\Tag') : $annotationsClass;
+                $annotationsMethod = empty($annotationsMethod) ? $this->routeAnnotations($route, 'OA\Tag') : $annotationsMethod;
+            }
+            $annotations = $this->describer()->merge($annotationsClass, $annotationsMethod);
             foreach ($annotations as $annotation) {
                 $tags[] = (string)$annotation;
             }
@@ -663,7 +673,9 @@ class RoutesParser
             $description = $docblock->getDescription()->__toString();
         }
         // Parse description extenders
-        $annotations = $this->methodAnnotations($methodRef, 'OA\DescriptionExtender');
+        $annotationsMethod = $this->methodAnnotations($methodRef, 'OA\DescriptionExtender');
+        $annotationsClass = $this->controllerAnnotations($route, 'OA\DescriptionExtender', true, false);
+        $annotations = $this->describer()->merge($annotationsClass, $annotationsMethod);
         foreach ($annotations as $annotation) {
             if (($descriptionAnn = $annotation->__toString()) === '') {
                 continue;
