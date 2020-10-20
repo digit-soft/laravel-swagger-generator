@@ -74,6 +74,8 @@ class GenerateCommand extends Command
         $this->files->put($filePath, $content);
         $this->getOutput()->success(sprintf("Swagger YML file generated to '%s'", $filePath));
         $this->printTimeSpent($startTime);
+
+        return 0;
     }
 
     /**
@@ -114,6 +116,8 @@ class GenerateCommand extends Command
         }
 
         $this->printTimeSpent($startTime);
+
+        return 0;
     }
 
     /**
