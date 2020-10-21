@@ -1,0 +1,32 @@
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+name: Create Release
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get commit summary
+      run: |
+        previousTag=$(git tag --sort=-creatordate | sed -n 2p)
+        echo "previousTag : $previousTag"
+
+        commitSummary="$(git log $previousTag..${{ github.ref }})"
+        echo "::set-env name=COMMIT_SUMMARY::\"$commitSummary\""
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: ${{env.COMMIT_SUMMARY}}
+          draft: false
+          prerelease: false
