@@ -407,7 +407,8 @@ class RoutesParser
 
     /**
      * Get FormRequest rules, process them and return described data
-     * @param string $className
+     *
+     * @param  string $className
      * @return array
      */
     protected function parseFormRequestRules($className)
@@ -430,7 +431,8 @@ class RoutesParser
 
     /**
      * Normalize FormRequest rules array
-     * @param array $rules
+     *
+     * @param  array $rules
      * @return array
      */
     protected function normalizeFormRequestRules(array $rules)
