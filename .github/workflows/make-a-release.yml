@@ -13,12 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Get commit summary
-      run: |
-        previousTag=$(git tag --sort=-creatordate | sed -n 2p)
-        echo "previousTag : $previousTag"
+        id: get_commit_summary
+        run: |
+          previousTag=$(git tag --sort=-creatordate | sed -n 2p)
+          echo "previousTag : $previousTag"
 
-        commitSummary="$(git log $previousTag..${{ github.ref }})"
-        echo "::set-env name=COMMIT_SUMMARY::\"$commitSummary\""
+          commitSummary="$(git log $previousTag..${{ github.ref }})"
+          echo "::set-env name=COMMIT_SUMMARY::\"$commitSummary\""
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
