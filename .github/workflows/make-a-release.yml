@@ -21,7 +21,9 @@ jobs:
           echo "previousTag : $previousTag"
 
           commitSummary="$(git log --no-merges --pretty=format:\\"%s [%an]\\" $previousTag..${{ github.ref }})"
-          echo "COMMIT_SUMMARY=\"$commitSummary\"" >> $GITHUB_ENV
+          echo 'COMMIT_SUMMARY<<EOF' >> $GITHUB_ENV
+          echo "$commitSummary" >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
