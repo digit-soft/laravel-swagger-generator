@@ -62,8 +62,9 @@ class RoutesParser
 
     /**
      * RoutesParser constructor.
-     * @param RouteCollection  $routes
-     * @param OutputStyle|null $output
+     *
+     * @param  RouteCollection  $routes
+     * @param  OutputStyle|null $output
      */
     public function __construct(RouteCollection $routes, OutputStyle $output = null)
     {
@@ -73,6 +74,7 @@ class RoutesParser
 
     /**
      * Parse routes collection
+     *
      * @return array
      */
     public function parse()
@@ -140,6 +142,13 @@ class RoutesParser
         return $paths;
     }
 
+    /**
+     * Get ID for given route.
+     *
+     * @param  \Illuminate\Routing\Route $route
+     * @param  string                    $tagName
+     * @return string
+     */
     protected function getRouteId(Route $route, $tagName = 'default')
     {
         $actionMethod = $route->getActionMethod();
