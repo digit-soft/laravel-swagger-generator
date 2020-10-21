@@ -20,7 +20,7 @@ jobs:
           previousTag=$(git tag --sort=-creatordate | sed -n 2p)
           echo "previousTag : $previousTag"
 
-          commitSummary="$(git log --no-merges --pretty=format:\"%s [%an]\" $previousTag..${{ github.ref }})"
+          commitSummary="$(git log --no-merges --pretty=format:"%s [%an]" $previousTag..${{ github.ref }})"
           echo 'COMMIT_SUMMARY<<EOF' >> $GITHUB_ENV
           echo "$commitSummary" >> $GITHUB_ENV
           echo 'EOF' >> $GITHUB_ENV
