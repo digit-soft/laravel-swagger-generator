@@ -18,8 +18,8 @@ jobs:
           previousTag=$(git tag --sort=-creatordate | sed -n 2p)
           echo "previousTag : $previousTag"
 
-          commitSummary="$(git log $previousTag..${{ github.ref }})"
-          echo "::set-env name=COMMIT_SUMMARY::\"$commitSummary\""
+          commitSummary="$(git log --no-merges --pretty=format:\\"%s [%an]\\" $previousTag..${{ github.ref }})"
+          echo "COMMIT_SUMMARY=\"$commitSummary\"" >> $GITHUB_ENV
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
