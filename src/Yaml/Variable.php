@@ -324,7 +324,8 @@ class Variable
         if (! empty($with)) {
             $this->setWithToPropertiesRecursively($properties, $with);
             $propertiesRead = $parser->propertiesRead($with, null, false);
-            $properties = $this->describer()->merge($properties, $propertiesRead);
+            $propertiesByAnnRead = $this->getDescriptionByPropertyAnnotations($className, $with, 'OA\PropertyRead');
+            $properties = $this->describer()->merge($properties, $propertiesRead, $propertiesByAnnRead);
         }
         $propertiesByAnn = $this->getDescriptionByPropertyAnnotations($className);
         $properties = $this->describer()->merge($properties, $propertiesByAnn);
@@ -359,15 +360,20 @@ class Variable
      * Get properties by annotations
      *
      * @param  string $className
+     * @param  array  $only
+     * @param  string $annotationClass
      * @return array
      */
-    protected function getDescriptionByPropertyAnnotations($className)
+    protected function getDescriptionByPropertyAnnotations($className, $only = [], $annotationClass = 'OA\Property')
     {
         /** @var \OA\Property[] $annotations */
-        $annotations = $this->classAnnotations($className, 'OA\Property');
+        $annotations = $this->classAnnotations($className, $annotationClass);
         $result = [];
         foreach ($annotations as $annotation) {
             $rowData = $annotation->toArray();
+            if (! empty($only) && ! in_array($annotation->name, $only, true)) {
+                continue;
+            }
             // Skip annotations w/o name
             if (empty($annotation->name)) {
                 continue;
