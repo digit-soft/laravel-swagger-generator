@@ -12,6 +12,7 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
  * @Annotation()
  * @Attributes({
  *  @Attribute("class",type="string"),
+ *  @Attribute("merge",type="boolean",required=false),
  * })
  */
 class Symlink extends BaseAnnotation
@@ -20,6 +21,10 @@ class Symlink extends BaseAnnotation
      * @var string
      */
     public $class;
+    /**
+     * @var boolean
+     */
+    public $merge = false;
 
     /**
      * Symlink constructor.

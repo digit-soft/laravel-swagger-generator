@@ -22,9 +22,13 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  */
 class ResponseClass extends Response
 {
-    public $with;
-
     use WithReflections, WithAnnotationReader;
+
+    public $with;
+    /**
+     * @var array Array of class names to merge with
+     */
+    protected $mergeWith = [];
 
     /**
      * @inheritdoc
@@ -34,36 +38,10 @@ class ResponseClass extends Response
         /** @var Symlink $symlink */
         $symlink = $this->classAnnotation($this->content, 'OA\Symlink');
         if ($symlink && $symlink->class !== $this->content) {
-            return $this->withClass($symlink->class)->toArray();
+            return $this->withClass($symlink->class, $symlink->merge)->toArray();
         }
 
         return parent::toArray();
-    }
-
-    /**
-     * Get clone with another class
-     * @param  string $className
-     * @return ResponseClass
-     */
-    protected function withClass($className)
-    {
-        $object = clone $this;
-        $object->content = $className;
-        return $object;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function getContent()
-    {
-        if ($this->content === null || (! class_exists($this->content) && ! interface_exists($this->content))) {
-            throw new \RuntimeException("Class or interface '{$this->content}' not found");
-        }
-        $properties = $this->getModelProperties();
-        $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
-
-        return $properties;
     }
 
     /**
@@ -73,23 +51,77 @@ class ResponseClass extends Response
     {
         $className = explode('\\', $this->content);
         $key = end($className);
-        if (!empty($this->with)) {
+        if (! empty($this->with)) {
             $with = implode('_', $this->getWith());
             $key .= '__with_' . $with;
         }
         $key .= $this->asList || $this->asPagedList ? '__list' : '';
         $key .= $this->asPagedList ? '_paged' : '';
+
         return $key;
     }
 
     /**
+     * @inheritdoc
+     */
+    protected function getContent()
+    {
+        $classNames = array_merge([$this->content], $this->mergeWith);
+        $propertiesToMerge = [];
+        foreach ($classNames as $className) {
+            $propertiesToMerge[] = $this->getModelProperties($className);
+        }
+        $properties = ! empty($propertiesToMerge) ? $this->describer()->merge([], ...$propertiesToMerge) : [];
+        $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
+
+        return $properties;
+    }
+
+    /**
+     * Get clone with another class
+     *
+     * @param  string $className
+     * @param  bool   $merge
+     * @return ResponseClass
+     */
+    protected function withClass($className, $merge = false)
+    {
+        $object = clone $this;
+        $object->content = $className;
+        if ($merge) {
+            $object->mergeWith[] = $this->content;
+        }
+
+        return $object;
+    }
+
+    /**
+     * Add class name to merge with.
+     *
+     * @param  string $className
+     * @return $this
+     */
+    protected function addClassToMerge($className)
+    {
+        $this->mergeWith[] = $className;
+
+        return $this;
+    }
+
+    /**
      * Get model properties
+     *
+     * @param  string $className
      * @return array
      */
-    protected function getModelProperties()
+    protected function getModelProperties($className)
     {
+        if ($className === null || (! class_exists($className) && ! interface_exists($className))) {
+            throw new \RuntimeException("Class or interface '{$className}' not found");
+        }
+
         $variable = Variable::fromDescription([
-            'type' => $this->content,
+            'type' => $className,
             'with' => $this->getWith(),
             'description' => $this->description,
         ]);
@@ -99,6 +131,7 @@ class ResponseClass extends Response
 
     /**
      * Get property-read names
+     *
      * @return array
      */
     protected function getWith()
@@ -106,6 +139,7 @@ class ResponseClass extends Response
         if (is_string($this->with)) {
             return $this->with = [$this->with];
         }
+
         return $this->with;
     }
 }
