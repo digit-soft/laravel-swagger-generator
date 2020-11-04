@@ -130,4 +130,40 @@ class VariableDescriberService
 
         return $res;
     }
+
+    /**
+     * Merge arrays without merging keys under `properties` key.
+     *
+     * In such way we are trying to rewrite all under properties key, without recursive merge.
+     *
+     * @param  array $a
+     * @param  array $b
+     * @return array
+     */
+    public function mergeWithPropertiesRewrite($a, $b)
+    {
+        $args = func_get_args();
+        $prevKey = null;
+        if (is_string(end($args))) {
+            $prevKey = array_pop($args);
+        }
+        $res = array_shift($args);
+        while (! empty($args)) {
+            foreach (array_shift($args) as $k => $v) {
+                if (is_int($k)) {
+                    if (array_key_exists($k, $res)) {
+                        $res[] = $v;
+                    } else {
+                        $res[$k] = $v;
+                    }
+                } elseif ($prevKey !== 'properties' && is_array($v) && isset($res[$k]) && is_array($res[$k])) {
+                    $res[$k] = $this->mergeWithPropertiesRewrite($res[$k], $v, $k);
+                } else {
+                    $res[$k] = $v;
+                }
+            }
+        }
+
+        return $res;
+    }
 }

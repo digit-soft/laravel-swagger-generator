@@ -71,7 +71,7 @@ class ResponseClass extends Response
         foreach ($classNames as $className) {
             $propertiesToMerge[] = $this->getModelProperties($className);
         }
-        $properties = ! empty($propertiesToMerge) ? $this->describer()->merge([], ...$propertiesToMerge) : [];
+        $properties = ! empty($propertiesToMerge) ? $this->describer()->mergeWithPropertiesRewrite([], ...$propertiesToMerge) : [];
         $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
 
         return $properties;
