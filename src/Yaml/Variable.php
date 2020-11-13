@@ -157,6 +157,7 @@ class Variable
                     // Remove already described example
                     Arr::forget($result, 'example');
                 }
+                $res['properties'] = ! empty($this->except) ? Arr::except($res['properties'], $this->except) : $res['properties'];
                 break;
             case static::SW_TYPE_ARRAY:
                 if ($this->describer()->isTypeArray($this->type)) {
@@ -182,19 +183,27 @@ class Variable
         return $result;
     }
 
+    /**
+     * Describe self as a PHP class.
+     *
+     * @return array
+     * @throws \Throwable
+     */
     protected function describeAsClass()
     {
         $className = $this->describer()->normalizeType($this->type);
         $result = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
         if (class_exists($className)) {
             $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
+            $result['properties'] = ! empty($this->except) ? Arr::except($result['properties'], $this->except) : $result['properties'];
         }
 
         return $result;
     }
 
     /**
-     * Get swagger type
+     * Get swagger type.
+     *
      * @return string|null
      */
     protected function getSwType()
@@ -223,7 +232,7 @@ class Variable
     }
 
     /**
-     * Fill missing properties
+     * Fill missing properties.
      */
     protected function fillMissingProperties()
     {
@@ -236,7 +245,8 @@ class Variable
     }
 
     /**
-     * Get PHPDoc type of value
+     * Get PHPDoc type of value.
+     *
      * @param  mixed $value
      * @return string|null
      */
@@ -261,7 +271,8 @@ class Variable
     }
 
     /**
-     * Get example value by PHPDoc type
+     * Get example value by PHPDoc type.
+     *
      * @param  string $phpType
      * @return array|mixed|null
      */
@@ -286,7 +297,8 @@ class Variable
     }
 
     /**
-     * Get example by class name
+     * Get example by class name.
+     *
      * @param  string $className
      * @return array|null
      */

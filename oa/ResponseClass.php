@@ -25,6 +25,9 @@ class ResponseClass extends Response
     use WithReflections, WithAnnotationReader;
 
     public $with;
+
+    public $except;
+
     /**
      * @var array Array of class names to merge with
      */
@@ -53,7 +56,11 @@ class ResponseClass extends Response
         $key = end($className);
         if (! empty($this->with)) {
             $with = implode('_', $this->getWith());
-            $key .= '__with_' . $with;
+            $key .= '__w_' . $with;
+        }
+        if (! empty($this->except)) {
+            $with = implode('_', $this->getExcept());
+            $key .= '__wo_' . $with;
         }
         $key .= $this->asList || $this->asPagedList ? '__list' : '';
         $key .= $this->asPagedList ? '_paged' : '';
@@ -123,6 +130,7 @@ class ResponseClass extends Response
         $variable = Variable::fromDescription([
             'type' => $className,
             'with' => $this->getWith(),
+            'except' => $this->getExcept(),
             'description' => $this->description,
         ]);
 
@@ -141,5 +149,19 @@ class ResponseClass extends Response
         }
 
         return $this->with;
+    }
+
+    /**
+     * Get property names to avoid.
+     *
+     * @return array
+     */
+    protected function getExcept()
+    {
+        if (is_string($this->except)) {
+            return $this->except = [$this->except];
+        }
+
+        return $this->except;
     }
 }
