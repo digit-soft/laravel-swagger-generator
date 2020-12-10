@@ -2,6 +2,7 @@
 
 namespace OA;
 
+use Illuminate\Support\Arr;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation;
 use DigitSoft\Swagger\Parser\WithReflections;
@@ -26,7 +27,7 @@ class ResponseClass extends Response
 
     public $with;
 
-    public $except;
+    public $except = [];
 
     /**
      * @var array Array of class names to merge with
@@ -75,11 +76,13 @@ class ResponseClass extends Response
     {
         $classNames = array_merge([$this->content], $this->mergeWith);
         $propertiesToMerge = [];
+        $propertiesToIgnore = $this->getModelsIgnoredProperties($classNames);
         foreach ($classNames as $className) {
-            $propertiesToMerge[] = $this->getModelProperties($className);
+            $propertiesToMerge[] = $this->getModelProperties($className, $propertiesToIgnore);
         }
         $properties = ! empty($propertiesToMerge) ? $this->describer()->mergeWithPropertiesRewrite([], ...$propertiesToMerge) : [];
         $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
+
 
         return $properties;
     }
@@ -119,9 +122,10 @@ class ResponseClass extends Response
      * Get model properties
      *
      * @param  string $className
+     * @param  array  $except
      * @return array
      */
-    protected function getModelProperties($className)
+    protected function getModelProperties($className, $except = [])
     {
         if ($className === null || (! class_exists($className) && ! interface_exists($className))) {
             throw new \RuntimeException("Class or interface '{$className}' not found");
@@ -130,11 +134,29 @@ class ResponseClass extends Response
         $variable = Variable::fromDescription([
             'type' => $className,
             'with' => $this->getWith(),
-            'except' => $this->getExcept(),
+            'except' => array_unique(array_merge($this->getExcept(), $except)),
             'description' => $this->description,
         ]);
 
         return $variable->describe();
+    }
+
+    /**
+     * Get ignored properties.
+     *
+     * @param  string[] $classNames
+     * @return array
+     */
+    protected function getModelsIgnoredProperties($classNames)
+    {
+        $ignored = [];
+        foreach ($classNames as $className) {
+            /** @var \OA\PropertyIgnore[] $annotations */
+            $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
+            $ignored[] = Arr::pluck($annotations, 'name', 'name');
+        }
+
+        return ! empty($ignored) ? array_keys(array_merge([], ...$ignored)) : [];
     }
 
     /**
