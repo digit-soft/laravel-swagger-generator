@@ -1,16 +1,17 @@
 <?php
+
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Target;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
-use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used to mark controller method as secured (with optional security scheme)
  *
  * @Annotation
- * @Target("METHOD")
+ * @Target({"METHOD"})
  * @Attributes({
  *   @Attribute("scheme",type="string"),
  * })
@@ -23,7 +24,8 @@ class Secured extends BaseAnnotation
 
     /**
      * Secured constructor.
-     * @param array $values
+     *
+     * @param  array $values
      */
     public function __construct(array $values)
     {
@@ -31,7 +33,8 @@ class Secured extends BaseAnnotation
     }
 
     /**
-     * Get object string representation
+     * Get object string representation.
+     *
      * @return string
      */
     public function __toString()
@@ -40,7 +43,7 @@ class Secured extends BaseAnnotation
     }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function toArray()
     {
@@ -48,7 +51,8 @@ class Secured extends BaseAnnotation
     }
 
     /**
-     * Get security scheme data
+     * Get security scheme data.
+     *
      * @return array
      * @throws \Exception
      */

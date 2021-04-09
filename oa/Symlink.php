@@ -3,15 +3,18 @@
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
-use Doctrine\Common\Annotations\Annotation\Attributes;
+use Doctrine\Common\Annotations\Annotation\Target;
 use Doctrine\Common\Annotations\Annotation\Attribute;
+use Doctrine\Common\Annotations\Annotation\Attributes;
 
 /**
  * Symlink to link class reader to another one
  *
  * @Annotation()
+ * @Target("CLASS")
  * @Attributes({
  *  @Attribute("class",type="string"),
+ *  @Attribute("merge",type="boolean",required=false),
  * })
  */
 class Symlink extends BaseAnnotation
@@ -20,6 +23,10 @@ class Symlink extends BaseAnnotation
      * @var string
      */
     public $class;
+    /**
+     * @var boolean
+     */
+    public $merge = false;
 
     /**
      * Symlink constructor.

@@ -157,6 +157,7 @@ class Variable
                     // Remove already described example
                     Arr::forget($result, 'example');
                 }
+                $res['properties'] = ! empty($this->except) ? Arr::except($res['properties'], $this->except) : $res['properties'];
                 break;
             case static::SW_TYPE_ARRAY:
                 if ($this->describer()->isTypeArray($this->type)) {
@@ -182,19 +183,27 @@ class Variable
         return $result;
     }
 
+    /**
+     * Describe self as a PHP class.
+     *
+     * @return array
+     * @throws \Throwable
+     */
     protected function describeAsClass()
     {
         $className = $this->describer()->normalizeType($this->type);
         $result = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
         if (class_exists($className)) {
             $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
+            $result['properties'] = ! empty($this->except) ? Arr::except($result['properties'], $this->except) : $result['properties'];
         }
 
         return $result;
     }
 
     /**
-     * Get swagger type
+     * Get swagger type.
+     *
      * @return string|null
      */
     protected function getSwType()
@@ -223,7 +232,7 @@ class Variable
     }
 
     /**
-     * Fill missing properties
+     * Fill missing properties.
      */
     protected function fillMissingProperties()
     {
@@ -236,7 +245,8 @@ class Variable
     }
 
     /**
-     * Get PHPDoc type of value
+     * Get PHPDoc type of value.
+     *
      * @param  mixed $value
      * @return string|null
      */
@@ -261,7 +271,8 @@ class Variable
     }
 
     /**
-     * Get example value by PHPDoc type
+     * Get example value by PHPDoc type.
+     *
      * @param  string $phpType
      * @return array|mixed|null
      */
@@ -286,7 +297,8 @@ class Variable
     }
 
     /**
-     * Get example by class name
+     * Get example by class name.
+     *
      * @param  string $className
      * @return array|null
      */
@@ -324,7 +336,8 @@ class Variable
         if (! empty($with)) {
             $this->setWithToPropertiesRecursively($properties, $with);
             $propertiesRead = $parser->propertiesRead($with, null, false);
-            $properties = $this->describer()->merge($properties, $propertiesRead);
+            $propertiesByAnnRead = $this->getDescriptionByPropertyAnnotations($className, $with, 'OA\PropertyRead');
+            $properties = $this->describer()->merge($properties, $propertiesRead, $propertiesByAnnRead);
         }
         $propertiesByAnn = $this->getDescriptionByPropertyAnnotations($className);
         $properties = $this->describer()->merge($properties, $propertiesByAnn);
@@ -359,15 +372,20 @@ class Variable
      * Get properties by annotations
      *
      * @param  string $className
+     * @param  array  $only
+     * @param  string $annotationClass
      * @return array
      */
-    protected function getDescriptionByPropertyAnnotations($className)
+    protected function getDescriptionByPropertyAnnotations($className, $only = [], $annotationClass = 'OA\Property')
     {
         /** @var \OA\Property[] $annotations */
-        $annotations = $this->classAnnotations($className, 'OA\Property');
+        $annotations = $this->classAnnotations($className, $annotationClass);
         $result = [];
         foreach ($annotations as $annotation) {
             $rowData = $annotation->toArray();
+            if (! empty($only) && ! in_array($annotation->name, $only, true)) {
+                continue;
+            }
             // Skip annotations w/o name
             if (empty($annotation->name)) {
                 continue;

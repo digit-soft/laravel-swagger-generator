@@ -267,7 +267,7 @@ class GenerateCommand extends Command
      */
     protected function sortPaths(&$paths)
     {
-        ksort($paths);
+        // ksort($paths);
         $byTags = [];
         // Group by first tag
         foreach ($paths as $path => $route) {
