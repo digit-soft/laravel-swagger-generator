@@ -252,7 +252,7 @@ class Response extends BaseAnnotation
     {
         $pager = new LengthAwarePaginator(array_fill(0, 10, null), 100, 10, 2);
 
-        return Arr::except($pager->toArray(), ['items', 'data']);
+        return Arr::except($pager->toArray(), ['items', 'data', 'links']);
     }
 
     /**
