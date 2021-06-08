@@ -3,7 +3,7 @@
     "description": "Swagger yaml generator",
     "keywords": ["api", "swagger", "open auth"],
     "license": "MIT",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "authors": [
         {
             "name": "Digit",
@@ -11,10 +11,10 @@
         }
     ],
     "require": {
-        "php": ">=7.3",
-        "laravel/framework": "^7.0|^8.40",
+        "php": ">=7.3 || ^8.0",
+        "laravel/framework": "^7.0 || ^8.40",
         "symfony/yaml": "^4.2",
-        "phpdocumentor/reflection-docblock": "^4.3",
+        "phpdocumentor/reflection-docblock": "^4.3 || ^5.0",
         "doctrine/annotations": "^1.6"
     },
     "autoload": {
