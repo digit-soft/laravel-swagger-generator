@@ -555,7 +555,7 @@ class RoutesParser
             if (strpos($attribute, '*') !== false) {
                 $attributeNormalized = str_replace('*', 'items', str_replace('*.', 'items.properties.', $attribute));
                 if (Arr::get($rules['properties'], $attributeNormalized) !== null) {
-                    Arr::set($rules['properties'], $attributeNormalized . '.description', $label);
+                    Arr::set($rules['properties'], $attributeNormalized . '.description', Str::ucfirst($label));
                 }
                 // Regular attribute names
             } elseif (isset($rules['properties'][$attribute])) {
