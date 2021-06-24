@@ -11,7 +11,6 @@ use Doctrine\Common\Annotations\AnnotationRegistry;
 
 /**
  * Trait WithAnnotationReader
- * @package DigitSoft\Swagger\Parser
  * @mixin WithRouteReflections
  */
 trait WithAnnotationReader
@@ -24,26 +23,29 @@ trait WithAnnotationReader
 
     /**
      * Get route controller method annotation
-     * @param Route  $route
-     * @param string $name
+     *
+     * @param  Route  $route
+     * @param  string $name
      * @return BaseAnnotation|null
      */
     protected function routeAnnotation(Route $route, $name = 'OA\Tag')
     {
         $annotations = $this->routeAnnotations($route, $name);
-        return !empty($annotations) ? reset($annotations) : null;
+
+        return ! empty($annotations) ? reset($annotations) : null;
     }
 
     /**
      * Get route controller method annotations
-     * @param Route       $route
-     * @param string|null $name
+     *
+     * @param  Route       $route
+     * @param  string|null $name
      * @return BaseAnnotation[]
      */
     protected function routeAnnotations(Route $route, $name = null)
     {
         $ref = $this->routeReflection($route);
-        if (!$ref instanceof \ReflectionMethod) {
+        if (! $ref instanceof \ReflectionMethod) {
             return [];
         }
         $annotations = $this->methodAnnotations($ref);
@@ -57,6 +59,7 @@ trait WithAnnotationReader
                 $result[] = $annotation;
             }
         }
+
         return $result;
     }
 
@@ -109,6 +112,7 @@ trait WithAnnotationReader
 
     /**
      * Get class annotation
+     *
      * @param  string|object $class
      * @param  string        $name
      * @return BaseAnnotation|null
@@ -116,11 +120,13 @@ trait WithAnnotationReader
     protected function classAnnotation($class, $name)
     {
         $annotations = $this->classAnnotations($class, $name);
-        return !empty($annotations) ? reset($annotations) : null;
+
+        return ! empty($annotations) ? reset($annotations) : null;
     }
 
     /**
      * Get class annotations
+     *
      * @param  string|object $class
      * @param  string|null   $name
      * @return BaseAnnotation[]
@@ -142,11 +148,13 @@ trait WithAnnotationReader
                 $result[] = $annotation;
             }
         }
+
         return $result;
     }
 
     /**
      * Get class method annotations
+     *
      * @param  \ReflectionMethod|array $ref
      * @param  string                  $name
      * @return BaseAnnotation|null
@@ -154,11 +162,13 @@ trait WithAnnotationReader
     protected function methodAnnotation($ref, $name)
     {
         $annotations = $this->methodAnnotations($ref, $name);
-        return !empty($annotations) ? reset($annotations) : null;
+
+        return ! empty($annotations) ? reset($annotations) : null;
     }
 
     /**
      * Get class method annotations
+     *
      * @param  \ReflectionMethod|array $ref
      * @param  string|null             $name
      * @return BaseAnnotation[]
@@ -181,11 +191,13 @@ trait WithAnnotationReader
                 $result[] = $annotation;
             }
         }
+
         return $result;
     }
 
     /**
      * Get annotaion reader
+     *
      * @return Reader
      */
     protected function annotationReader()
@@ -198,24 +210,28 @@ trait WithAnnotationReader
             }
             $this->annotationReader = new AnnotationReader();
         }
+
         return $this->annotationReader;
     }
 
     /**
      * Get cached annotations
+     *
      * @param  \ReflectionClass|\ReflectionMethod $ref
      * @return array|null
      */
     private function getCachedAnnotations($ref)
     {
         [$property, $key] = $this->getRefAnnotationsCacheKeys($ref);
+
         return Arr::get($this->{$property}, $key, null);
     }
 
     /**
      * Set annotations to cache
-     * @param \ReflectionClass|\ReflectionMethod $ref
-     * @param array $annotations
+     *
+     * @param  \ReflectionClass|\ReflectionMethod $ref
+     * @param  array                              $annotations
      */
     private function setCachedAnnotations($ref, array $annotations)
     {
@@ -225,6 +241,7 @@ trait WithAnnotationReader
 
     /**
      * Get keys for annotations cache
+     *
      * @param  \ReflectionClass|\ReflectionMethod $ref
      * @return array
      * @see WithAnnotationReader::$_classAnnotations
@@ -237,6 +254,7 @@ trait WithAnnotationReader
         } else {
             $keys = ['_classAnnotations', $ref->name];
         }
+
         return $keys;
     }
 }

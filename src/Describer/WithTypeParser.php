@@ -150,6 +150,7 @@ trait WithTypeParser
 
     /**
      * Check that given type is basic
+     *
      * @param  string $type
      * @return bool
      */
@@ -162,6 +163,7 @@ trait WithTypeParser
 
     /**
      * Check that given type is array of types
+     *
      * @param  string $type
      * @return bool
      */
@@ -174,6 +176,7 @@ trait WithTypeParser
 
     /**
      * Check that given type is a class name
+     *
      * @param  string $type
      * @return bool
      */
@@ -186,11 +189,12 @@ trait WithTypeParser
 
     /**
      * Normalize type name
+     *
      * @param  string $type
      * @param  bool   $stripArray
      * @return string
      */
-    public function normalizeType($type, $stripArray = false)
+    public function normalizeType(string $type, $stripArray = false)
     {
         $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
         if ($stripArray && $this->isTypeArray($type)) {
@@ -209,6 +213,7 @@ trait WithTypeParser
 
     /**
      * Get swagger type by example variable
+     *
      * @param  mixed $example
      * @return string|null
      */
@@ -227,6 +232,7 @@ trait WithTypeParser
 
     /**
      * Get swagger type by given PHP type
+     *
      * @param  string $phpType
      * @return string|null
      */
@@ -240,20 +246,15 @@ trait WithTypeParser
         switch ($phpType) {
             case 'string':
                 return Variable::SW_TYPE_STRING;
-                break;
             case 'integer':
                 return Variable::SW_TYPE_INTEGER;
-                break;
             case 'float':
             case 'double':
                 return Variable::SW_TYPE_NUMBER;
-                break;
             case 'object':
                 return Variable::SW_TYPE_OBJECT;
-                break;
             case 'array':
                 return Variable::SW_TYPE_ARRAY;
-                break;
             default:
                 return $phpType;
         }
@@ -261,6 +262,7 @@ trait WithTypeParser
 
     /**
      * Get PHP type by given Swagger type
+     *
      * @param  string $swType
      * @return string
      */
@@ -269,10 +271,8 @@ trait WithTypeParser
         switch ($swType) {
             case Variable::SW_TYPE_OBJECT:
                 return 'array';
-                break;
             case Variable::SW_TYPE_NUMBER:
                 return 'float';
-                break;
             default:
                 return $swType;
         }
@@ -280,6 +280,7 @@ trait WithTypeParser
 
     /**
      * Simplify class name to basic type
+     *
      * @param  string $className
      * @return mixed|string
      */
@@ -292,6 +293,7 @@ trait WithTypeParser
 
     /**
      * Get possible rule for a variable name
+     *
      * @param  string      $varName
      * @param  string|null $default
      * @return string|null
@@ -316,6 +318,7 @@ trait WithTypeParser
 
     /**
      * Get rule type (for php)
+     *
      * @param  string $rule
      * @return string|null
      */
@@ -333,6 +336,7 @@ trait WithTypeParser
 
     /**
      * Cleanup variable name (if nested or have suffix appended)
+     *
      * @param  string $name
      * @return string|null
      */

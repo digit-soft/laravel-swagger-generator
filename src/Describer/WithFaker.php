@@ -2,12 +2,8 @@
 
 namespace DigitSoft\Swagger\Describer;
 
-use Faker\Factory;
-use Faker\Generator;
-
 /**
  * Trait WithFaker
- * @package DigitSoft\Swagger\Describer
  */
 trait WithFaker
 {
@@ -15,13 +11,15 @@ trait WithFaker
 
     /**
      * Get faker instance
-     * @return Generator
+     *
+     * @return \Faker\Generator
      */
     protected function faker()
     {
         if ($this->faker === null) {
-            $this->faker = Factory::create();
+            $this->faker = \Faker\Factory::create();
         }
+
         return $this->faker;
     }
 }

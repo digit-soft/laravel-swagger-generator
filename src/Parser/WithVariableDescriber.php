@@ -6,7 +6,6 @@ use DigitSoft\Swagger\VariableDescriberService;
 
 /**
  * Trait WithVariableDescriber.
- * @package DigitSoft\Swagger\Parser
  */
 trait WithVariableDescriber
 {
@@ -14,6 +13,7 @@ trait WithVariableDescriber
 
     /**
      * Get describer instance
+     *
      * @return VariableDescriberService
      */
     protected function describer()
@@ -21,6 +21,7 @@ trait WithVariableDescriber
         if ($this->describer === null) {
             $this->describer = app('swagger.describer');
         }
+
         return $this->describer;
     }
 }

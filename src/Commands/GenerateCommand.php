@@ -14,6 +14,9 @@ use DigitSoft\Swagger\Parser\WithDocParser;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
 
+/**
+ * Main command to generate documentation.
+ */
 class GenerateCommand extends Command
 {
     use WithVariableDescriber, WithReflections, WithDocParser;
@@ -183,6 +186,7 @@ class GenerateCommand extends Command
         if (empty($filesContent)) {
             return $data;
         }
+
         return $this->describer()->merge($data, ...$filesContent);
     }
 
@@ -202,11 +206,12 @@ class GenerateCommand extends Command
         if ($this->getOutput()->isVerbose()) {
             $responses = array_keys($parser->components['responses']);
             $requests = array_keys($parser->components['requestBodies']);
-            array_walk($responses, function (&$value){ $value = [$value]; });
-            array_walk($requests, function (&$value){ $value = [$value]; });
+            array_walk($responses, function (&$value) { $value = [$value]; });
+            array_walk($requests, function (&$value) { $value = [$value]; });
             $this->getOutput()->table(['Responses'], $responses);
             $this->getOutput()->table(['Request Bodies'], $requests);
         }
+
         return $data;
     }
 

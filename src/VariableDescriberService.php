@@ -4,7 +4,6 @@ namespace DigitSoft\Swagger;
 
 use Symfony\Component\Yaml\Yaml;
 use Illuminate\Filesystem\Filesystem;
-use DigitSoft\Swagger\Describer\WithFaker;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Describer\WithTypeParser;
 use DigitSoft\Swagger\Describer\WithExampleGenerator;
@@ -12,10 +11,11 @@ use DigitSoft\Swagger\Describer\WithRecursiveDescriber;
 
 /**
  * Service made to describe variables in swagger format
- * @package DigitSoft\Swagger
  */
 class VariableDescriberService
 {
+    use WithTypeParser, WithExampleGenerator, WithRecursiveDescriber, WithReflections;
+
     /**
      * @var Filesystem
      */
@@ -24,8 +24,6 @@ class VariableDescriberService
      * @var array
      */
     protected $classShortcuts = [];
-
-    use WithFaker, WithTypeParser, WithExampleGenerator, WithRecursiveDescriber, WithReflections;
 
     /**
      * VariableDescriberService constructor.
@@ -38,12 +36,13 @@ class VariableDescriberService
 
     /**
      * Export YAML data to file
-     * @param array  $content
-     * @param string $filePath
-     * @param bool   $describe
+     *
+     * @param  array       $content
+     * @param  string|null $filePath
+     * @param  bool        $describe
      * @return string
      */
-    public function toYml($content = [], $describe = false, $filePath = null)
+    public function toYml(array $content = [], bool $describe = false, ?string $filePath = null)
     {
         $arrayContent = $content;
         if ($describe) {
@@ -62,7 +61,7 @@ class VariableDescriberService
      * @param  string $filePath
      * @return array
      */
-    public function fromYml($filePath)
+    public function fromYml(string $filePath)
     {
         $contentStr = $this->files->get($filePath);
 
@@ -76,17 +75,18 @@ class VariableDescriberService
      * @param  bool  $withExample
      * @return array
      */
-    public function describe($variable, $withExample = true)
+    public function describe($variable, bool $withExample = true)
     {
         return $this->describeValue($variable, $withExample);
     }
 
     /**
      * Shorten class name
+     *
      * @param  string $className
      * @return string
      */
-    public function shortenClass($className)
+    public function shortenClass(string $className)
     {
         $className = ltrim($className, '\\');
         if (isset($this->classShortcuts[$className])) {
@@ -99,6 +99,7 @@ class VariableDescriberService
             $classNameShort = $classNameShortBase . '_' . $num;
             $num++;
         }
+
         return $this->classShortcuts[$className] = $classNameShort;
     }
 

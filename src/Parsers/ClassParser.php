@@ -34,6 +34,7 @@ class ClassParser
 
     /**
      * ModelParser constructor.
+     *
      * @param $className
      */
     public function __construct($className)
@@ -43,11 +44,12 @@ class ClassParser
 
     /**
      * Get model properties
-     * @param bool $onlyVisible
-     * @param bool $describeClasses
+     *
+     * @param  bool $onlyVisible
+     * @param  bool $describeClasses
      * @return array
      */
-    public function properties($onlyVisible = true, $describeClasses = true)
+    public function properties(bool $onlyVisible = true, bool $describeClasses = true)
     {
         $appends = [];
         $hidden = null;
@@ -58,17 +60,16 @@ class ClassParser
             $appends = $this->getModelAppends($instance);
         }
         $properties = $this->getPropertiesDescribed('property', null, $hidden, $describeClasses);
-        $properties = ! empty($appends)
+
+        return ! empty($appends)
             ? $this->describer()->merge($properties, $this->getPropertiesDescribed('property-read', $appends, null, $describeClasses))
             : $properties;
-
-        return $properties;
     }
 
     /**
      * Get model appends attribute.
      *
-     * @param \Illuminate\Database\Eloquent\Model $model
+     * @param  \Illuminate\Database\Eloquent\Model $model
      * @return array
      */
     protected function getModelAppends($model)
@@ -82,12 +83,12 @@ class ClassParser
     /**
      * Get `property-read` tags.
      *
-     * @param array|null $only
-     * @param array|null $not
-     * @param bool       $describeClasses
+     * @param  array|null $only
+     * @param  array|null $not
+     * @param  bool       $describeClasses
      * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    public function propertiesRead($only = null, $not = null, $describeClasses = true)
+    public function propertiesRead(?array $only = null, ?array $not = null, bool $describeClasses = true)
     {
         return $this->getPropertiesDescribed('property-read', $only, $not, $describeClasses);
     }
@@ -101,7 +102,7 @@ class ClassParser
      * @param  bool       $describeClasses
      * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    protected function getPropertiesDescribed($tag = 'property', $only = null, $not = null, $describeClasses = false)
+    protected function getPropertiesDescribed(string $tag = 'property', ?array $only = null, ?array $not = null, bool $describeClasses = false)
     {
         $docStr = $this->docBlockClass($this->className);
         if ($docStr === null) {

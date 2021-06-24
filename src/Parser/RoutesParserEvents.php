@@ -2,14 +2,12 @@
 
 namespace DigitSoft\Swagger\Parser;
 
-use Illuminate\Console\OutputStyle;
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Routing\Route;
 use Illuminate\Support\Str;
+use Illuminate\Routing\Route;
+use Illuminate\Console\OutputStyle;
 
 /**
  * Trait RoutesParserEvents
- * @package DigitSoft\Swagger\Parser
  */
 trait RoutesParserEvents
 {
@@ -24,16 +22,18 @@ trait RoutesParserEvents
 
     /**
      * Trigger event
-     * @param string $event
-     * @param mixed  ...$params
+     *
+     * @param  string $event
+     * @param  mixed  ...$params
      * @return bool|mixed
      */
-    protected function trigger($event, ...$params)
+    protected function trigger(string $event, ...$params)
     {
         $methodName = 'event' . ucfirst(Str::camel($event));
         if (method_exists($this, $methodName)) {
             return call_user_func_array([$this, $methodName], $params);
         }
+
         return false;
     }
 
@@ -42,7 +42,7 @@ trait RoutesParserEvents
      */
     protected function eventParseStart()
     {
-        if (!$this->output instanceof OutputStyle) {
+        if (! $this->output instanceof OutputStyle) {
             return;
         }
         $this->output->progressStart(count($this->routes));
@@ -53,11 +53,11 @@ trait RoutesParserEvents
      */
     protected function eventParseFinish()
     {
-        if (!$this->output instanceof OutputStyle) {
+        if (! $this->output instanceof OutputStyle) {
             return;
         }
         $this->output->progressFinish();
-        if (!empty($this->skippedRoutes)) {
+        if (! empty($this->skippedRoutes)) {
             $this->output->warning(strtr('There are {count} skipped routes', ['{count}' => count($this->skippedRoutes)]));
             if ($this->output->isVerbose()) {
                 $routePaths = [];
@@ -70,12 +70,11 @@ trait RoutesParserEvents
                 $this->output->table(['URI', 'Methods'], $routePaths);
             }
         }
-        if (!empty($this->failedFormRequests)) {
+        if (! empty($this->failedFormRequests)) {
             $failedRequests = [];
             foreach ($this->failedFormRequests as $key => $row) {
                 /** @var \Throwable $exception */
-                $className = $row[0];
-                $exception = $row[1];
+                [$className, $exception] = $row;
                 $exceptionStr = $exception ? get_class($exception) . "\n" . $exception->getMessage() : '-';
                 $failedRequests[$className] = [$className, $exceptionStr];
             }
@@ -88,11 +87,12 @@ trait RoutesParserEvents
 
     /**
      * Route processed
-     * @param Route $route
+     *
+     * @param  Route $route
      */
-    protected function eventRouteProcessed($route)
+    protected function eventRouteProcessed(Route $route)
     {
-        if (!$this->output instanceof OutputStyle) {
+        if (! $this->output instanceof OutputStyle) {
             return;
         }
         $this->output->progressAdvance();
@@ -100,12 +100,13 @@ trait RoutesParserEvents
 
     /**
      * Route skipped
-     * @param Route $route
+     *
+     * @param  Route $route
      */
     protected function eventRouteSkipped(Route $route)
     {
         $this->skippedRoutes[] = $route;
-        if (!$this->output instanceof OutputStyle) {
+        if (! $this->output instanceof OutputStyle) {
             return;
         }
         $this->output->progressAdvance();
@@ -113,8 +114,9 @@ trait RoutesParserEvents
 
     /**
      * Failed to fetch from request data
-     * @param FormRequest $request
-     * @param null $exception
+     *
+     * @param  \Illuminate\Foundation\Http\FormRequest $request
+     * @param  string|null                             $exception
      */
     protected function eventRouteFormRequestFailed($request, $exception = null)
     {
@@ -123,11 +125,12 @@ trait RoutesParserEvents
 
     /**
      * Some problem found
-     * @param string $problemType
-     * @param Route $route
-     * @param string|null  $additional
+     *
+     * @param  string      $problemType
+     * @param  Route       $route
+     * @param  string|null $additional
      */
-    protected function eventProblemFound($problemType, Route $route, $additional = null)
+    protected function eventProblemFound(string $problemType, Route $route, $additional = null)
     {
         $this->problems[$problemType] = $this->problems[$problemType] ?? [];
         $this->problems[$problemType][$route->uri()] = [$route, $additional];

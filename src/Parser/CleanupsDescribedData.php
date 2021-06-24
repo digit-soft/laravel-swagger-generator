@@ -2,18 +2,18 @@
 
 namespace DigitSoft\Swagger\Parser;
 
-use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
+use DigitSoft\Swagger\Yaml\Variable;
 
 /**
  * Trait CleanupsDescribedData
- * @package DigitSoft\Swagger\Parser
  */
 trait CleanupsDescribedData
 {
     /**
      * Remove incompatible array keys for current type
-     * @param array $target
+     *
+     * @param  array $target
      */
     protected static function handleIncompatibleTypeKeys(array &$target)
     {
@@ -22,7 +22,8 @@ trait CleanupsDescribedData
                 static::handleIncompatibleTypeKeys($value);
             }
         }
-        if (!isset($target['type'])) {
+        unset($value);
+        if (! isset($target['type'])) {
             return;
         }
         $type = $target['type'];

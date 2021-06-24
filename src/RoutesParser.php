@@ -9,7 +9,6 @@ use Illuminate\Console\OutputStyle;
 use Illuminate\Routing\RouteCollection;
 use DigitSoft\Swagger\Parser\WithDocParser;
 use Illuminate\Foundation\Http\FormRequest;
-use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\RoutesParserEvents;
 use DigitSoft\Swagger\Parser\RoutesParserHelpers;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
@@ -19,6 +18,9 @@ use DigitSoft\Swagger\Parser\WithVariableDescriber;
 
 class RoutesParser
 {
+    use WithRouteReflections, WithAnnotationReader, WithDocParser,
+        RoutesParserHelpers, RoutesParserEvents, CleanupsDescribedData, WithVariableDescriber;
+
     const EVENT_START = 'parse_start';
     const EVENT_FINISH = 'parse_finish';
     const EVENT_ROUTE_PROCESSED = 'route_processed';
@@ -56,9 +58,6 @@ class RoutesParser
     ];
 
     public $problems = [];
-
-    use WithReflections, WithRouteReflections, WithAnnotationReader, WithDocParser,
-        RoutesParserHelpers, RoutesParserEvents, CleanupsDescribedData, WithVariableDescriber;
 
     /**
      * RoutesParser constructor.
@@ -343,7 +342,8 @@ class RoutesParser
             $annotationsData = $this->parseFormRequestAnnotations($className);
             if (empty($annotationsData['description'])) {
                 $classRef = $this->reflectionClass($className);
-                $annotationsData['description'] = $this->getDocSummary($classRef->getDocComment());
+                $descriptionRaw = $classRef->getDocComment();
+                $annotationsData['description'] = is_string($descriptionRaw) ? $this->getDocSummary($descriptionRaw) : '';
             }
 
             $result = $annotationsData;
@@ -420,12 +420,15 @@ class RoutesParser
         }
         try {
             $rulesRaw = $instance->rules();
+            $labels = $instance->attributes();
         } catch (\Throwable $exception) {
             $this->trigger(static::EVENT_FORM_REQUEST_FAILED, $instance, $exception);
             $rulesRaw = [];
+            $labels = [];
         }
         $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
-        [$exampleData] = $this->processFormRequestRules($rulesRaw);
+        [$exampleData] = $this->processFormRequestRules($rulesRaw, $labels);
+
         return $exampleData;
     }
 
@@ -468,11 +471,12 @@ class RoutesParser
      * Process rules obtained from FromRequest class and return data examples.
      *
      * @param  array       $rules
+     * @param  array       $labels
      * @param  bool        $describe
      * @param  string|null $parent
      * @return array
      */
-    protected function processFormRequestRules(array $rules, $describe = true, $parent = null)
+    protected function processFormRequestRules(array $rules, array $labels = [], $describe = true, $parent = null)
     {
         $result = [];
         $required = [];
@@ -481,7 +485,7 @@ class RoutesParser
             if (Arr::isAssoc($row)) {
                 // Replace KEY for nested rules
                 $keyToPlace = $key === "*" ? 0 : $key;
-                [$result[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, false, $key);
+                [$result[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, [], false, $key);
                 continue;
             }
             foreach ($row as $ruleName) {
@@ -501,9 +505,11 @@ class RoutesParser
                 }
             }
         }
+        // Describe optionally
         if ($describe) {
             $result = $this->describer()->describe($result);
             $this->applyFormRequestRequiredRules($result, $required);
+            $this->applyFromRequestLabelsToRules($result, $labels);
         }
 
         return [$result, $required];
@@ -515,7 +521,7 @@ class RoutesParser
      * @param  array $rules
      * @param  array $required
      */
-    protected function applyFormRequestRequiredRules(&$rules, $required)
+    protected function applyFormRequestRequiredRules(array &$rules, $required)
     {
         foreach ($required as $key => $value) {
             if (is_array($value) && isset($rules['properties'][$key])) {
@@ -527,6 +533,33 @@ class RoutesParser
                     $keyToSet = 'properties.' . $key . '.required';
                     Arr::set($rules, $keyToSet, $value);
                 }
+            }
+        }
+    }
+
+    /**
+     * Apply labels as description to described validation rules.
+     *
+     * @param  array $rules
+     * @param  array $labels
+     */
+    protected function applyFromRequestLabelsToRules(array &$rules, array $labels)
+    {
+        if (empty($labels) || empty($rules['properties'])) {
+            return;
+        }
+
+        foreach ($labels as $attribute => $label) {
+            $attributeNormalized = $attribute;
+            // Attribute names with a wildcard (*)
+            if (strpos($attribute, '*') !== false) {
+                $attributeNormalized = str_replace('*', 'items', str_replace('*.', 'items.properties.', $attribute));
+                if (Arr::get($rules['properties'], $attributeNormalized) !== null) {
+                    Arr::set($rules['properties'], $attributeNormalized . '.description', $label);
+                }
+                // Regular attribute names
+            } elseif (isset($rules['properties'][$attribute])) {
+                $rules['properties'][$attribute]['description'] = Str::ucfirst($label);
             }
         }
     }

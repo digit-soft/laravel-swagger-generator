@@ -2,13 +2,13 @@
 
 namespace DigitSoft\Swagger\Describer;
 
-use DigitSoft\Swagger\Parser\WithReflections;
-use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Support\Arr;
+use DigitSoft\Swagger\Yaml\Variable;
+use DigitSoft\Swagger\Parser\WithReflections;
 
 /**
  * Trait WithRecursiveDescriber
- * @package DigitSoft\Swagger\Describer
+ *
  * @mixin WithReflections
  * @mixin WithTypeParser
  */
@@ -16,11 +16,12 @@ trait WithRecursiveDescriber
 {
     /**
      * Describe one value
+     *
      * @param  mixed $value
      * @param  bool  $withExample
      * @return array
      */
-    protected function describeValue($value, $withExample = true)
+    protected function describeValue($value, bool $withExample = true)
     {
         $type = $this->swaggerType(strtolower(gettype($value)));
         $type = $type === 'null' ? null : $type;
@@ -39,19 +40,21 @@ trait WithRecursiveDescriber
                 $desc = $this->describeArray($value, $withExample);
                 break;
         }
-        if ($withExample && in_array($type, $examplable)) {
+        if ($withExample && in_array($type, $examplable, true)) {
             $desc['example'] = $value;
         }
+
         return $desc;
     }
 
     /**
      * Describe object
+     *
      * @param  object $value
      * @param  bool   $withExample
      * @return array
      */
-    protected function describeObject($value, $withExample = true)
+    protected function describeObject($value, bool $withExample = true)
     {
         $data = [
             'type' => 'object',
@@ -74,16 +77,18 @@ trait WithRecursiveDescriber
         foreach ($objProperties as $key => $val) {
             $data['properties'][$key] = $this->describeValue($val, $withExample);
         }
+
         return $data;
     }
 
     /**
      * Describe array
+     *
      * @param  array $value
      * @param  bool  $withExample
      * @return array
      */
-    protected function describeArray($value, $withExample = true)
+    protected function describeArray($value, bool $withExample = true)
     {
         if (empty($value)) {
             $data = [
@@ -103,6 +108,7 @@ trait WithRecursiveDescriber
                 'items' => $this->describeValue(reset($value)),
             ];
         }
+
         return $data;
     }
 }

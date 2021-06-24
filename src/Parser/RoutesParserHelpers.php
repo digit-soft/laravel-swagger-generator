@@ -6,15 +6,15 @@ use Illuminate\Support\Str;
 
 /**
  * Trait RoutesParserHelpers
- * @package DigitSoft\Swagger\Parser
  * @property array $components
  */
 trait RoutesParserHelpers
 {
     /**
-     * Normalize route URI
-     * @param string $uri
-     * @param bool $forYml
+     * Normalize route URI.
+     *
+     * @param  string $uri
+     * @param  bool   $forYml
      * @return bool|mixed|string
      */
     protected function normalizeUri($uri, $forYml = false)
@@ -31,8 +31,10 @@ trait RoutesParserHelpers
     }
 
     /**
-     * @param string $key
-     * @param string $type
+     * Get component by key ant type.
+     *
+     * @param  string $key
+     * @param  string $type
      * @return null
      */
     protected function getComponent($key, $type = self::COMPONENT_RESPONSE)
@@ -40,14 +42,16 @@ trait RoutesParserHelpers
         if (empty($key)) {
             return null;
         }
+
         return $this->components[$type][$key] ?? null;
     }
 
     /**
-     * Set component
-     * @param array  $component
-     * @param string $key
-     * @param string $type
+     * Set component.
+     *
+     * @param  array  $component
+     * @param  string $key
+     * @param  string $type
      */
     protected function setComponent($component, $key, $type = self::COMPONENT_RESPONSE)
     {
@@ -58,21 +62,24 @@ trait RoutesParserHelpers
     }
 
     /**
-     * Get component reference name
-     * @param string $key
-     * @param string $type
+     * Get component reference name.
+     *
+     * @param  string $key
+     * @param  string $type
      * @return string
      */
     protected function getComponentReference($key, $type = self::COMPONENT_RESPONSE)
     {
         $keys = ['components', $type, $key];
+
         return '#/' . implode('/', $keys);
     }
 
     /**
-     * Get array element by string key (camel|snake)
-     * @param array  $array
-     * @param string $key
+     * Get array element by string key (camel|snake).
+     *
+     * @param  array  $array
+     * @param  string $key
      * @return mixed|null
      */
     protected static function getArrayElemByStrKey(array $array, $key)
@@ -81,6 +88,7 @@ trait RoutesParserHelpers
             return $array[$key];
         }
         $keyCamel = Str::camel($key);
+
         return $array[$keyCamel] ?? null;
     }
 }

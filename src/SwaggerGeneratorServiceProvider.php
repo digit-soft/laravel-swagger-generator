@@ -2,8 +2,8 @@
 
 namespace DigitSoft\Swagger;
 
-use DigitSoft\Swagger\Commands\GenerateCommand;
 use Illuminate\Support\ServiceProvider;
+use DigitSoft\Swagger\Commands\GenerateCommand;
 
 class SwaggerGeneratorServiceProvider extends ServiceProvider
 {

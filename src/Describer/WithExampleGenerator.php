@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\Date;
 
 /**
  * Trait WithExampleGenerator
- * @package DigitSoft\Swagger\Parser
- * @mixin WithFaker
  * @mixin WithTypeParser
  */
 trait WithExampleGenerator
 {
+    use WithFaker;
+
     /**
      * @var array Generated variables cache
      */
@@ -25,13 +25,14 @@ trait WithExampleGenerator
 
     /**
      * Get variable example
+     *
      * @param  string|null $type
      * @param  string|null $varName
      * @param  string|null $rule
      * @param  bool        $normalizeType
      * @return mixed|null
      */
-    public function example(&$type, $varName = null, $rule = null, $normalizeType = false)
+    public function example(?string &$type, ?string $varName = null, ?string $rule = null, bool $normalizeType = false)
     {
         $typeUsed = $type;
         // Guess variable type to get from cache
@@ -58,100 +59,101 @@ trait WithExampleGenerator
             $type = $typeNormalized;
         }
         $example = $isArray ? [$example] : $example;
+
         return $this->setVarCache($varName, $type, $example);
     }
 
     /**
      * Generate example sequence by type
-     * @param  string $type
-     * @param  int    $count
+     *
+     * @param  string|null $type
+     * @param  int         $count
      * @return array
      */
-    protected function generateExampleByTypeSequence($type, $count = 10)
+    protected function generateExampleByTypeSequence(?string $type, int $count = 10)
     {
         $type = is_string($type) ? $this->normalizeType($type, true) : null;
         $sequence = [];
-        for ($i=1; $i <= $count; $i++) {
+        for ($i = 1; $i <= $count; $i++) {
             $elem = $this->exampleByTypeSequential($type, $i);
             $sequence[] = $elem;
             if ($elem === null) {
                 break;
             }
         }
+
         return $sequence;
     }
 
     /**
      * Generate example sequence by rule
+     *
      * @param  string $rule
      * @param  int    $count
      * @return array
      */
-    protected function generateExampleByRuleSequence($rule, $count = 10)
+    protected function generateExampleByRuleSequence(string $rule, int $count = 10)
     {
         $sequence = [];
-        for ($i=1; $i <= $count; $i++) {
+        for ($i = 1; $i <= $count; $i++) {
             $elem = $this->exampleByRuleSequential($rule, $i);
             $sequence[] = $elem;
             if ($elem === null) {
                 break;
             }
         }
+
         return $sequence;
     }
 
     /**
      * Get example by given type for sequence
-     * @param  string    $type
-     * @param  int $iteration
+     *
+     * @param  string|null $type
+     * @param  int         $iteration
      * @return mixed
      */
-    protected function exampleByTypeSequential($type, $iteration = 1)
+    protected function exampleByTypeSequential(?string $type, int $iteration = 1)
     {
         $dateStr = '2019-01-01 00:00:00';
         switch ($type) {
             case 'int':
             case 'integer':
-                return intval($iteration * 3);
-                break;
+                return (int)($iteration * 3);
             case 'float':
             case 'double':
                 return 1.65 * $iteration;
-                break;
             case 'string':
                 $strArr = ['string', 'str value', 'str example', 'string data', 'some txt'];
                 return $this->takeFromArray($strArr, $iteration);
-                break;
             case 'bool':
             case 'boolean':
-                return ($iteration % 2) ? true : false;
-                break;
+                return (bool)(($iteration % 2));
             case 'date':
                 $date = Date::createFromFormat('Y-m-d H:i:s', $dateStr);
                 $date->addSeconds($iteration * 800636);
                 return $date->format('Y-m-d');
-                break;
             case 'Illuminate\Support\Carbon':
             case 'dateTime':
             case 'datetime':
                 $date = Date::createFromFormat('Y-m-d H:i:s', $dateStr);
                 $date->addSeconds($iteration * 800636);
                 return $date->format('Y-m-d H:i:s');
-                break;
             case 'array':
                 return [];
-                break;
         }
+
         return null;
     }
 
     /**
      * Get example value by validation rule
+     *
      * @param  string $rule
      * @param  int    $iteration
      * @return mixed
      */
-    protected function exampleByRuleSequential(string $rule, $iteration = 1)
+    protected function exampleByRuleSequential(string $rule, int $iteration = 1)
     {
         $dateStr = '2019-01-01 00:00:00';
         switch ($rule) {
@@ -330,10 +332,10 @@ trait WithExampleGenerator
     /**
      * Get example by given type
      *
-     * @param  string $type
+     * @param  string|null $type
      * @return array|int|string|null
      */
-    protected function exampleByType($type)
+    protected function exampleByType(?string $type)
     {
         $type = is_string($type) ? $this->normalizeType($type, true) : null;
         $key = $type;
@@ -350,59 +352,65 @@ trait WithExampleGenerator
 
     /**
      * Get example value by validation rule
+     *
      * @param  string $rule
      * @return mixed
      */
     protected function exampleByRule(string $rule)
     {
         $key = '__' . $rule;
-        if (!isset($this->varsSequences[$key])) {
+        if (! isset($this->varsSequences[$key])) {
             $this->varsSequences[$key] = $this->generateExampleByRuleSequence($rule, 10);
         }
         $example = current($this->varsSequences[$key]);
         if (next($this->varsSequences[$key]) === false) {
             reset($this->varsSequences[$key]);
         }
+
         return $example;
     }
 
     /**
      * Get variable value from cache
-     * @param  string $name
-     * @param  string $type
+     *
+     * @param  string      $name
+     * @param  string|null $type
      * @return mixed|null
      * @internal
      */
-    protected function getVarCache($name, $type)
+    protected function getVarCache(string $name, ?string $type)
     {
         if (($key = $this->getVarCacheKey($name, $type)) === null) {
             return null;
         }
+
         return Arr::get($this->varsCache, $key);
     }
 
     /**
      * Set variable value to cache
-     * @param  string $name
-     * @param  string $type
-     * @param  mixed $value
+     *
+     * @param  string      $name
+     * @param  string|null $type
+     * @param  mixed       $value
      * @return mixed|null
      * @internal
      */
-    protected function setVarCache($name, $type, $value)
+    protected function setVarCache(string $name, ?string $type, $value)
     {
         if ($value !== null && ($key = $this->getVarCacheKey($name, $type)) !== null) {
             Arr::set($this->varsCache, $key, $value);
         }
+
         return $value;
     }
 
     /**
-     * @internal
      * @param  string $type
      * @return mixed
+     * @internal
      */
-    protected function exampleByTypeInternal($type)
+    protected function exampleByTypeInternal(string $type)
     {
         switch ($type) {
             case 'int':
@@ -432,13 +440,14 @@ trait WithExampleGenerator
                 return [];
                 break;
         }
+
         return null;
     }
 
     /**
-     * @internal
      * @param  string $rule
      * @return mixed
+     * @internal
      */
     protected function exampleByRuleInternal(string $rule)
     {
@@ -512,7 +521,7 @@ trait WithExampleGenerator
                 $example = $this->faker()->firstName;
                 break;
             case 'last_name':
-                $example = $this->faker()->firstName;
+                $example = $this->faker()->lastName;
                 break;
             case 'address':
                 $example = trim($this->faker()->address);
@@ -525,11 +534,12 @@ trait WithExampleGenerator
 
     /**
      * Create variable cache string key
-     * @param  string $name
-     * @param  string $type
+     *
+     * @param  string      $name
+     * @param  string|null $type
      * @return string|null
      */
-    private function getVarCacheKey($name, $type)
+    private function getVarCacheKey(string $name, ?string $type)
     {
         $suffixes = ['_confirm', '_original', '_example', '_new'];
         if ($name === null || $type === null) {
@@ -547,18 +557,20 @@ trait WithExampleGenerator
 
     /**
      * Take value from array even if it does not exists by given offset
+     *
      * @param  array $array
-     * @param  int $number
+     * @param  int   $number
      * @return mixed
      */
-    private function takeFromArray($array, $number)
+    private function takeFromArray(array $array, int $number)
     {
         if (empty($array)) {
             return null;
         }
-        if (!isset($array[$number])) {
+        if (! isset($array[$number])) {
             $number = $number % count($array);
         }
+
         return $array[$number];
     }
 }
