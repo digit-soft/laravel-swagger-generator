@@ -5,7 +5,6 @@ namespace OA;
 use Illuminate\Support\Arr;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Doctrine\Common\Annotations\Annotation\Target;
 use DigitSoft\Swagger\Parser\CleanupsDescribedData;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
@@ -22,7 +21,8 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  *   @Attribute("contentType",type="string"),
  *   @Attribute("description",type="string"),
  *   @Attribute("asList",type="boolean"),
- *   @Attribute("withPager",type="boolean"),
+ *   @Attribute("asPagedList",type="boolean"),
+ *   @Attribute("asCursorPagedList",type="boolean"),
  * })
  */
 class Response extends BaseAnnotation
@@ -33,6 +33,7 @@ class Response extends BaseAnnotation
     public $description;
     public $asList = false;
     public $asPagedList = false;
+    public $asCursorPagedList = false;
 
     protected $_hasNoData = false;
     protected $_setProperties = [];
@@ -54,7 +55,7 @@ class Response extends BaseAnnotation
      */
     public function toArray()
     {
-        $asList = $this->asList || $this->asPagedList;
+        $asList = $this->asList || $this->asPagedList || $this->asCursorPagedList;
         if ($asList) {
             $contentRaw = $this->describer()->describe(['']);
             Arr::set($contentRaw, 'items', $this->getContent());
@@ -184,8 +185,12 @@ class Response extends BaseAnnotation
             return $content;
         }
         [$responseRaw, $resultKey] = array_values($responseData);
-        if ($this->asPagedList && static::isSuccessStatus($this->status)) {
-            $responseRaw['pagination'] = static::getPagerExample();
+        if (($this->asPagedList || $this->asCursorPagedList) && static::isSuccessStatus($this->status)) {
+            if ($this->asPagedList) {
+                $responseRaw['pagination'] = static::getPagerExample();
+            } elseif ($this->asCursorPagedList) {
+                $responseRaw['pagination'] = static::getCursorPagerExample();
+            }
         }
         $response = $this->describer()->describe($responseRaw);
         $content !== null ? Arr::set($response, $resultKey, $content) : Arr::forget($response, $resultKey);
@@ -244,19 +249,34 @@ class Response extends BaseAnnotation
     }
 
     /**
-     * Get pager example
+     * Get pager example.
      *
      * @return array
      */
     protected static function getPagerExample()
     {
-        $pager = new LengthAwarePaginator(array_fill(0, 10, null), 100, 10, 2);
+        $data = array_fill(0, 100, null);
+        $pager = new \Illuminate\Pagination\LengthAwarePaginator($data, 100, 10, 2);
 
         return Arr::except($pager->toArray(), ['items', 'data', 'links']);
     }
 
     /**
-     * Get default description
+     * Get cursor pager example.
+     *
+     * @return array
+     */
+    protected static function getCursorPagerExample()
+    {
+        $cursor = new \Illuminate\Pagination\Cursor(['id' => 20]);
+        $data = array_map(function ($v) { return ['id' => $v]; }, array_keys(array_fill(1, 100, null)));
+        $pager = new \Illuminate\Pagination\CursorPaginator($data, 10, $cursor);
+
+        return Arr::except($pager->toArray(), ['data']);
+    }
+
+    /**
+     * Get default description.
      *
      * @return string
      */

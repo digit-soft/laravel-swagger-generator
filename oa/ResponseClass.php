@@ -65,6 +65,7 @@ class ResponseClass extends Response
         }
         $key .= $this->asList || $this->asPagedList ? '__list' : '';
         $key .= $this->asPagedList ? '_paged' : '';
+        $key .= $this->asCursorPagedList ? '_paged_cursor' : '';
 
         return $key;
     }
