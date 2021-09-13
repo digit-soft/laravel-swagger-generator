@@ -30,6 +30,26 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public $format;
     /**
+     * @var bool Value may be null
+     */
+    public $nullable;
+    /**
+     * @var float|int Minimum value of number value
+     */
+    public $minimum;
+    /**
+     * @var float|int Maximum value of number value
+     */
+    public $maximum;
+    /**
+     * @var int Min length of string value
+     */
+    public $minLength;
+    /**
+     * @var int Min length of string value
+     */
+    public $maxLength;
+    /**
      * @var array Array of possible values
      */
     public $enum;
@@ -123,7 +143,11 @@ abstract class BaseValueDescribed extends BaseAnnotation
         $data = [
             'type' => $swType,
         ];
-        $optional = ['format', 'name', 'required', 'example' => 'exampleProcessed', 'description', 'enum'];
+        $optional = [
+            'format', 'name', 'required', 'description', 'enum',
+            'nullable', 'minimum', 'maximum', 'minLength', 'maxLength',
+            'example' => 'exampleProcessed',
+        ];
         foreach ($optional as $arrKey => $optKey) {
             $arrKey = is_numeric($arrKey) ? $optKey : $arrKey;
             $optValue = $this->{$optKey};
@@ -146,7 +170,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         // Write example if needed
         if ($this->isExampleRequired()
-            && !isset($data['example'])
+            && ! isset($data['example'])
             && ($example = $this->describer()->example($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
