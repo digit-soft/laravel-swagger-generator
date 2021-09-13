@@ -34,7 +34,6 @@ trait WithExampleGenerator
      */
     public function example(?string &$type, ?string $varName = null, ?string $rule = null, bool $normalizeType = false)
     {
-        if ($varName === 'sex') { dump(func_get_args()); }
         $typeUsed = $type;
         // Guess variable type to get from cache
         if ($typeUsed === null && $rule !== null) {
