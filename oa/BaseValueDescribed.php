@@ -20,7 +20,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public $name;
     /**
-     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @Enum({"string", "integer", "number", "boolean", "array", "object"})
      * @var string Swagger or PHP type
      */
     public $type;
