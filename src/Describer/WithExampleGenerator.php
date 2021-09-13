@@ -34,6 +34,7 @@ trait WithExampleGenerator
      */
     public function example(?string &$type, ?string $varName = null, ?string $rule = null, bool $normalizeType = false)
     {
+        if ($varName === 'sex') { dump(func_get_args()); }
         $typeUsed = $type;
         // Guess variable type to get from cache
         if ($typeUsed === null && $rule !== null) {
@@ -44,7 +45,7 @@ trait WithExampleGenerator
             return $cachedValue;
         }
         // Fill rule and type
-        $rule = $rule === null || $this->isBasicType($rule) ? $this->getVariableRule($varName, $rule) : $rule;
+        $rule = $rule === null || $this->isBasicType($rule) ? $this->getVariableRule($varName, $rule ?? $varName) : $rule;
         $typeUsed = $typeUsed === null && $rule !== null ? $this->getRuleType($rule) : $typeUsed;
         // Can't guess => leaving
         if ($typeUsed === null) {
@@ -289,6 +290,13 @@ trait WithExampleGenerator
             case 'boolean':
                 $example = $this->takeFromArray([false, true], $iteration);
                 break;
+            case 'company_name':
+                $examples = [
+                    "Walker Group", "Bogan, Abernathy and Parker", "Gutkowski, Stracke and Treutel", "Green Group", "Ortiz-Schmidt",
+                    "Reilly Inc", "Dach-Donnelly", "Koepp, Raynor and Gerlach", "Padberg PLC", "Graham, Lowe and Harber",
+                ];
+                $example = $this->takeFromArray($examples, $iteration);
+                break;
             case 'first_name':
                 $examples = [
                     'Myriam', 'Sylvan', 'Eldred', 'Joana', 'Carson', 'Madisyn', 'Trever', 'Scotty', 'Oran', 'Guadalupe',
@@ -317,10 +325,10 @@ trait WithExampleGenerator
                 $example = $this->takeFromArray($examples, $iteration);
                 break;
             case 'currency_code':
-                $examples = [
-                    'UAH', 'USD', 'EUR', 'CZK', 'AUD', 'CHF', 'CAD',
-                ];
-                $example = $this->takeFromArray($examples, $iteration);
+                $example = $this->takeFromArray(['UAH', 'USD', 'EUR', 'CZK', 'AUD', 'CHF', 'CAD'], $iteration);
+                break;
+            case 'sex':
+                $example = $this->takeFromArray(['male', 'female'], $iteration);
                 break;
             default:
                 $example = null;

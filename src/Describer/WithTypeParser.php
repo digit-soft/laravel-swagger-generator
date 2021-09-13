@@ -101,6 +101,14 @@ trait WithTypeParser
                 'phones',
             ],
         ],
+        'company_name' => [
+            'type' => 'string',
+            'names' => [
+                'company_name',
+                'companyName',
+                'company',
+            ],
+        ],
         'first_name' => [
             'type' => 'string',
             'names' => [
