@@ -60,6 +60,7 @@ class Parameter extends BaseValueDescribed
         if ($this->explode !== null) {
             $data['explode'] = $this->explode;
         }
+
         return $data;
     }
 
@@ -73,6 +74,7 @@ class Parameter extends BaseValueDescribed
 
     /**
      * Get param style
+     *
      * @param  string $in
      * @param  string $type
      * @return string|null
@@ -84,11 +86,13 @@ class Parameter extends BaseValueDescribed
         }
         $default = static::getDefaultStyles();
         $key = $in . '.' . $type;
+
         return $default[$key] ?? $default['*'] ?? null;
     }
 
     /**
      * Get default styles keyed by `in`, `type` params
+     *
      * @return array
      */
     protected static function getDefaultStyles()

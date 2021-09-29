@@ -2,10 +2,10 @@
 
 namespace OA;
 
-use DigitSoft\Swagger\Parser\WithVariableDescriber;
+use Illuminate\Support\Arr;
 use DigitSoft\Swagger\Yaml\Variable;
 use Doctrine\Common\Annotations\Annotation\Enum;
-use Illuminate\Support\Arr;
+use DigitSoft\Swagger\Parser\WithVariableDescriber;
 
 /**
  * @property-read mixed|null $exampleProcessed Processed example
@@ -58,7 +58,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public $description;
     /**
-     * @var mixed Example of variable
+     * @var mixed Example of variable (It's possible to set `example` to NULL)
      */
     public $example;
     /**
@@ -86,7 +86,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     /**
      * Sets this array content to target by obtained key
-     * @param array $target
+     *
+     * @param  array $target
      */
     public function toArrayRecursive(&$target)
     {
@@ -94,22 +95,23 @@ abstract class BaseValueDescribed extends BaseAnnotation
         $currentTarget = &$target;
         while ($key = array_shift($nameArr)) {
             $isArray = $key === '*';
-            $hasNested = !empty($nameArr);
+            $hasNested = ! empty($nameArr);
             if ($isArray) {
-                if (!isset($currentTarget['items'])) {
+                if (! isset($currentTarget['items'])) {
                     $currentTarget['type'] = 'array';
                     $currentTarget['items'] = [];
                 }
                 $currentTarget = &$currentTarget['items'];
             } else {
-                if (!isset($currentTarget['properties'])) {
+                if (! isset($currentTarget['properties'])) {
                     $currentTarget = ['type' => 'object', 'properties' => []];
                 }
-                $currentTarget['properties'][$key] = isset($currentTarget['properties'][$key]) ? $currentTarget['properties'][$key] : [];
+                /** @noinspection UnsupportedStringOffsetOperationsInspection */
+                $currentTarget['properties'][$key] = $currentTarget['properties'][$key] ?? [];
                 $currentTarget = &$currentTarget['properties'][$key];
             }
 
-            if (!$hasNested) {
+            if (! $hasNested) {
                 $currentTarget = empty($currentTarget) ? $this->toArray() : $this->describer()->merge($currentTarget, $this->toArray());
             }
         }
@@ -117,7 +119,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     /**
      * BaseValueDescribed constructor.
-     * @param array $values
+     *
+     * @param  array $values
      */
     public function __construct(array $values)
     {
@@ -126,7 +129,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Get object string representation
+     * Get object string representation.
+     *
      * @return string
      */
     public function __toString()
@@ -169,8 +173,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
             }
         }
         // Write example if needed
-        if ($this->isExampleRequired()
-            && ! isset($data['example'])
+        if (! isset($data['example'])
+            && $this->isExampleRequired()
             && ($example = $this->describer()->example($this->type, $this->name)) !== null
         ) {
             $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
@@ -180,26 +184,30 @@ abstract class BaseValueDescribed extends BaseAnnotation
         $excludeEmptyKeys = $this->getExcludedEmptyKeys();
 
         // Exclude undesirable keys
-        if (!empty($excludeKeys)) {
+        if (! empty($excludeKeys)) {
             $data = Arr::except($data, $excludeKeys);
         }
 
         // Exclude undesirable keys those are empty
-        if (!empty($excludeEmptyKeys)) {
+        if (! empty($excludeEmptyKeys)) {
             $data = array_filter($data, function ($value, $key) use ($excludeEmptyKeys) {
-                return !in_array($key, $excludeEmptyKeys) || !empty($value);
+                return ! in_array($key, $excludeEmptyKeys, true) || ! empty($value);
             }, ARRAY_FILTER_USE_BOTH);
         }
         // Remap schema children keys
         if ($this->isSchemaTypeUsed()) {
             $schemaKeys = ['type', 'items', 'example', 'format'];
             foreach ($schemaKeys as $schemaKey) {
-                if (!isset($data[$schemaKey])) {
+                if (($dataValue = $data[$schemaKey] ?? null) === null) {
                     continue;
                 }
-                Arr::set($data, 'schema.' . $schemaKey, $data[$schemaKey]);
+                $dataValue = $dataValue === static::NULL_VALUE ? null : $dataValue;
+                Arr::set($data, 'schema.' . $schemaKey, $dataValue);
                 Arr::forget($data, $schemaKey);
             }
+            // Rewrite `example` key "NULL" => null
+        } elseif (isset($data['example'])) {
+            $data['example'] = $data['example'] === static::NULL_VALUE ? null : $data['example'];
         }
 
         return $data;
@@ -216,19 +224,22 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     /**
      * Get example with check by enum
+     *
      * @return mixed
      */
     protected function getExampleProcessed()
     {
         $example = $this->example;
         if ($this->hasEnum()) {
-            $example = in_array($this->example, $this->enum) ? $this->example : reset($this->enum);
+            $example = in_array($this->example, $this->enum, false) ? $this->example : reset($this->enum);
         }
+
         return $example;
     }
 
     /**
      * Guess object properties key
+     *
      * @return array|null
      */
     protected function guessProperties()
@@ -236,16 +247,22 @@ abstract class BaseValueDescribed extends BaseAnnotation
         $example = $this->getExampleProcessed();
         if ($example !== null) {
             $described = Variable::fromExample($example, $this->name, $this->description)->describe();
-            return !empty($described['properties']) ? $described['properties'] : [];
-        } elseif ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
-            $described = Variable::fromDescription(['type' => $this->_phpType])->describe();
-            return !empty($described['properties']) ? $described['properties'] : [];
+
+            return ! empty($described['properties']) ? $described['properties'] : [];
         }
+
+        if ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
+            $described = Variable::fromDescription(['type' => $this->_phpType])->describe();
+
+            return ! empty($described['properties']) ? $described['properties'] : [];
+        }
+
         return [];
     }
 
     /**
-     * Guess var type by example
+     * Guess var type by example.
+     *
      * @return string|null
      */
     protected function guessType()
@@ -254,11 +271,12 @@ abstract class BaseValueDescribed extends BaseAnnotation
         if ($example !== null) {
             return $this->describer()->swaggerTypeByExample($example);
         }
+
         return $this->type;
     }
 
     /**
-     * Process type in object
+     * Process type in object.
      */
     protected function processType()
     {
@@ -274,7 +292,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         // Convert PHP type to Swagger and vise versa
         if ($this->isPhpType($this->type)) {
             $this->type = $this->describer()->swaggerType($this->type);
-        } elseif($this->describer()->isTypeClassName($this->type)) {
+        } elseif ($this->describer()->isTypeClassName($this->type)) {
             $this->_phpType = $this->type;
             $this->type = Variable::SW_TYPE_OBJECT;
         } else {
@@ -283,7 +301,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Check that given type is PHP type
+     * Check that given type is PHP type.
+     *
      * @param  string $type
      * @return bool
      */
@@ -293,11 +312,13 @@ abstract class BaseValueDescribed extends BaseAnnotation
             return true;
         }
         $swType = $this->describer()->swaggerType($type);
+
         return $swType !== $type;
     }
 
     /**
      * Definition must include `schema` key and type, items... keys must be present under that key.
+     *
      * @return bool
      */
     protected function isSchemaTypeUsed()
@@ -306,7 +327,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Example required for this annotation
+     * Example required for this annotation.
+     *
      * @return bool
      */
     protected function isExampleRequired()
@@ -315,7 +337,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Get keys that must be excluded
+     * Get keys that must be excluded.
+     *
      * @return array
      */
     protected function getExcludedKeys()
@@ -324,7 +347,8 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Get keys that must be excluded if they are empty
+     * Get keys that must be excluded if they are empty.
+     *
      * @return array
      */
     protected function getExcludedEmptyKeys()
