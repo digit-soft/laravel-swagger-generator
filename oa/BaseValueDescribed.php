@@ -173,11 +173,15 @@ abstract class BaseValueDescribed extends BaseAnnotation
             }
         }
         // Write example if needed
-        if (! isset($data['example'])
-            && $this->isExampleRequired()
-            && ($example = $this->describer()->example($this->type, $this->name)) !== null
-        ) {
-            $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
+        if (! isset($data['example']) && $this->isExampleRequired()) {
+            $example = $this->describer()->example($this->type, $this->name);
+            // Get example one more time for PHP type (except PHP_ARRAY, SW_TYPE_OBJECT)
+            $example = $example === null && $this->type !== Variable::SW_TYPE_OBJECT && ($phpType = $this->describer()->phpType($this->type)) !== $this->type
+                ? $this->describer()->example($phpType, $this->name)
+                : $example;
+            if ($example !== null) {
+                $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
+            }
         }
 
         $excludeKeys = $this->getExcludedKeys();
