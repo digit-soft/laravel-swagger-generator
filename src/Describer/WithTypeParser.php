@@ -202,7 +202,7 @@ trait WithTypeParser
      * @param  bool   $stripArray
      * @return string
      */
-    public function normalizeType(string $type, $stripArray = false)
+    public function normalizeType(string $type, bool $stripArray = false)
     {
         $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
         if ($stripArray && $this->isTypeArray($type)) {
@@ -212,7 +212,7 @@ trait WithTypeParser
         if (isset($this->basicTypesSyn[$typeLower])) {
             return $this->basicTypesSyn[$typeLower];
         }
-        if (strpos($type, '\\') !== false || class_exists($type)) {
+        if (strpos($type, '\\') !== false || class_exists($type) || interface_exists($type)) {
             return ltrim($type, '\\');
         }
 
@@ -254,6 +254,7 @@ trait WithTypeParser
         switch ($phpType) {
             case 'string':
                 return Variable::SW_TYPE_STRING;
+            case 'int':
             case 'integer':
                 return Variable::SW_TYPE_INTEGER;
             case 'float':
