@@ -287,7 +287,7 @@ class Variable
             $example = $this->getExampleByPHPDocTypeClass($phpType);
             $example = $example ?? [];
         } else {
-            $example = $this->describer()->example($phpType, $this->name);
+            $example = $this->describer()->example($phpType, null, $this->name);
         }
         if ($isArrayOf) {
             $example = [$example];

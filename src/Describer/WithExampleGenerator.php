@@ -26,41 +26,58 @@ trait WithExampleGenerator
     /**
      * Get variable example
      *
-     * @param  string|null $type
+     * @param  string|null $phpType
+     * @param  string|null $swaggerType
      * @param  string|null $varName
      * @param  string|null $rule
-     * @param  bool        $normalizeType
      * @return mixed|null
      */
-    public function example(?string &$type, ?string $varName = null, ?string $rule = null, bool $normalizeType = false)
+    public function example(?string $phpType, ?string $swaggerType = null, ?string $varName = null, ?string $rule = null)
     {
-        $typeUsed = $type;
+        $phpType = $phpType ?? ($swaggerType !== null ? $this->phpType($swaggerType) : null);
+        $swaggerType = $swaggerType ?? ($phpType !== null ? $this->swaggerType($phpType) : null);
         // Guess variable type to get from cache
-        if ($typeUsed === null && $rule !== null) {
-            $typeUsed = $this->getRuleType($rule);
+        if ($phpType === null && $rule !== null) {
+            $phpType = $this->getRuleType($rule);
         }
         // Get from cache
-        if (($cachedValue = $this->getVarCache($varName, $typeUsed)) !== null) {
+        if (($cachedValue = $this->getVarCache($varName, $phpType)) !== null) {
             return $cachedValue;
         }
         // Fill rule and type
         $rule = $rule === null || $this->isBasicType($rule) ? $this->getVariableRule($varName, $rule ?? $varName) : $rule;
-        $typeUsed = $typeUsed === null && $rule !== null ? $this->getRuleType($rule) : $typeUsed;
+        $phpType = $phpType === null && $rule !== null ? $this->getRuleType($rule) : $phpType;
         // Can't guess => leaving
-        if ($typeUsed === null) {
+        if ($phpType === null) {
             return null;
         }
-        $isArray = strpos($typeUsed, '[]') !== false;
+        $isArray = $this->isTypeArray($phpType);
         if ($rule === null || ($example = $this->exampleByRule($rule)) === null) {
-            $typeClean = $isArray ? substr($typeUsed, 0, -2) : $type;
+            $typeClean = $isArray ? substr($phpType, 0, -2) : $phpType;
             $example = $this->exampleByType($typeClean);
         }
-        if ($normalizeType && is_string($typeUsed) && ($typeNormalized = $this->swaggerType($typeUsed)) !== null) {
-            $type = $typeNormalized;
-        }
+        $example = $this->typeCastExample($example, $phpType);
         $example = $isArray ? [$example] : $example;
 
-        return $this->setVarCache($varName, $type, $example);
+        return $this->setVarCache($varName, $phpType, $example);
+    }
+
+    /**
+     * Simple typecast for generated examples.
+     *
+     * @param  mixed       $example
+     * @param  string|null $phpType
+     * @return mixed
+     */
+    protected function typeCastExample(mixed $example, ?string $phpType)
+    {
+        return match ($phpType) {
+            'integer' => (int)$example,
+            'float','double' => round((float)$example, 2),
+            'string' => (string)$example,
+            'boolean', 'bool' => (bool)$example,
+            default => $example
+        };
     }
 
     /**

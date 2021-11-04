@@ -476,7 +476,7 @@ class RoutesParser
      * @param  string|null $parent
      * @return array
      */
-    protected function processFormRequestRules(array $rules, array $labels = [], $describe = true, $parent = null)
+    protected function processFormRequestRules(array $rules, array $labels = [], bool $describe = true, ?string $parent = null)
     {
         $result = [];
         $required = [];
@@ -492,10 +492,9 @@ class RoutesParser
                 if (strpos($ruleName, ':')) {
                     $ruleName = explode(':', $ruleName)[0];
                 }
-                $required[$key] = $ruleName === 'required' ? true : $required[$key];
-                $type = null;
+                $required[$key] = $ruleName === 'required' || $required[$key];
                 $keyForExample = $key === '*' && $parent !== null ? $parent : $key;
-                if (($example = $this->describer()->example($type, $keyForExample, $ruleName)) !== null) {
+                if (($example = $this->describer()->example(null, null, $keyForExample, $ruleName)) !== null) {
                     if ($key === '*') {
                         $result = [$example];
                     } else {
