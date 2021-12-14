@@ -85,6 +85,23 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
+     * Get paths for nested names.
+     *
+     * @return string[]
+     */
+    public function getNestedPaths()
+    {
+        $nameParts = explode('.', $this->name);
+        if (count($nameParts) === 1) {
+            return [null, null, $this->name];
+        }
+        $namePartsParent = $nameParts;
+        array_pop($namePartsParent);
+
+        return [implode('.properties.', $nameParts), implode('.properties.', $namePartsParent), last($nameParts)];
+    }
+
+    /**
      * Sets this array content to target by obtained key
      *
      * @param  array $target

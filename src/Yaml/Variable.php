@@ -390,6 +390,17 @@ class Variable
             if (empty($annotation->name)) {
                 continue;
             }
+            // Handle nested names (with dots)
+            if (
+                $annotation->isNested()
+                && ([$nestedPath, $nestedParentPath, $nestedName] = $annotation->getNestedPaths())
+                && $nestedParentPath !== null
+                && Arr::get($result, $nestedParentPath . '.type') === static::SW_TYPE_OBJECT
+            ) {
+                $rowData['name'] = $nestedName;
+                Arr::set($result, $nestedPath, $rowData);
+                continue;
+            }
             $result[$annotation->name] = $rowData;
         }
 
