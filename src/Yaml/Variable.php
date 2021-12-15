@@ -17,6 +17,7 @@ class Variable
     const KEY_WITH = 'with';
     const KEY_EXCEPT = 'except';
     const KEY_ONLY = 'only';
+    const KEY_PROPERTIES = 'properties';
 
     const SW_TYPE_STRING = 'string';
     const SW_TYPE_INTEGER = 'integer';
@@ -44,6 +45,8 @@ class Variable
 
     public $name;
 
+    public $properties;
+
     public $with = [];
 
     public $except = [];
@@ -63,6 +66,7 @@ class Variable
         self::KEY_WITH,
         self::KEY_EXCEPT,
         self::KEY_ONLY,
+        self::KEY_PROPERTIES,
     ];
 
     protected $swaggerType;
@@ -90,7 +94,7 @@ class Variable
         $this->fillMissingProperties();
         foreach ($this->getFillable() as $paramName) {
             $value = $this->{$paramName};
-            if ($value === null && ! in_array($paramName, [static::KEY_TYPE], true)) {
+            if ($value === null && ! in_array($paramName, [static::KEY_TYPE, static::KEY_PROPERTIES], true)) {
                 continue;
             }
             $result[$paramName] = $value;
@@ -100,37 +104,27 @@ class Variable
     }
 
     /**
-     * Get cache key for objects.
-     *
-     * @param  string $className
-     * @return string|null
-     */
-    protected function generateObjectCacheKey($className)
-    {
-        if (! class_exists($className) && ! interface_exists($className)) {
-            return null;
-        }
-
-        return $className
-            . '::' . (! empty($this->with) ? implode(',', $this->with) : '-')
-            . '::' . (! empty($this->except) ? implode(',', $this->except) : '-')
-            . '::' . (! empty($this->only) ? implode(',', $this->only) : '-');
-    }
-
-    /**
      * Describe variable
      * @return array
      */
     public function describe()
     {
         $this->fillMissingProperties();
+        $typeSwagger = $this->getSwType();
         $result = [
-            'type' => $this->getSwType(),
+            'type' => $typeSwagger,
         ];
         if ($this->description !== null) {
             $result['description'] = trim($this->description);
         }
-        if ($this->example !== null) {
+        // Set example if it was provided and not empty for array and object type
+        if (
+            $this->example !== null
+            && (
+                ! in_array($typeSwagger, [static::SW_TYPE_OBJECT, static::SW_TYPE_ARRAY], true)
+                || ! empty($this->example)
+            )
+        ) {
             $result['example'] = $this->example;
         }
         $res = [];
@@ -139,7 +133,7 @@ class Variable
                 $className = $this->describer()->normalizeType($this->type);
                 $objCacheKey = $this->generateObjectCacheKey($className);
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
-                // If class does not exists then $objCacheKey will be NULL
+                // If class does not exist then $objCacheKey will be NULL
                 if ($objCacheKey !== null) {
                     // Look for a cache
                     if (isset(static::$_cache_objects[$objCacheKey])) {
@@ -156,6 +150,10 @@ class Variable
                     $res['properties'] = Arr::get($describedEx, 'properties', []);
                     // Remove already described example
                     Arr::forget($result, 'example');
+                }
+                // Merge previously set properties
+                if (is_array($this->properties) && ! empty($this->properties)) {
+                    $res['properties'] = $this->describer()->merge($res['properties'], $this->properties);
                 }
                 $res['properties'] = ! empty($this->except) ? Arr::except($res['properties'], $this->except) : $res['properties'];
                 break;
@@ -181,6 +179,15 @@ class Variable
         }
 
         return $result;
+    }
+
+    /**
+     * Get fillable properties
+     * @return array
+     */
+    public function getFillable()
+    {
+        return $this->fillable;
     }
 
     /**
@@ -364,6 +371,9 @@ class Variable
                 throw $exception;
             }
         }
+        // if (isset($propertiesByAnnRead['price_breakdown'])) {
+        //     dd($described, '');
+        // }
 
         return $described;
     }
@@ -383,7 +393,7 @@ class Variable
         $result = [];
         foreach ($annotations as $annotation) {
             $rowData = $annotation->toArray();
-            if (! empty($only) && ! in_array($annotation->name, $only, true)) {
+            if (! empty($only) && ! in_array($annotation->name, $only, true) && ! $annotation->isNested()) {
                 continue;
             }
             // Skip annotations w/o name
@@ -403,6 +413,8 @@ class Variable
             }
             $result[$annotation->name] = $rowData;
         }
+        // Cleanup nested annotations
+        $result = ! empty($only) ? array_intersect_key($result, array_flip($only)) : $result;
 
         return $result;
     }
@@ -440,6 +452,24 @@ class Variable
     }
 
     /**
+     * Get cache key for objects.
+     *
+     * @param  string $className
+     * @return string|null
+     */
+    protected function generateObjectCacheKey($className)
+    {
+        if (! class_exists($className) && ! interface_exists($className)) {
+            return null;
+        }
+
+        return $className
+            . '::' . (! empty($this->with) ? implode(',', $this->with) : '-')
+            . '::' . (! empty($this->except) ? implode(',', $this->except) : '-')
+            . '::' . (! empty($this->only) ? implode(',', $this->only) : '-');
+    }
+
+    /**
      * Configure object itself
      * @param  array $config
      */
@@ -450,15 +480,6 @@ class Variable
                 $this->{$key} = $value;
             }
         }
-    }
-
-    /**
-     * Get fillable properties
-     * @return array
-     */
-    public function getFillable()
-    {
-        return $this->fillable;
     }
 
     /**

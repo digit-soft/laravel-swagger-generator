@@ -85,6 +85,18 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
+     * Get name of the parent for nested.
+     *
+     * @return string|null
+     */
+    public function getNestedParentName()
+    {
+        [ , , , $parentName] = $this->getNestedPaths();
+
+        return $parentName;
+    }
+
+    /**
      * Get paths for nested names.
      *
      * @return string[]
@@ -93,12 +105,17 @@ abstract class BaseValueDescribed extends BaseAnnotation
     {
         $nameParts = explode('.', $this->name);
         if (count($nameParts) === 1) {
-            return [null, null, $this->name];
+            return [null, null, $this->name, null];
         }
         $namePartsParent = $nameParts;
         array_pop($namePartsParent);
 
-        return [implode('.properties.', $nameParts), implode('.properties.', $namePartsParent), last($nameParts)];
+        return [
+            implode('.properties.', $nameParts),        // Full path
+            implode('.properties.', $namePartsParent),  // Path to the parent
+            last($nameParts),                                     // Deepest variable name
+            implode('.', $namePartsParent)              // Parent name
+        ];
     }
 
     /**
