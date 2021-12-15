@@ -405,9 +405,14 @@ class Variable
                 $annotation->isNested()
                 && ([$nestedPath, $nestedParentPath, $nestedName] = $annotation->getNestedPaths())
                 && $nestedParentPath !== null
-                && Arr::get($result, $nestedParentPath . '.type') === static::SW_TYPE_OBJECT
+                && ($nestedParentType = Arr::get($result, $nestedParentPath . '.type')) !== null
+                && in_array($nestedParentType, [static::SW_TYPE_ARRAY, static::SW_TYPE_OBJECT], true)
             ) {
-                $rowData['name'] = $nestedName;
+                if ($nestedParentType === static::SW_TYPE_ARRAY && in_array($nestedName, ['*', null], true)) {
+                    unset($rowData['name']);
+                } elseif ($nestedParentType === static::SW_TYPE_OBJECT) {
+                    $rowData['name'] = $nestedName;
+                }
                 Arr::set($result, $nestedPath, $rowData);
                 continue;
             }

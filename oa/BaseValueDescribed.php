@@ -109,12 +109,15 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         $namePartsParent = $nameParts;
         array_pop($namePartsParent);
+        $path = $this->makePathFromKeysArray($nameParts);
+        $pathParent = $this->makePathFromKeysArray($namePartsParent);
+        $lastName = last($nameParts);
 
         return [
-            implode('.properties.', $nameParts),        // Full path
-            implode('.properties.', $namePartsParent),  // Path to the parent
-            last($nameParts),                                     // Deepest variable name
-            implode('.', $namePartsParent)              // Parent name
+            $path,                                  // Full path
+            $pathParent,                            // Path to the parent
+            $lastName !== '*' ? $lastName : null,   // Deepest variable name
+            implode('.', $namePartsParent),         // Parent name
         ];
     }
 
@@ -258,6 +261,21 @@ abstract class BaseValueDescribed extends BaseAnnotation
     protected function hasEnum()
     {
         return is_array($this->enum) && !empty($this->enum);
+    }
+
+    /**
+     * Make a path from keys array.
+     *
+     * @param  array $keys
+     * @return string
+     */
+    protected function makePathFromKeysArray(array $keys)
+    {
+        $first = array_shift($keys);
+        $keys = array_map(fn ($k) => $k === '*' ? '.items' : '.properties.' . $k, $keys);
+        array_unshift($keys, $first);
+
+        return implode('', $keys);
     }
 
     /**
