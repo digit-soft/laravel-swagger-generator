@@ -3,7 +3,7 @@
     "description": "Swagger yaml generator",
     "keywords": ["api", "swagger", "open auth"],
     "license": "MIT",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "authors": [
         {
             "name": "Digit",

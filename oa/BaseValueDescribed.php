@@ -213,7 +213,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
             $example = $example === null && $this->type !== Variable::SW_TYPE_OBJECT && ($phpType = $this->describer()->phpType($this->type)) !== $this->type
                 ? $this->describer()->example($phpType, null, $this->name)
                 : $example;
-            if ($example !== null) {
+            if ($example !== null && $this->describer()->isValueSuitableForType($this->type, $example)) {
                 $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
             }
         }

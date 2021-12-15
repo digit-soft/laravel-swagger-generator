@@ -301,6 +301,34 @@ trait WithTypeParser
     }
 
     /**
+     * Determines whether a value is suitable for given swagger type.
+     *
+     * @param  string $swType       Swagger type
+     * @param  mixed  $value        Value to check
+     * @param  bool   $excludeEmpty Exclude empty values for array and object
+     * @return bool
+     */
+    public function isValueSuitableForType($swType, $value, $excludeEmpty = true)
+    {
+        switch ($swType) {
+            case Variable::SW_TYPE_OBJECT:
+                return is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) !== array_keys(array_values($value));
+            case Variable::SW_TYPE_ARRAY:
+                return is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) === array_keys(array_values($value));
+            case Variable::SW_TYPE_NUMBER:
+                return is_numeric($value);
+            case Variable::SW_TYPE_INTEGER:
+                return is_int($value);
+            case Variable::SW_TYPE_STRING:
+                return is_string($value);
+            case Variable::SW_TYPE_BOOLEAN:
+                return is_bool($value);
+        }
+
+        return false;
+    }
+
+    /**
      * Get possible rule for a variable name
      *
      * @param  string      $varName
