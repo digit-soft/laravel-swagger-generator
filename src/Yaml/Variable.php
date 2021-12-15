@@ -143,7 +143,7 @@ class Variable
                         }
                         return $cached;
                     }
-                    $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
+                    $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with ?? []);
                     $res['properties'] = $res['properties'] ?? [];
                 } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
                     $describedEx = $this->describer()->describe($this->example);
@@ -201,7 +201,7 @@ class Variable
         $className = $this->describer()->normalizeType($this->type);
         $result = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
         if (class_exists($className)) {
-            $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with);
+            $result['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with ?? []);
             $result['properties'] = ! empty($this->except) ? Arr::except($result['properties'], $this->except) : $result['properties'];
         }
 
@@ -334,22 +334,23 @@ class Variable
      *
      * @param  string $className
      * @param  array  $with
-     * @return array|null
+     * @return array
      */
-    protected function getDescriptionByPHPDocTypeClass($className, $with = [])
+    protected function getDescriptionByPHPDocTypeClass(string $className, array $with = [])
     {
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
+        $propertiesRead = [];
+        $propertiesByAnnRead = [];
         if (! empty($with)) {
             $this->setWithToPropertiesRecursively($properties, $with);
             $propertiesRead = $parser->propertiesRead($with, null, false);
-            $propertiesByAnnRead = $this->getDescriptionByPropertyAnnotations($className, $with, 'OA\PropertyRead');
-            $properties = $this->describer()->merge($properties, $propertiesRead, $propertiesByAnnRead);
+            $propertiesByAnnRead = $this->getDescriptionByPropertyAnnotations($className, $with, \OA\PropertyRead::class);
         }
         $propertiesByAnn = $this->getDescriptionByPropertyAnnotations($className);
-        $properties = $this->describer()->merge($properties, $propertiesByAnn);
+        $properties = $this->describer()->merge($properties, $propertiesRead, $propertiesByAnn, $propertiesByAnnRead);
         if (empty($properties)) {
-            return null;
+            return [];
         }
         // Ignore properties
         $ignored = $this->getIgnoredProperties($className);
@@ -371,9 +372,6 @@ class Variable
                 throw $exception;
             }
         }
-        // if (isset($propertiesByAnnRead['price_breakdown'])) {
-        //     dd($described, '');
-        // }
 
         return $described;
     }
@@ -386,7 +384,7 @@ class Variable
      * @param  string $annotationClass
      * @return array
      */
-    protected function getDescriptionByPropertyAnnotations($className, $only = [], $annotationClass = 'OA\Property')
+    protected function getDescriptionByPropertyAnnotations(string $className, array $only = [], string $annotationClass = \OA\Property::class)
     {
         /** @var \OA\Property[] $annotations */
         $annotations = $this->classAnnotations($className, $annotationClass);
@@ -418,18 +416,18 @@ class Variable
             }
             $result[$annotation->name] = $rowData;
         }
-        // Cleanup nested annotations
-        $result = ! empty($only) ? array_intersect_key($result, array_flip($only)) : $result;
 
-        return $result;
+        // Cleanup nested annotations
+        return ! empty($only) ? array_intersect_key($result, array_flip($only)) : $result;
     }
 
     /**
-     * Get ignored properties
+     * Get ignored properties.
+     *
      * @param  string $className
      * @return array
      */
-    protected function getIgnoredProperties($className)
+    protected function getIgnoredProperties(string $className)
     {
         /** @var \OA\PropertyIgnore[] $annotations */
         $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
