@@ -292,7 +292,7 @@ class RoutesParser
      * @param  bool                      $asQueryParams Return request body as query parameters
      * @return array|null
      */
-    protected function getRouteRequest(Route $route, $asQueryParams = false)
+    protected function getRouteRequest(Route $route, bool $asQueryParams = false)
     {
         $ref = $this->routeReflection($route);
         $request = null;
@@ -334,7 +334,7 @@ class RoutesParser
      * @param  bool   $asRaw
      * @return array
      */
-    protected function getParamsFromFormRequest($className, $asRaw = false)
+    protected function getParamsFromFormRequest(string $className, bool $asRaw = false): array
     {
         $classKey = $this->describer()->shortenClass($className);
         if ($asRaw || ($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
@@ -415,7 +415,7 @@ class RoutesParser
     {
         /** @var FormRequest $instance */
         $instance = new $className;
-        if (!method_exists($instance, 'rules')) {
+        if (! method_exists($instance, 'rules')) {
             return [];
         }
         try {
@@ -478,6 +478,7 @@ class RoutesParser
      */
     protected function processFormRequestRules(array $rules, array $labels = [], bool $describe = true, ?string $parent = null)
     {
+        $resultAdditional = [];
         $result = [];
         $required = [];
         foreach ($rules as $key => $row) {
@@ -485,20 +486,21 @@ class RoutesParser
             if (Arr::isAssoc($row)) {
                 // Replace KEY for nested rules
                 $keyToPlace = $key === "*" ? 0 : $key;
-                [$result[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, [], false, $key);
+                [$result[$keyToPlace], $resultAdditional[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, [], false, $key);
                 continue;
             }
-            foreach ($row as $ruleName) {
-                if (strpos($ruleName, ':')) {
-                    $ruleName = explode(':', $ruleName)[0];
-                }
+            foreach ($row as $ruleRow) {
+                [$ruleName] = $this->normalizeFormRequestValidationRule($ruleRow);
                 $required[$key] = $ruleName === 'required' || $required[$key];
                 $keyForExample = $key === '*' && $parent !== null ? $parent : $key;
                 if (($example = $this->describer()->example(null, null, $keyForExample, $ruleName)) !== null) {
+                    $additionalParams = $this->parseAdditionalParamsFromRequestValidationRules($row, $example);
                     if ($key === '*') {
                         $result = [$example];
+                        $resultAdditional = [$additionalParams];
                     } else {
                         $result[$key] = $example;
+                        $resultAdditional[$key] = array_merge($resultAdditional[$key] ?? [], $additionalParams);
                     }
                     break;
                 }
@@ -506,12 +508,101 @@ class RoutesParser
         }
         // Describe optionally
         if ($describe) {
-            $result = $this->describer()->describe($result);
+            $result = $this->describer()->describe($result, $resultAdditional);
             $this->applyFormRequestRequiredRules($result, $required);
             $this->applyFromRequestLabelsToRules($result, $labels);
         }
 
-        return [$result, $required];
+        return [$result, $resultAdditional, $required];
+    }
+
+    /**
+     * Get additional params for the variable description by all validation rules.
+     *
+     * @param  array $rules
+     * @param  mixed $value
+     * @return array
+     */
+    protected function parseAdditionalParamsFromRequestValidationRules(array $rules, $value): array
+    {
+        $params = [];
+        foreach ($rules as $ruleRow) {
+            [$ruleName, $ruleParams] = $this->normalizeFormRequestValidationRule($ruleRow);
+            if (! is_string($ruleName)) {
+                continue;
+            }
+            /** @noinspection SlowArrayOperationsInLoopInspection */
+            $params = array_merge($params, $this->getAdditionalParamsFromRequestValidationRule($ruleName, $ruleParams, $value));
+        }
+
+        return $params;
+    }
+
+    /**
+     * Get additional parameters for value description by its validation rules.
+     *
+     * @param  string $ruleName
+     * @param  array  $ruleParams
+     * @param  mixed  $value
+     * @return array
+     */
+    protected function getAdditionalParamsFromRequestValidationRule(string $ruleName, array $ruleParams, $value): array
+    {
+        $params = [];
+        switch ($ruleName) {
+            case 'min':
+                if (($min = reset($ruleParams)) !== false) {
+                    $paramKey = is_numeric($value) ? 'minimum' : 'minLength';
+                    $paramKey = is_array($value) ? 'minItems' : $paramKey;
+                    $params[$paramKey] = strpos($min, '.') !== false ? (float)$min : (int)$min;
+                }
+                break;
+            case 'max':
+                if (($max = reset($ruleParams)) !== false) {
+                    $paramKey = is_numeric($value) ? 'maximum' : 'maxLength';
+                    $paramKey = is_array($value) ? 'maxItems' : $paramKey;
+                    $params[$paramKey] = strpos($max, '.') !== false ? (float)$max : (int)$max;
+                }
+                break;
+            case 'between':
+                if (count($ruleParams) >= 2) {
+                    [$min, $max] = $ruleParams;
+                    $paramsLocal = [
+                        $this->getAdditionalParamsFromRequestValidationRule('min', [$min], $value),
+                        $this->getAdditionalParamsFromRequestValidationRule('max', [$max], $value),
+                    ];
+                    $params = array_merge($params, ...$paramsLocal);
+                }
+                break;
+            case 'in':
+                if (! empty($ruleParams)) {
+                    $params['enum'] = $ruleParams;
+                }
+                break;
+            case 'nullable':
+                $params['nullable'] = true;
+                break;
+        }
+
+        return $params;
+    }
+
+    /**
+     * Normalize validation rule data for the request.
+     *
+     * @param  string|mixed $rule
+     * @return array
+     */
+    protected function normalizeFormRequestValidationRule($rule): array
+    {
+        if (! is_string($rule) || strpos($rule, ':') === false) {
+            return [$rule, []];
+        }
+
+        [$ruleName, $ruleParamsStr] = explode(':', $rule);
+        $ruleParams = array_map('trim', explode(',', $ruleParamsStr));
+
+        return [$ruleName, $ruleParams];
     }
 
     /**

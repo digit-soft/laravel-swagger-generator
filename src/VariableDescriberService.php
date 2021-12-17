@@ -72,16 +72,17 @@ class VariableDescriberService
      * Describe variable
      *
      * @param  mixed $variable
+     * @param  array $additionalData
      * @param  bool  $withExample
      * @return array
      */
-    public function describe($variable, bool $withExample = true)
+    public function describe($variable, array $additionalData = [], bool $withExample = true)
     {
-        return $this->describeValue($variable, $withExample);
+        return $this->describeValue($variable, $additionalData, $withExample);
     }
 
     /**
-     * Shorten class name
+     * Shorten class name.
      *
      * @param  string $className
      * @return string
@@ -104,7 +105,8 @@ class VariableDescriberService
     }
 
     /**
-     * Merge arrays
+     * Merge arrays.
+     *
      * @param  array $a
      * @param  array $b
      * @return array
