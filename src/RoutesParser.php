@@ -124,7 +124,7 @@ class RoutesParser
                 $routeData['responses'] = $responses;
             }
 
-            $tag = !empty($routeData['tags']) ? reset($routeData['tags']) : 'default';
+            $tag = ! empty($routeData['tags']) ? reset($routeData['tags']) : 'default';
             $routeData['operationId'] = $this->getRouteId($route, $tag);
             $path = $this->normalizeUri($route->uri(), true);
             $paths[$path] = $paths[$path] ?? [];
@@ -145,26 +145,27 @@ class RoutesParser
      * Get ID for given route.
      *
      * @param  \Illuminate\Routing\Route $route
-     * @param  string                    $tagName
+     * @param  string|null               $tagName
      * @return string
      */
-    protected function getRouteId(Route $route, $tagName = 'default')
+    protected function getRouteId(Route $route, ?string $tagName = 'default')
     {
         $actionMethod = $route->getActionMethod();
         if ($actionMethod === 'Closure') {
             return 'closure_' . $this->routeNum;
         }
-        $id = $actionMethod;
-        $fullId = $tagName . '/' . $id;
-        if (isset($this->routeIds[$fullId])) {
+        if (($id = $route->getName()) === null) {
             $ctrlName = get_class($route->getController());
             $ctrlNameArr = explode('\\', $ctrlName);
             $ctrlBaseName = end($ctrlNameArr);
             $ctrlBaseName = Str::endsWith($ctrlBaseName, 'Controller') ? substr($ctrlBaseName, 0, -10) : $ctrlBaseName;
-            $id = $ctrlBaseName . ucfirst($id);
-            $fullId = $tagName . '/' . $id;
+            $id = Str::snake($ctrlBaseName . ucfirst($actionMethod));
         }
-        $this->routeIds[$fullId] = true;
+        if (isset($this->routeIds[$id])) {
+            $id .= '_' . $this->routeNum;
+        }
+        $this->routeIds[$id] = true;
+
         return $id;
     }
 
