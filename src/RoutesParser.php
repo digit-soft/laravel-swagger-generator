@@ -449,6 +449,7 @@ class RoutesParser
                 unset($rules[$key]);
             }
         }
+        $this->normalizeFormRequestRulesExpanded($rulesExpanded);
         $rules = array_merge($rules, $rulesExpanded);
         foreach ($rules as $key => $row) {
             if (is_object($row)) {
@@ -466,6 +467,33 @@ class RoutesParser
         }
 
         return $result;
+    }
+
+    /**
+     * Remove validation rules in objects which were put there with some validation rules.
+     *
+     * Like:
+     * [
+     *      "videos" => ["array"],
+     *      "videos.*" => ["array"],
+     *      "videos.*.url" => ["string"],
+     * ]
+     *
+     * @param  array $rules
+     * @return void
+     */
+    protected function normalizeFormRequestRulesExpanded(array &$rules)
+    {
+        if (Arr::isAssoc($rules)) {
+            if (isset($rules[0])) {
+                $rules = array_filter($rules, fn ($k) => ! is_int($k), ARRAY_FILTER_USE_KEY);
+            }
+            foreach ($rules as &$children) {
+                if (is_array($children)) {
+                    $this->normalizeFormRequestRulesExpanded($children);
+                }
+            }
+        }
     }
 
     /**
