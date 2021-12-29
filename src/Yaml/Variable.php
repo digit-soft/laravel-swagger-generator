@@ -401,16 +401,12 @@ class Variable
             // Handle nested names (with dots)
             if (
                 $annotation->isNested()
-                && ([$nestedPath, $nestedParentPath, $nestedName] = $annotation->getNestedPaths())
+                && ([$nestedPath, $nestedParentPath] = $annotation->getNestedPaths())
                 && $nestedParentPath !== null
                 && ($nestedParentType = Arr::get($result, $nestedParentPath . '.type')) !== null
                 && in_array($nestedParentType, [static::SW_TYPE_ARRAY, static::SW_TYPE_OBJECT], true)
             ) {
-                if ($nestedParentType === static::SW_TYPE_ARRAY && in_array($nestedName, ['*', null], true)) {
-                    unset($rowData['name']);
-                } elseif ($nestedParentType === static::SW_TYPE_OBJECT) {
-                    $rowData['name'] = $nestedName;
-                }
+                unset($rowData['name']);
                 Arr::set($result, $nestedPath, $rowData);
                 continue;
             }
