@@ -287,7 +287,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
     {
         $example = $this->example;
         if ($this->hasEnum()) {
-            $example = in_array($this->example, $this->enum, false) ? $this->example : reset($this->enum);
+            $example = $this->example !== null && in_array($this->example, $this->enum, false) ? $this->example : reset($this->enum);
         }
 
         return $example;
