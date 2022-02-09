@@ -76,16 +76,18 @@ class RoutesParser
      *
      * @return array
      */
-    public function parse()
+    public function parse(): array
     {
         $this->trigger(static::EVENT_START);
         $paths = [];
         $only = config('swagger-generator.routes.only', []);
+        $except = config('swagger-generator.routes.not', []);
         $matches = config('swagger-generator.routes.matches', []);
+        $matchesNot = config('swagger-generator.routes.notMatches', []);
         $documentedMethods = config('swagger-generator.routes.methods', ['GET']);
         $this->routeNum = 1;
         foreach ($this->routes as $route) {
-            if (! $this->checkRoute($route, $matches, $only)) {
+            if (! $this->checkRoute($route, $matches, $matchesNot, $only, $except)) {
                 $this->trigger(static::EVENT_ROUTE_SKIPPED, $route);
                 continue;
             }
@@ -148,7 +150,7 @@ class RoutesParser
      * @param  string|null               $tagName
      * @return string
      */
-    protected function getRouteId(Route $route, ?string $tagName = 'default')
+    protected function getRouteId(Route $route, ?string $tagName = 'default'): string
     {
         $actionMethod = $route->getActionMethod();
         if ($actionMethod === 'Closure') {
@@ -175,20 +177,20 @@ class RoutesParser
      * @param  \Illuminate\Routing\Route $route
      * @return array|null
      */
-    protected function getRouteParams(Route $route)
+    protected function getRouteParams(Route $route): ?array
     {
         $params = [];
         /** @var \OA\Parameter[] $paramsAnn */
         /** @var \OA\Parameter[] $paramsAnnCtrl */
-        $paramsAnn = $this->routeAnnotations($route, 'OA\Parameter');
-        if (! empty($paramsAnnGroup = $this->routeAnnotations($route, 'OA\Parameters'))) {
+        $paramsAnn = $this->routeAnnotations($route, \OA\Parameter::class);
+        if (! empty($paramsAnnGroup = $this->routeAnnotations($route, \OA\Parameters::class))) {
             foreach ($paramsAnnGroup as $paramsGroup) {
                 /** @var \OA\Parameters $paramsGroup */
                 $paramsAnn = array_merge($paramsAnn, $paramsGroup->parameters);
             }
             $paramsAnn = array_unique($paramsAnn, SORT_STRING);
         }
-        $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, 'OA\Parameter'), null, 'name');
+        $paramsAnnCtrl = Arr::pluck($this->controllerAnnotations($route, \OA\Parameter::class), null, 'name');
         $paramsDoc = $this->getRouteDocParams($route);
         $paramsAnnInPath = array_filter($paramsAnn, function ($param) {
             return $param->in === 'path';
@@ -200,7 +202,7 @@ class RoutesParser
                 if (isset($paramsAnn[$parameterName])) {
                     continue;
                 }
-                $required = strpos($route->uri(), '{' . $parameterName . '}') !== false;
+                $required = str_contains($route->uri(), '{' . $parameterName . '}');
                 if (($paramDoc = static::getArrayElemByStrKey($paramsDoc, $parameterName)) !== null
                     && isset($paramDoc['type'])
                     && $this->describer()->isBasicType($paramDoc['type'])
@@ -238,13 +240,14 @@ class RoutesParser
      * @param  \Illuminate\Routing\Route $route
      * @return array
      */
-    protected function getRouteDocParams(Route $route)
+    protected function getRouteDocParams(Route $route): array
     {
         $ref = $this->routeReflection($route);
         $docBlockStr = $ref->getDocComment();
         if (empty($docBlockStr)) {
             return [];
         }
+
         return $this->getDocTagsPropertiesDescribed($docBlockStr, 'param');
     }
 
@@ -254,11 +257,11 @@ class RoutesParser
      * @param  \Illuminate\Routing\Route $route
      * @return array
      */
-    protected function getRouteResponses(Route $route)
+    protected function getRouteResponses(Route $route): array
     {
         $result = [];
         /** @var \OA\Response[] $annotations */
-        $annotations = $this->routeAnnotations($route, 'OA\Response');
+        $annotations = $this->routeAnnotations($route, \OA\Response::class);
         if (empty($annotations)) {
             $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_NO_RESPONSE, $route);
         }
@@ -293,13 +296,13 @@ class RoutesParser
      * @param  bool                      $asQueryParams Return request body as query parameters
      * @return array|null
      */
-    protected function getRouteRequest(Route $route, bool $asQueryParams = false)
+    protected function getRouteRequest(Route $route, bool $asQueryParams = false): ?array
     {
         $ref = $this->routeReflection($route);
         $request = null;
         $stdTypes = ['int', 'integer', 'string', 'float', 'array', 'bool', 'boolean'];
         foreach ($ref->getParameters() as $parameter) {
-            if ($parameter->hasType() && ($type = $parameter->getType()->getName()) && ! in_array($type, $stdTypes, true)) {
+            if ($parameter->hasType() && ($type = $parameter->getType()?->getName()) !== null && ! in_array($type, $stdTypes, true)) {
                 if (
                     class_exists($type)
                     && isset(class_parents($type)[FormRequest::class])
@@ -312,7 +315,7 @@ class RoutesParser
         // Parse route annotations
         if ($request === null) {
             /** @var \OA\RequestBody[] $requestAnn */
-            $requestAnn = $this->routeAnnotations($route, 'OA\RequestBody');
+            $requestAnn = $this->routeAnnotations($route, \OA\RequestBody::class);
             if (! empty($requestAnn)) {
                 $request = [];
                 foreach ($requestAnn as $annotation) {
@@ -376,7 +379,7 @@ class RoutesParser
      * @param  array $body Request body array
      * @return array|null
      */
-    protected function convertRequestBodyIntoQueryParams(array $body)
+    protected function convertRequestBodyIntoQueryParams(array $body): ?array
     {
         if (! isset($body['content'])) {
             return null;
@@ -412,7 +415,7 @@ class RoutesParser
      * @param  string $className
      * @return array
      */
-    protected function parseFormRequestRules($className)
+    protected function parseFormRequestRules(string $className): array
     {
         /** @var FormRequest $instance */
         $instance = new $className;
@@ -444,7 +447,7 @@ class RoutesParser
         $result = [];
         $rulesExpanded = [];
         foreach ($rules as $key => $row) {
-            if (strpos($key, '.') !== false) {
+            if (str_contains($key, '.')) {
                 Arr::set($rulesExpanded, $key, $row);
                 unset($rules[$key]);
             }
@@ -486,7 +489,7 @@ class RoutesParser
     {
         if (Arr::isAssoc($rules)) {
             if (isset($rules[0])) {
-                $rules = array_filter($rules, fn ($k) => ! is_int($k), ARRAY_FILTER_USE_KEY);
+                $rules = array_filter($rules, fn($k) => ! is_int($k), ARRAY_FILTER_USE_KEY);
             }
             foreach ($rules as &$children) {
                 if (is_array($children)) {
@@ -505,7 +508,7 @@ class RoutesParser
      * @param  string|null $parent
      * @return array
      */
-    protected function processFormRequestRules(array $rules, array $labels = [], bool $describe = true, ?string $parent = null)
+    protected function processFormRequestRules(array $rules, array $labels = [], bool $describe = true, ?string $parent = null): array
     {
         $resultAdditional = [];
         $result = [];
@@ -640,7 +643,7 @@ class RoutesParser
      * @param  array $rules
      * @param  array $required
      */
-    protected function applyFormRequestRequiredRules(array &$rules, $required)
+    protected function applyFormRequestRequiredRules(array &$rules, array $required)
     {
         foreach ($required as $key => $value) {
             if (is_array($value) && isset($rules['properties'][$key])) {
@@ -648,7 +651,7 @@ class RoutesParser
             } elseif (is_bool($value) && $value) {
                 if ($key === '*') {
                     $rules['required'] = $value;
-                } elseif(isset($rules['properties'][$key])) {
+                } elseif (isset($rules['properties'][$key])) {
                     $keyToSet = 'properties.' . $key . '.required';
                     Arr::set($rules, $keyToSet, $value);
                 }
@@ -685,12 +688,13 @@ class RoutesParser
 
     /**
      * Get form request annotations (\OA\RequestBody)
-     * @param string $className
+     *
+     * @param  string $className
      * @return array
      */
-    protected function parseFormRequestAnnotations($className)
+    protected function parseFormRequestAnnotations(string $className): array
     {
-        $annotations = $this->classAnnotations($className, 'OA\RequestBody');
+        $annotations = $this->classAnnotations($className, \OA\RequestBody::class);
         if (empty($annotations)) {
             $annotations = [new \OA\RequestBodyJson(['content' => []])];
         }
@@ -699,20 +703,20 @@ class RoutesParser
         foreach ($annotations as $annotation) {
             $request = $this->describer()->merge($request, $annotation->toArray());
         }
+
         return $request;
     }
 
     /**
      * Check if route is ignored by annotation
+     *
      * @param  Route $route
      * @return bool
      */
-    protected function isRouteIgnored(Route $route)
+    protected function isRouteIgnored(Route $route): bool
     {
-        if ($this->routeAnnotation($route, 'OA\Ignore') !== null || !empty($this->controllerAnnotations($route, 'OA\Ignore'))) {
-            return true;
-        }
-        return false;
+        return $this->routeAnnotation($route, \OA\Ignore::class) !== null
+            || ! empty($this->controllerAnnotations($route, \OA\Ignore::class));
     }
 
     /**
@@ -720,24 +724,21 @@ class RoutesParser
      *
      * @param  Route      $route
      * @param  array      $matches
-     * @param  array|null $only
-     * @param  null       $except
+     * @param  array      $matchesNot
+     * @param  array $only
+     * @param  array $except
      * @return bool
      */
-    protected function checkRoute(Route $route, $matches = [], $only = null, $except = null)
+    protected function checkRoute(Route $route, array $matches = [], array $matchesNot = [], array $only = [], array $except = []): bool
     {
         if ($this->isRouteIgnored($route)) {
             return false;
         }
         $uri = '/' . ltrim($route->uri, '/');
-        $only = $only ?? config('swagger-generator.routes.only', []);
-        $except = $except ?? config('swagger-generator.routes.not', []);
-        $matches = $matches ?? config('swagger-generator.routes.matches', []);
-        $matchesNot = $matchesNot ?? config('swagger-generator.routes.notMatches', []);
-        if (!empty($except) && in_array($uri, $except)) {
+        if (! empty($except) && in_array($uri, $except, true)) {
             return false;
         }
-        if (!empty($only) && in_array($uri, $only)) {
+        if (! empty($only) && in_array($uri, $only, true)) {
             return true;
         }
         foreach ($matchesNot as $pattern) {
@@ -750,15 +751,17 @@ class RoutesParser
                 return true;
             }
         }
+
         return false;
     }
 
     /**
      * Get route tag names
-     * @param Route $route
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return string[]
      */
-    protected function getRouteTags(Route $route)
+    protected function getRouteTags(Route $route): array
     {
         $methodRef = $this->routeReflection($route);
         $tags = [];
@@ -772,8 +775,8 @@ class RoutesParser
             $annotationsMethod = [];
             foreach ($controllerNames as $controllerName) {
                 // Get annotation only if previously not found any
-                $annotationsClass = empty($annotationsClass) ? $this->classAnnotations($controllerName, 'OA\Tag') : $annotationsClass;
-                $annotationsMethod = empty($annotationsMethod) ? $this->routeAnnotations($route, 'OA\Tag') : $annotationsMethod;
+                $annotationsClass = empty($annotationsClass) ? $this->classAnnotations($controllerName, \OA\Tag::class) : $annotationsClass;
+                $annotationsMethod = empty($annotationsMethod) ? $this->routeAnnotations($route, \OA\Tag::class) : $annotationsMethod;
             }
             $annotations = $this->describer()->merge($annotationsClass, $annotationsMethod);
             foreach ($annotations as $annotation) {
@@ -785,49 +788,54 @@ class RoutesParser
                 $tags[] = last($controllerName);
             }
         }
+
         return $tags;
     }
 
     /**
-     * Get route security definitions
-     * @param Route $route
+     * Get route security definitions.
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return array|null
      */
-    protected function getRouteSecurity(Route $route)
+    protected function getRouteSecurity(Route $route): ?array
     {
         $methodRef = $this->routeReflection($route);
         $results = [];
         if ($methodRef instanceof \ReflectionMethod) {
             /** @var \OA\Secured[] $annotations */
-            $annotations = $this->routeAnnotations($route, 'OA\Secured');
+            $annotations = $this->routeAnnotations($route, \OA\Secured::class);
             foreach ($annotations as $annotation) {
                 $results[] = $annotation->toArray();
             }
         }
-        return !empty($results) ? $results : null;
+
+        return ! empty($results) ? $results : null;
     }
 
     /**
      * Get route summary
-     * @param Route $route
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return string|null
      */
-    protected function getRouteSummary($route)
+    protected function getRouteSummary(Route $route): ?string
     {
         $methodRef = $this->routeReflection($route);
         if (($docComment = $methodRef->getDocComment()) !== false) {
-            $docblock = $this->getDocFactory()->create($docComment);
-            return $docblock->getSummary();
+            return $this->getDocFactory()->create($docComment)->getSummary();
         }
+
         return null;
     }
 
     /**
-     * Get description of route
-     * @param Route $route
+     * Get description of the route.
+     *
+     * @param  \Illuminate\Routing\Route $route
      * @return string|null
      */
-    protected function getRouteDescription($route)
+    protected function getRouteDescription(Route $route): ?string
     {
         $methodRef = $this->routeReflection($route);
         $description = '';
@@ -836,11 +844,12 @@ class RoutesParser
             $description = $docblock->getDescription()->__toString();
         }
         // Parse description extenders
-        $annotationsMethod = $this->methodAnnotations($methodRef, 'OA\DescriptionExtender');
-        $annotationsClass = $this->controllerAnnotations($route, 'OA\DescriptionExtender', true, false);
+        $annotationsMethod = $this->methodAnnotations($methodRef, \OA\DescriptionExtender::class);
+        $annotationsClass = $this->controllerAnnotations($route, \OA\DescriptionExtender::class, true, false);
+        /** @var \OA\DescriptionExtender[] $annotations */
         $annotations = $this->describer()->merge($annotationsClass, $annotationsMethod);
         foreach ($annotations as $annotation) {
-            if (($descriptionAnn = $annotation->__toString()) === '') {
+            if (($descriptionAnn = $annotation->setAction($route->getActionMethod())->__toString()) === '') {
                 continue;
             }
             $description .= "\n\n" . $descriptionAnn;
@@ -854,9 +863,9 @@ class RoutesParser
      * @param  \Illuminate\Routing\Route $route
      * @param  string                    $paramName
      * @param  string                    $default
-     * @return string|mixed
+     * @return string
      */
-    protected function getRouteParamType(Route $route, $paramName, $default = 'integer')
+    protected function getRouteParamType(Route $route, string $paramName, string $default = 'integer'): string
     {
         $pattern = $route->wheres[$paramName] ?? null;
         if ($pattern === null) {
@@ -872,8 +881,7 @@ class RoutesParser
                 $types[] = $type;
             }
         }
-        $typesCount = count($types);
 
-        return $typesCount !== 1 ? $default : reset($types);
+        return count($types) === 1 ? reset($types) : $default;
     }
 }
