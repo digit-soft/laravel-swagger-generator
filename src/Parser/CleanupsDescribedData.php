@@ -23,10 +23,13 @@ trait CleanupsDescribedData
             }
         }
         unset($value);
-        if (! isset($target['type'])) {
+        if (($type = $target['type'] ?? null) === null) {
             return;
         }
-        $type = $target['type'];
+        // Make enums unique
+        if (is_array($enum = $target['enum'] ?? null)) {
+            $target['enum'] = array_values(array_unique($enum));
+        }
         switch ($type) {
             case Variable::SW_TYPE_OBJECT:
                 Arr::forget($target, ['items']);
