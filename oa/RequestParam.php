@@ -21,7 +21,6 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class RequestParam extends BaseValueDescribed
 {
-    public $required = false;
     /**
      * @Enum({"string", "integer", "number", "boolean", "array", "object"})
      * @var string Swagger or PHP type
@@ -49,6 +48,6 @@ class RequestParam extends BaseValueDescribed
      */
     protected function getExcludedEmptyKeys()
     {
-        return ['required', 'type'];
+        return ['type'];
     }
 }
