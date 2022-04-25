@@ -22,7 +22,7 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
 class Parameter extends BaseValueDescribed
 {
     /**
-     * @Enum({"path", "query"})
+     * @Enum({"path", "query", "header"})
      * @var string Swagger parameter position
      */
     public $in = 'path';
