@@ -450,7 +450,7 @@ trait WithExampleGenerator
                 break;
             case 'bool':
             case 'boolean':
-                return $this->faker()->boolean;
+                return $this->faker()->boolean();
                 break;
             case 'date':
                 return $this->faker()->dateTimeBetween('-1 month')->format('Y-m-d');
@@ -480,13 +480,13 @@ trait WithExampleGenerator
                 $example = Arr::random(['+380971234567', '+380441234567', '+15411234567', '+4901511234567']);
                 break;
             case 'url':
-                $example = $this->faker()->url;
+                $example = $this->faker()->url();
                 break;
             case 'image':
                 $example = $this->faker()->imageUrl();
                 break;
             case 'email':
-                $example = $this->faker()->email;
+                $example = $this->faker()->safeEmail();
                 break;
             case 'password':
                 $example = Str::random(16);
@@ -498,7 +498,7 @@ trait WithExampleGenerator
                 $example = Arr::random(['fb', 'google', 'twitter']);
                 break;
             case 'domain_name':
-                $example = $this->faker()->domainName;
+                $example = $this->faker()->domainName();
                 break;
             case 'alpha':
             case 'string':
@@ -539,16 +539,16 @@ trait WithExampleGenerator
                 $example = $this->faker()->numberBetween(1, 99);
                 break;
             case 'boolean':
-                $example = $this->faker()->boolean;
+                $example = $this->faker()->boolean();
                 break;
             case 'first_name':
-                $example = $this->faker()->firstName;
+                $example = $this->faker()->firstName();
                 break;
             case 'last_name':
-                $example = $this->faker()->lastName;
+                $example = $this->faker()->lastName();
                 break;
             case 'address':
-                $example = trim($this->faker()->address);
+                $example = trim($this->faker()->address());
                 break;
             default:
                 $example = null;
