@@ -306,6 +306,7 @@ class RoutesParser
                 if (
                     class_exists($type)
                     && isset(class_parents($type)[FormRequest::class])
+                    && ! $this->hasIgnoreAnnotation($type)
                     && ($request = $this->getParamsFromFormRequest($type, $asQueryParams)) !== null
                 ) {
                     break;
@@ -717,6 +718,20 @@ class RoutesParser
     {
         return $this->routeAnnotation($route, \OA\Ignore::class) !== null
             || ! empty($this->controllerAnnotations($route, \OA\Ignore::class));
+    }
+
+    /**
+     * Check whether class or its method has an `OA\Ignore` annotation.
+     *
+     * @param  string      $className
+     * @param  string|null $method
+     * @return bool
+     */
+    protected function hasIgnoreAnnotation(string $className, ?string $method = null): bool
+    {
+        return $method !== null
+            ? $this->methodAnnotation([$className, $method], \OA\Ignore::class) !== null
+            : $this->classAnnotation($className, \OA\Ignore::class) !== null;
     }
 
     /**
