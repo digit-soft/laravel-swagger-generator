@@ -10,7 +10,7 @@ trait WithReflections
     /**
      * @var \ReflectionClass[]|\ReflectionMethod[]
      */
-    protected $reflections = [];
+    protected array $reflections = [];
 
     /**
      * Get method reflection
@@ -19,7 +19,7 @@ trait WithReflections
      * @param  string        $method
      * @return \ReflectionMethod
      */
-    protected function reflectionMethod($class, string $method)
+    protected function reflectionMethod(string|object $class, string $method): \ReflectionMethod
     {
         $refClass = $this->reflectionClass($class);
         $methodName = $refClass->name . '::' . $method;
@@ -37,7 +37,7 @@ trait WithReflections
      * @param  string        $property
      * @return \ReflectionProperty
      */
-    protected function reflectionProperty($class, string $property)
+    protected function reflectionProperty(string|object $class, string $property): \ReflectionProperty
     {
         $refClass = $this->reflectionClass($class);
         $propertyName = $refClass->name . '->' . $property;
@@ -54,7 +54,7 @@ trait WithReflections
      * @param  string|object $class
      * @return \ReflectionClass
      */
-    protected function reflectionClass($class)
+    protected function reflectionClass(string|object $class): \ReflectionClass
     {
         $className = is_object($class) ? get_class($class) : $class;
         if (! isset($this->reflections[$className])) {
@@ -70,7 +70,7 @@ trait WithReflections
      * @param  \Closure $closure
      * @return \ReflectionFunction
      */
-    protected function reflectionClosure($closure)
+    protected function reflectionClosure($closure): \ReflectionFunction
     {
         return new \ReflectionFunction($closure);
     }
@@ -82,7 +82,7 @@ trait WithReflections
      * @param  string        $method
      * @return string|null
      */
-    protected function docBlockMethod($class, $method)
+    protected function docBlockMethod(string|object $class, string $method): ?string
     {
         $ref = $this->reflectionMethod($class, $method);
         $docBlock = $ref->getDocComment();
@@ -96,7 +96,7 @@ trait WithReflections
      * @param  string|object $class
      * @return string|null
      */
-    protected function docBlockClass($class)
+    protected function docBlockClass(string|object $class): ?string
     {
         $ref = $this->reflectionClass($class);
         $docBlock = $ref->getDocComment();

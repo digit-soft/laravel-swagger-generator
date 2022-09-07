@@ -17,11 +17,11 @@ trait WithExampleGenerator
     /**
      * @var array Generated variables cache
      */
-    protected $varsCache = [];
+    protected array $varsCache = [];
     /**
      * @var array Generated sequences
      */
-    protected $varsSequences = [];
+    protected array $varsSequences = [];
 
     /**
      * Get variable example
@@ -32,7 +32,7 @@ trait WithExampleGenerator
      * @param  string|null $rule
      * @return mixed|null
      */
-    public function example(?string $phpType, ?string $swaggerType = null, ?string $varName = null, ?string $rule = null)
+    public function example(?string $phpType, ?string $swaggerType = null, ?string $varName = null, ?string $rule = null): mixed
     {
         $phpType = $phpType ?? ($swaggerType !== null ? $this->phpType($swaggerType) : null);
         $swaggerType = $swaggerType ?? ($phpType !== null ? $this->swaggerType($phpType) : null);
@@ -69,7 +69,7 @@ trait WithExampleGenerator
      * @param  string|null $phpType
      * @return mixed
      */
-    protected function typeCastExample(mixed $example, ?string $phpType)
+    protected function typeCastExample(mixed $example, ?string $phpType): mixed
     {
         return match ($phpType) {
             'integer' => (int)$example,
@@ -87,7 +87,7 @@ trait WithExampleGenerator
      * @param  int         $count
      * @return array
      */
-    protected function generateExampleByTypeSequence(?string $type, int $count = 10)
+    protected function generateExampleByTypeSequence(?string $type, int $count = 10): array
     {
         $type = is_string($type) ? $this->normalizeType($type, true) : null;
         $sequence = [];
@@ -109,7 +109,7 @@ trait WithExampleGenerator
      * @param  int    $count
      * @return array
      */
-    protected function generateExampleByRuleSequence(string $rule, int $count = 10)
+    protected function generateExampleByRuleSequence(string $rule, int $count = 10): array
     {
         $sequence = [];
         for ($i = 1; $i <= $count; $i++) {
@@ -130,7 +130,7 @@ trait WithExampleGenerator
      * @param  int         $iteration
      * @return mixed
      */
-    protected function exampleByTypeSequential(?string $type, int $iteration = 1)
+    protected function exampleByTypeSequential(?string $type, int $iteration = 1): mixed
     {
         $dateStr = '2019-01-01 00:00:00';
         switch ($type) {
@@ -150,7 +150,8 @@ trait WithExampleGenerator
                 $date = Date::createFromFormat('Y-m-d H:i:s', $dateStr);
                 $date->addSeconds($iteration * 800636);
                 return $date->format('Y-m-d');
-            case 'Illuminate\Support\Carbon':
+            case \Illuminate\Support\Carbon::class:
+            case \Carbon\Carbon::class:
             case 'dateTime':
             case 'datetime':
                 $date = Date::createFromFormat('Y-m-d H:i:s', $dateStr);
@@ -170,7 +171,7 @@ trait WithExampleGenerator
      * @param  int    $iteration
      * @return mixed
      */
-    protected function exampleByRuleSequential(string $rule, int $iteration = 1)
+    protected function exampleByRuleSequential(string $rule, int $iteration = 1): mixed
     {
         $dateStr = '2019-01-01 00:00:00';
         switch ($rule) {
@@ -359,7 +360,7 @@ trait WithExampleGenerator
      * @param  string|null $type
      * @return array|int|string|null
      */
-    protected function exampleByType(?string $type)
+    protected function exampleByType(?string $type): mixed
     {
         $type = is_string($type) ? $this->normalizeType($type, true) : null;
         $key = $type;
@@ -380,7 +381,7 @@ trait WithExampleGenerator
      * @param  string $rule
      * @return mixed
      */
-    protected function exampleByRule(string $rule)
+    protected function exampleByRule(string $rule): mixed
     {
         $key = '__' . $rule;
         if (! isset($this->varsSequences[$key])) {
@@ -402,7 +403,7 @@ trait WithExampleGenerator
      * @return mixed|null
      * @internal
      */
-    protected function getVarCache(string $name, ?string $type)
+    protected function getVarCache(string $name, ?string $type): mixed
     {
         if (($key = $this->getVarCacheKey($name, $type)) === null) {
             return null;
@@ -420,7 +421,7 @@ trait WithExampleGenerator
      * @return mixed|null
      * @internal
      */
-    protected function setVarCache(string $name, ?string $type, $value)
+    protected function setVarCache(string $name, ?string $type, mixed $value): mixed
     {
         if ($value !== null && ($key = $this->getVarCacheKey($name, $type)) !== null) {
             Arr::set($this->varsCache, $key, $value);
@@ -434,38 +435,20 @@ trait WithExampleGenerator
      * @return mixed
      * @internal
      */
-    protected function exampleByTypeInternal(string $type)
+    protected function exampleByTypeInternal(string $type): mixed
     {
-        switch ($type) {
-            case 'int':
-            case 'integer':
-                return $this->faker()->numberBetween(1, 99);
-                break;
-            case 'float':
-            case 'double':
-                return $this->faker()->randomFloat(2);
-                break;
-            case 'string':
-                return Arr::random(['string', 'value', 'str value']);
-                break;
-            case 'bool':
-            case 'boolean':
-                return $this->faker()->boolean();
-                break;
-            case 'date':
-                return $this->faker()->dateTimeBetween('-1 month')->format('Y-m-d');
-                break;
-            case 'Illuminate\Support\Carbon':
-            case 'dateTime':
-            case 'datetime':
-                return $this->faker()->dateTimeBetween('-1 month')->format('Y-m-d H:i:s');
-                break;
-            case 'array':
-                return [];
-                break;
-        }
+        return match ($type) {
+            'int', 'integer' => $this->faker()->numberBetween(1, 99),
+            'float', 'double' => $this->faker()->randomFloat(2),
+            'string' => Arr::random(['string', 'value', 'str value']),
+            'bool', 'boolean' => $this->faker()->boolean(),
+            'date' => $this->faker()->dateTimeBetween('-1 month')->format('Y-m-d'),
+            \Illuminate\Support\Carbon::class, \Carbon\Carbon::class, 'dateTime', 'datetime'
+                => $this->faker()->dateTimeBetween('-1 month')->format('Y-m-d H:i:s'),
+            'array' => [],
+            default => null,
+        };
 
-        return null;
     }
 
     /**
@@ -563,10 +546,10 @@ trait WithExampleGenerator
      * @param  string|null $type
      * @return string|null
      */
-    private function getVarCacheKey(string $name, ?string $type)
+    private function getVarCacheKey(string $name, ?string $type): ?string
     {
         $suffixes = ['_confirm', '_original', '_example', '_new'];
-        if ($name === null || $type === null) {
+        if ($type === null) {
             return null;
         }
         foreach ($suffixes as $suffix) {
@@ -586,13 +569,13 @@ trait WithExampleGenerator
      * @param  int   $number
      * @return mixed
      */
-    private function takeFromArray(array $array, int $number)
+    private function takeFromArray(array $array, int $number): mixed
     {
         if (empty($array)) {
             return null;
         }
         if (! isset($array[$number])) {
-            $number = $number % count($array);
+            $number %= count($array);
         }
 
         return $array[$number];

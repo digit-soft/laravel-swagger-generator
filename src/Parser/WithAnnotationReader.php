@@ -15,11 +15,11 @@ use Doctrine\Common\Annotations\AnnotationRegistry;
  */
 trait WithAnnotationReader
 {
-    protected $_annotationReader;
+    protected Reader $_annotationReader;
     /** @var \OA\BaseAnnotation[][] */
-    protected $_classAnnotations;
+    private array $_classAnnotations = [];
     /** @var \OA\BaseAnnotation[][] */
-    protected $_methodAnnotations;
+    private array $_methodAnnotations = [];
 
     /**
      * Get route controller method annotation
@@ -202,7 +202,7 @@ trait WithAnnotationReader
      */
     protected function annotationReader(): Reader
     {
-        if ($this->_annotationReader === null) {
+        if (! isset($this->_annotationReader)) {
             AnnotationRegistry::registerLoader('class_exists');
             $ignored = config('swagger-generator.ignoredAnnotationNames', []);
             foreach ($ignored as $item) {
@@ -233,7 +233,7 @@ trait WithAnnotationReader
      * @param  \ReflectionClass|\ReflectionMethod $ref
      * @param  array                              $annotations
      */
-    private function setCachedAnnotations($ref, array $annotations)
+    private function setCachedAnnotations($ref, array $annotations): void
     {
         [$property, $key] = $this->getRefAnnotationsCacheKeys($ref);
         Arr::set($this->{$property}, $key, $annotations);

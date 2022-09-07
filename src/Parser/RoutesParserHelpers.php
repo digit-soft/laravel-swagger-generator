@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 
 /**
  * Trait RoutesParserHelpers
+ *
  * @property array $components
  */
 trait RoutesParserHelpers
@@ -15,14 +16,15 @@ trait RoutesParserHelpers
      *
      * @param  string $uri
      * @param  bool   $forYml
-     * @return bool|mixed|string
+     * @return string
      */
-    protected function normalizeUri($uri, $forYml = false)
+    protected function normalizeUri(string $uri, bool $forYml = false): string
     {
         $uri = '/' . ltrim($uri, '/');
         $uri = str_replace('?}', '}', $uri);
         if ($forYml) {
-            if (($stripBaseUrl = config('swagger-generator.stripBaseUrl', null)) !== null && strpos($uri, $stripBaseUrl) === 0) {
+            $stripBaseUrl = config('swagger-generator.stripBaseUrl');
+            if ($stripBaseUrl !== null && str_starts_with($uri, $stripBaseUrl)) {
                 $uri = substr($uri, strlen($stripBaseUrl));
             }
         }
@@ -35,9 +37,9 @@ trait RoutesParserHelpers
      *
      * @param  string $key
      * @param  string $type
-     * @return null
+     * @return array|null
      */
-    protected function getComponent($key, $type = self::COMPONENT_RESPONSE)
+    protected function getComponent(string $key, string $type = self::COMPONENT_RESPONSE): ?array
     {
         if (empty($key)) {
             return null;
@@ -53,7 +55,7 @@ trait RoutesParserHelpers
      * @param  string $key
      * @param  string $type
      */
-    protected function setComponent($component, $key, $type = self::COMPONENT_RESPONSE)
+    protected function setComponent(array $component, string $key, string $type = self::COMPONENT_RESPONSE): void
     {
         if (empty($key)) {
             return;
@@ -68,7 +70,7 @@ trait RoutesParserHelpers
      * @param  string $type
      * @return string
      */
-    protected function getComponentReference($key, $type = self::COMPONENT_RESPONSE)
+    protected function getComponentReference(string $key, string $type = self::COMPONENT_RESPONSE): string
     {
         $keys = ['components', $type, $key];
 
@@ -82,7 +84,7 @@ trait RoutesParserHelpers
      * @param  string $key
      * @return mixed|null
      */
-    protected static function getArrayElemByStrKey(array $array, $key)
+    protected static function getArrayElemByStrKey(array $array, string $key): mixed
     {
         if (isset($array[$key])) {
             return $array[$key];

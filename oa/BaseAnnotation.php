@@ -18,7 +18,7 @@ abstract class BaseAnnotation implements Arrayable
      *
      * @param  array $values
      */
-    public function __construct($values)
+    public function __construct(array $values)
     {
         $this->configureSelf($values);
     }
@@ -28,12 +28,12 @@ abstract class BaseAnnotation implements Arrayable
      *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $reflection = new \ReflectionClass($this);
         $data = [];
         foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
-            if ($property->isStatic()) {
+            if ($property->isStatic() || ! $property->isInitialized($this)) {
                 continue;
             }
             $value = $this->{$property->name};
@@ -49,7 +49,7 @@ abstract class BaseAnnotation implements Arrayable
      * @param  array $data
      * @return static
      */
-    public function fill(array $data)
+    public function fill(array $data): static
     {
         $this->configureSelf($data);
 
@@ -63,7 +63,7 @@ abstract class BaseAnnotation implements Arrayable
      * @param  string|null $defaultParam
      * @return array
      */
-    protected function configureSelf($config, $defaultParam = null)
+    protected function configureSelf(array $config, ?string $defaultParam = null): array
     {
         $setParams = [];
         if (array_key_exists('value', $config) && ! property_exists($this, 'value') && $defaultParam !== null) {
@@ -87,7 +87,7 @@ abstract class BaseAnnotation implements Arrayable
      * @return mixed
      * @throws \ErrorException
      */
-    public function __get($name)
+    public function __get(string $name)
     {
         $getter = 'get' . Str::studly($name);
         if (! method_exists($this, $getter)) {
@@ -104,7 +104,7 @@ abstract class BaseAnnotation implements Arrayable
      * @param  mixed  $value
      * @throws \ErrorException
      */
-    public function __set(string $name, $value): void
+    public function __set(string $name, mixed $value): void
     {
         $setter = 'set' . Str::studly($name);
         if (! method_exists($this, $setter)) {

@@ -25,7 +25,7 @@ class Ignore extends BaseAnnotation
     /**
      * @inheritDoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         return [];
     }

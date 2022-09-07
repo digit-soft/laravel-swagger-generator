@@ -14,8 +14,13 @@ use Doctrine\Common\Annotations\Annotation\Target;
  *      OA\ResponseParam("param_name_2", type="integer", example=1, description="Int parameter"),
  * })
  *
- * @Annotation
- * @Target({"ANNOTATION"})
+ * @Annotation()
+ * @Target("ANNOTATION")
+ * @Attributes({
+ *   @Attribute("name", type="string"),
+ *   @Attribute("type", type="string"),
+ *   @Attribute("description", type="string"),
+ * })
  */
 class ResponseParam extends Property
 {

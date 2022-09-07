@@ -3,9 +3,9 @@
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Target;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
-use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used to ignore class property by name.
@@ -13,13 +13,13 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target("CLASS")
  * @Attributes({
- *   @Attribute("name",type="string"),
+ *   @Attribute("name", type="string"),
  * })
  */
 final class PropertyIgnore extends BaseAnnotation
 {
     /** @var string property name to ignore */
-    public $name;
+    public string $name;
 
     public function __construct(array $values)
     {
@@ -28,10 +28,15 @@ final class PropertyIgnore extends BaseAnnotation
 
     /**
      * Get object string representation
+     *
      * @return string
      */
     public function __toString()
     {
+        if (! isset($this->name)) {
+            throw new \RuntimeException("You must set a \$name for 'OA\PropertyIgnore' annotation");
+        }
+
         return $this->name;
     }
 }

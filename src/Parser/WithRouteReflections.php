@@ -17,7 +17,7 @@ trait WithRouteReflections
      * @param  Route $route
      * @return \ReflectionMethod|\ReflectionFunction
      */
-    protected function routeReflection(Route $route)
+    protected function routeReflection(Route $route): \ReflectionMethod|\ReflectionFunction
     {
         if ($route->getActionMethod() === 'Closure') {
             $closure = $route->getAction('uses');

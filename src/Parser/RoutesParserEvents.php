@@ -14,11 +14,11 @@ trait RoutesParserEvents
     /**
      * @var Route[]
      */
-    protected $skippedRoutes = [];
+    protected array $skippedRoutes = [];
     /**
      * @var array
      */
-    protected $failedFormRequests = [];
+    protected array $failedFormRequests = [];
 
     /**
      * Trigger event
@@ -27,7 +27,7 @@ trait RoutesParserEvents
      * @param  mixed  ...$params
      * @return bool|mixed
      */
-    protected function trigger(string $event, ...$params)
+    protected function trigger(string $event, ...$params): mixed
     {
         $methodName = 'event' . ucfirst(Str::camel($event));
         if (method_exists($this, $methodName)) {
@@ -40,7 +40,7 @@ trait RoutesParserEvents
     /**
      * Start parsing
      */
-    protected function eventParseStart()
+    protected function eventParseStart(): void
     {
         if (! $this->output instanceof OutputStyle) {
             return;
@@ -51,7 +51,7 @@ trait RoutesParserEvents
     /**
      * Finish parsing
      */
-    protected function eventParseFinish()
+    protected function eventParseFinish(): void
     {
         if (! $this->output instanceof OutputStyle) {
             return;
@@ -90,7 +90,7 @@ trait RoutesParserEvents
      *
      * @param  Route $route
      */
-    protected function eventRouteProcessed(Route $route)
+    protected function eventRouteProcessed(Route $route): void
     {
         if (! $this->output instanceof OutputStyle) {
             return;
@@ -103,7 +103,7 @@ trait RoutesParserEvents
      *
      * @param  Route $route
      */
-    protected function eventRouteSkipped(Route $route)
+    protected function eventRouteSkipped(Route $route): void
     {
         $this->skippedRoutes[] = $route;
         if (! $this->output instanceof OutputStyle) {
@@ -118,7 +118,7 @@ trait RoutesParserEvents
      * @param  \Illuminate\Foundation\Http\FormRequest $request
      * @param  string|null                             $exception
      */
-    protected function eventRouteFormRequestFailed($request, $exception = null)
+    protected function eventRouteFormRequestFailed(object $request, ?string $exception = null): void
     {
         $this->failedFormRequests[] = [get_class($request), $exception];
     }
@@ -130,7 +130,7 @@ trait RoutesParserEvents
      * @param  Route       $route
      * @param  string|null $additional
      */
-    protected function eventProblemFound(string $problemType, Route $route, $additional = null)
+    protected function eventProblemFound(string $problemType, Route $route, ?string $additional = null): void
     {
         $this->problems[$problemType] = $this->problems[$problemType] ?? [];
         $this->problems[$problemType][$route->uri()] = [$route, $additional];

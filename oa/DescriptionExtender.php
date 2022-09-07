@@ -8,7 +8,7 @@ namespace OA;
  */
 abstract class DescriptionExtender extends BaseAnnotation
 {
-    public $value;
+    public mixed $value = null;
 
     protected ?string $action = null;
 
@@ -41,6 +41,7 @@ abstract class DescriptionExtender extends BaseAnnotation
      */
     public function __toString()
     {
-        return $this->value;
+        /** @noinspection MagicMethodsValidityInspection */
+        return is_string($this->value) ? $this->value : '';
     }
 }

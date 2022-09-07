@@ -2,21 +2,23 @@
 
 namespace DigitSoft\Swagger\Describer;
 
+use Faker\Generator;
+
 /**
  * Trait WithFaker
  */
 trait WithFaker
 {
-    protected $faker;
+    protected Generator $faker;
 
     /**
      * Get faker instance
      *
      * @return \Faker\Generator
      */
-    protected function faker()
+    protected function faker(): Generator
     {
-        if ($this->faker === null) {
+        if (! isset($this->faker)) {
             $this->faker = \Faker\Factory::create();
         }
 

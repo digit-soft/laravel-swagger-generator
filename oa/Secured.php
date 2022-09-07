@@ -45,7 +45,7 @@ class Secured extends BaseAnnotation
     /**
      * {@inheritdoc}
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->getSecurityScheme();
     }

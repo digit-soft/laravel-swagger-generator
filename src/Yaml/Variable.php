@@ -35,31 +35,27 @@ class Variable
     const SW_FORMAT_PASSWORD = 'password';
     const SW_FORMAT_BINARY = 'binary';
 
-    public $example;
+    public mixed $example = null;
 
-    public $description;
+    public ?string $description = null;
 
-    public $type;
+    public ?string $type = null;
 
-    public $items;
+    public string|array|null $items = null;
 
-    public $name;
+    public ?string $name = null;
 
-    public $properties;
+    public ?array $properties = null;
 
-    public $with = [];
+    public array $with = [];
 
-    public $except = [];
+    public array $except = [];
 
-    public $only = [];
+    public array $only = [];
 
-    protected $descriptionsNested = [];
+    protected array $descriptionsNested = [];
 
-    protected $described;
-
-    protected $parsedClassData = [];
-
-    protected $fillable = [
+    protected array $fillable = [
         self::KEY_NAME,
         self::KEY_DESC,
         self::KEY_TYPE,
@@ -69,9 +65,9 @@ class Variable
         self::KEY_PROPERTIES,
     ];
 
-    protected $swaggerType;
+    protected ?string $swaggerType = null;
 
-    protected static $_cache_objects = [];
+    protected static array $_cache_objects = [];
 
     use WithReflections, WithAnnotationReader, WithVariableDescriber;
 
@@ -79,7 +75,7 @@ class Variable
      * Variable constructor.
      * @param  array $config
      */
-    public function __construct($config = [])
+    public function __construct(array $config = [])
     {
         $this->configureSelf($config);
     }
@@ -88,7 +84,7 @@ class Variable
      * Get object array representation
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $result = [];
         $this->fillMissingProperties();
@@ -105,16 +101,17 @@ class Variable
 
     /**
      * Describe variable
+     *
      * @return array
      */
-    public function describe()
+    public function describe(): array
     {
         $this->fillMissingProperties();
         $typeSwagger = $this->getSwType();
         $result = [
             'type' => $typeSwagger,
         ];
-        if ($this->description !== null) {
+        if (isset($this->description)) {
             $result['description'] = trim($this->description);
         }
         // Set example if it was provided and not empty for array and object type
@@ -138,7 +135,7 @@ class Variable
                     // Look for a cache
                     if (isset(static::$_cache_objects[$objCacheKey])) {
                         $cached = static::$_cache_objects[$objCacheKey];
-                        if ($this->description) {
+                        if (isset($this->description)) {
                             $cached['description'] = $this->description;
                         }
                         return $cached;
@@ -185,7 +182,7 @@ class Variable
      * Get fillable properties
      * @return array
      */
-    public function getFillable()
+    public function getFillable(): array
     {
         return $this->fillable;
     }
@@ -196,7 +193,7 @@ class Variable
      * @return array
      * @throws \Throwable
      */
-    protected function describeAsClass()
+    protected function describeAsClass(): array
     {
         $className = $this->describer()->normalizeType($this->type);
         $result = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
@@ -213,7 +210,7 @@ class Variable
      *
      * @return string|null
      */
-    protected function getSwType()
+    protected function getSwType(): ?string
     {
         if ($this->swaggerType === null) {
             $phpType = $this->type !== null
@@ -225,9 +222,7 @@ class Variable
             } elseif ($this->describer()->isTypeArray($phpType)) {
                 $swType = static::SW_TYPE_ARRAY;
             } elseif ($this->describer()->isTypeClassName($phpType)) {
-                $swType = $simplifiedType === $phpType
-                    ? static::SW_TYPE_OBJECT
-                    : $simplifiedType;
+                $swType = $simplifiedType === $phpType ? static::SW_TYPE_OBJECT : $simplifiedType;
             } else {
                 $swType = $this->describer()->swaggerType($phpType);
             }
@@ -241,7 +236,7 @@ class Variable
     /**
      * Fill missing properties.
      */
-    protected function fillMissingProperties()
+    protected function fillMissingProperties(): void
     {
         $type = $this->type !== null && $this->describer()->isTypeClassName($this->type) ? $this->describer()->simplifyClassName($this->type) : $this->type;
         if ($this->type === null && $this->example !== null) {
@@ -257,7 +252,7 @@ class Variable
      * @param  mixed $value
      * @return string|null
      */
-    protected function getPHPDocType($value)
+    protected function getPHPDocType(mixed $value): ?string
     {
         $baseType = $phpType = $value !== null ? gettype($value) : null;
         switch ($baseType) {
@@ -283,7 +278,7 @@ class Variable
      * @param  string $phpType
      * @return array|mixed|null
      */
-    protected function getExampleByPHPDocType($phpType)
+    protected function getExampleByPHPDocType(string $phpType): mixed
     {
         $phpType = $this->describer()->normalizeType($phpType);
         $phpTypeSimplified = $this->describer()->simplifyClassName($phpType);
@@ -309,7 +304,7 @@ class Variable
      * @param  string $className
      * @return array|null
      */
-    protected function getExampleByPHPDocTypeClass($className)
+    protected function getExampleByPHPDocTypeClass(string $className): ?array
     {
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
@@ -336,7 +331,7 @@ class Variable
      * @param  array  $with
      * @return array
      */
-    protected function getDescriptionByPHPDocTypeClass(string $className, array $with = [])
+    protected function getDescriptionByPHPDocTypeClass(string $className, array $with = []): array
     {
         $parser = new ClassParser($className);
         $properties = $parser->properties(true, false);
@@ -384,7 +379,7 @@ class Variable
      * @param  string $annotationClass
      * @return array
      */
-    protected function getDescriptionByPropertyAnnotations(string $className, array $only = [], string $annotationClass = \OA\Property::class)
+    protected function getDescriptionByPropertyAnnotations(string $className, array $only = [], string $annotationClass = \OA\Property::class): array
     {
         /** @var \OA\Property[] $annotations */
         $annotations = $this->classAnnotations($className, $annotationClass);
@@ -423,10 +418,10 @@ class Variable
      * @param  string $className
      * @return array
      */
-    protected function getIgnoredProperties(string $className)
+    protected function getIgnoredProperties(string $className): array
     {
         /** @var \OA\PropertyIgnore[] $annotations */
-        $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
+        $annotations = $this->classAnnotations($className, \OA\PropertyIgnore::class);
 
         return Arr::pluck($annotations, 'name', 'name');
     }
@@ -437,7 +432,7 @@ class Variable
      * @param  array $properties
      * @param  array $with
      */
-    protected function setWithToPropertiesRecursively(array &$properties, $with = [])
+    protected function setWithToPropertiesRecursively(array &$properties, array $with = []): void
     {
         foreach ($with as $key) {
             if (($pos  = strpos($key, '.')) === false) {
@@ -456,7 +451,7 @@ class Variable
      * @param  string $className
      * @return string|null
      */
-    protected function generateObjectCacheKey($className)
+    protected function generateObjectCacheKey(string $className): ?string
     {
         if (! class_exists($className) && ! interface_exists($className)) {
             return null;
@@ -469,10 +464,11 @@ class Variable
     }
 
     /**
-     * Configure object itself
+     * Configure object itself.
+     *
      * @param  array $config
      */
-    protected function configureSelf($config = [])
+    protected function configureSelf(array $config = []): void
     {
         foreach ($config as $key => $value) {
             if (property_exists($this, $key)) {
@@ -482,34 +478,36 @@ class Variable
     }
 
     /**
-     * Getter
+     * Get magic method.
+     *
      * @param  string $name
      * @return mixed
      * @throws \Exception
      */
-    public function __get($name)
+    public function __get(string $name)
     {
         $method = 'get' . ucfirst($name);
         if (method_exists($this, $method)) {
             return $this->{$method}();
         }
-        throw new \Exception("Property {$name} does not exist or is not readable");
+        throw new \RuntimeException("Property {$name} does not exist or is not readable");
     }
 
     /**
-     * Setter
+     * Set magic method.
+     *
      * @param  string $name
      * @param  mixed  $value
      * @return mixed
      * @throws \Exception
      */
-    public function __set($name, $value)
+    public function __set(string $name, mixed $value)
     {
         $method = 'set' . ucfirst($name);
         if (method_exists($this, $method)) {
             return $this->{$method}($value);
         }
-        throw new \Exception("Property {$name} does not exist or is not writable");
+        throw new \RuntimeException("Property {$name} does not exist or is not writable");
     }
 
     /**
@@ -518,7 +516,7 @@ class Variable
      * @param  string $name
      * @return bool
      */
-    public function __isset($name)
+    public function __isset(string $name)
     {
         $method = 'get' . ucfirst($name);
         if (method_exists($this, $method)) {
@@ -530,22 +528,24 @@ class Variable
 
     /**
      * Create object from array description
+     *
      * @param  array $config
      * @return Variable
      */
-    public static function fromDescription($config)
+    public static function fromDescription(array $config): static
     {
         return new static($config);
     }
 
     /**
      * Create object from example
+     *
      * @param  mixed       $example
      * @param  string|null $name
      * @param  string|null $description
      * @return Variable
      */
-    public static function fromExample($example, $name = null, $description = null)
+    public static function fromExample(mixed $example, ?string $name = null, ?string $description = null): static
     {
         $config = [
             'example' => $example,

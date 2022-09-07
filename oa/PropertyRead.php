@@ -23,7 +23,7 @@ class PropertyRead extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function isExampleRequired()
+    protected function isExampleRequired(): bool
     {
         return true;
     }
@@ -31,7 +31,7 @@ class PropertyRead extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function getExcludedKeys()
+    protected function getExcludedKeys(): array
     {
         return ['required'];
     }

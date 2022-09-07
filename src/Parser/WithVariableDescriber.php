@@ -9,16 +9,16 @@ use DigitSoft\Swagger\VariableDescriberService;
  */
 trait WithVariableDescriber
 {
-    protected $describer;
+    protected VariableDescriberService $describer;
 
     /**
      * Get describer instance
      *
      * @return VariableDescriberService
      */
-    protected function describer()
+    protected function describer(): VariableDescriberService
     {
-        if ($this->describer === null) {
+        if (! isset($this->describer)) {
             $this->describer = app('swagger.describer');
         }
 

@@ -58,8 +58,10 @@ class GenerateCommand extends Command
 
     /**
      * Handle command.
+     *
+     * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         if ($this->isDiag()) {
             return $this->handleDiagnose();
@@ -83,8 +85,10 @@ class GenerateCommand extends Command
 
     /**
      * Handle request in diagnose mode.
+     *
+     * @return int
      */
-    protected function handleDiagnose()
+    protected function handleDiagnose(): int
     {
         $startTime = microtime();
         $this->getOutput()->success('Diagnose mode, files will not be generated.');
@@ -128,7 +132,7 @@ class GenerateCommand extends Command
      *
      * @param  string $startTime
      */
-    protected function printTimeSpent($startTime)
+    protected function printTimeSpent(string $startTime): void
     {
         $start = \DateTime::createFromFormat('0.u00 U', $startTime);
         $finish = \DateTime::createFromFormat('0.u00 U', microtime());
@@ -140,9 +144,9 @@ class GenerateCommand extends Command
      * Get problem label.
      *
      * @param  string $key
-     * @return mixed|string
+     * @return string
      */
-    protected function getProblemLabel($key)
+    protected function getProblemLabel(string $key): string
     {
         $labels = [
             RoutesParser::PROBLEM_NO_RESPONSE => 'Route has no described response body',
@@ -160,7 +164,7 @@ class GenerateCommand extends Command
      *
      * @return bool
      */
-    protected function isDiag()
+    protected function isDiag(): bool
     {
         return $this->option('diagnose');
     }
@@ -172,7 +176,7 @@ class GenerateCommand extends Command
      * @param  array $fileList
      * @return array
      */
-    protected function mergeWithFilesContent($data = [], $fileList = [])
+    protected function mergeWithFilesContent(array $data = [], array $fileList = []): array
     {
         if (empty($fileList)) {
             return $data;
@@ -195,7 +199,7 @@ class GenerateCommand extends Command
      *
      * @return array
      */
-    protected function getRoutesData()
+    protected function getRoutesData(): array
     {
         $parser = new RoutesParser($this->routes, $this->getOutput());
         $paths = $parser->parse();
@@ -220,7 +224,7 @@ class GenerateCommand extends Command
      *
      * @return array
      */
-    protected function generateAdditionalDefinitions()
+    protected function generateAdditionalDefinitions(): array
     {
         $classes = config('swagger-generator.generateDefinitions', []);
         $definitions = [];
@@ -249,7 +253,7 @@ class GenerateCommand extends Command
      * @param  string|array $itemRaw
      * @return array
      */
-    private function normalizeModelDefinitionConfigItem($itemRaw)
+    private function normalizeModelDefinitionConfigItem(array|string $itemRaw): array
     {
         $item = ['', null, null, []];
 
@@ -270,7 +274,7 @@ class GenerateCommand extends Command
      *
      * @param  array $paths
      */
-    protected function sortPaths(&$paths)
+    protected function sortPaths(array &$paths)
     {
         // ksort($paths);
         $byTags = [];
@@ -292,7 +296,7 @@ class GenerateCommand extends Command
         ksort($byTags);
         // Rewrite paths array
         $paths = [];
-        foreach ($byTags as $tag => $routes) {
+        foreach ($byTags as $routes) {
             $paths = $this->describer()->merge($paths, $routes);
         }
     }
@@ -306,7 +310,7 @@ class GenerateCommand extends Command
     {
         $path = config('swagger-generator.output.path');
         // absolute path
-        if (strpos($path, '/') !== 0) {
+        if (! str_starts_with($path, '/')) {
             $path = app()->basePath($path);
         }
         if (! $this->files->exists($path)) {

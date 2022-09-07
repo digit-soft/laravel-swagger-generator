@@ -3,8 +3,8 @@
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
-use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Target;
+use Doctrine\Common\Annotations\Annotation\Attribute;
 
 /**
  * Used to describe request body FormRequest class
@@ -19,11 +19,11 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class RequestBody extends BaseAnnotation
 {
-    public $description;
+    public ?string $description = null;
 
-    public $contentType = 'application/json';
+    public string $contentType = 'application/json';
 
-    public $content;
+    public mixed $content;
 
     public function __construct(array $values)
     {
@@ -32,10 +32,11 @@ class RequestBody extends BaseAnnotation
 
     /**
      * Get object string representation
+     *
      * @return string
      */
     public function __toString()
     {
-        return $this->description;
+        return (string)$this->description;
     }
 }

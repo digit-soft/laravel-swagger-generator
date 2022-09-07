@@ -3,9 +3,9 @@
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
+use Doctrine\Common\Annotations\Annotation\Target;
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
-use Doctrine\Common\Annotations\Annotation\Target;
 
 /**
  * Used in annotations (RequestBody) to describe request body parameter
@@ -13,24 +13,18 @@ use Doctrine\Common\Annotations\Annotation\Target;
  * @Annotation
  * @Target({"CLASS", "ANNOTATION", "METHOD"})
  * @Attributes({
- *   @Attribute("type",type="string"),
- *   @Attribute("name",type="string"),
- *   @Attribute("description",type="string"),
- *   @Attribute("format",type="string"),
+ *   @Attribute("type", type="string"),
+ *   @Attribute("name", type="string"),
+ *   @Attribute("description", type="string"),
+ *   @Attribute("format", type="string"),
  * })
  */
 class RequestParam extends BaseValueDescribed
 {
     /**
-     * @Enum({"string", "integer", "number", "boolean", "array", "object"})
-     * @var string Swagger or PHP type
-     */
-    public $type;
-
-    /**
      * @inheritdoc
      */
-    protected function isExampleRequired()
+    protected function isExampleRequired(): bool
     {
         return true;
     }
@@ -38,7 +32,7 @@ class RequestParam extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function getExcludedKeys()
+    protected function getExcludedKeys(): array
     {
         return ['name'];
     }
@@ -46,7 +40,7 @@ class RequestParam extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function getExcludedEmptyKeys()
+    protected function getExcludedEmptyKeys(): array
     {
         return ['type'];
     }

@@ -22,11 +22,11 @@ class Symlink extends BaseAnnotation
     /**
      * @var string
      */
-    public $class;
+    public string $class;
     /**
      * @var boolean
      */
-    public $merge = false;
+    public bool $merge = false;
 
     /**
      * Symlink constructor.
@@ -43,6 +43,10 @@ class Symlink extends BaseAnnotation
      */
     public function __toString()
     {
+        if (! isset($this->class)) {
+            throw new \RuntimeException("'OA\Symlink::\$class' is required");
+        }
+
         return $this->class;
     }
 }

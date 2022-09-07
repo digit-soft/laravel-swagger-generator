@@ -13,9 +13,9 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  * @Annotation()
  * @Target("CLASS")
  * @Attributes({
- *   @Attribute("name",type="string"),
- *   @Attribute("type",type="string"),
- *   @Attribute("description",type="string"),
+ *   @Attribute("name", type="string"),
+ *   @Attribute("type", type="string"),
+ *   @Attribute("description", type="string"),
  * })
  */
 class Property extends BaseValueDescribed
@@ -23,7 +23,7 @@ class Property extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function isExampleRequired()
+    protected function isExampleRequired(): bool
     {
         return true;
     }
@@ -31,7 +31,7 @@ class Property extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function getExcludedKeys()
+    protected function getExcludedKeys(): array
     {
         return ['required'];
     }

@@ -25,22 +25,22 @@ class ResponseClass extends Response
 {
     use WithReflections, WithAnnotationReader;
 
-    public $with;
+    public array $with = [];
 
-    public $except = [];
+    public array $except = [];
 
     /**
      * @var array Array of class names to merge with
      */
-    protected $mergeWith = [];
+    protected array $mergeWith = [];
 
     /**
      * @inheritdoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         /** @var Symlink $symlink */
-        $symlink = $this->classAnnotation($this->content, 'OA\Symlink');
+        $symlink = $this->classAnnotation($this->content, \OA\Symlink::class);
         if ($symlink && $symlink->class !== $this->content) {
             return $this->withClass($symlink->class, $symlink->merge)->toArray();
         }
@@ -51,17 +51,15 @@ class ResponseClass extends Response
     /**
      * @inheritdoc
      */
-    public function getComponentKey()
+    public function getComponentKey(): ?string
     {
         $className = explode('\\', $this->content);
         $key = end($className);
         if (! empty($this->with)) {
-            $with = implode('_', $this->getWith());
-            $key .= '__w_' . $with;
+            $key .= '__w_' . implode('_', $this->with);
         }
         if (! empty($this->except)) {
-            $with = implode('_', $this->getExcept());
-            $key .= '__wo_' . $with;
+            $key .= '__wo_' . implode('_', $this->except);
         }
         $key .= $this->asList || $this->asPagedList ? '__list' : '';
         $key .= $this->asPagedList ? '_paged' : '';
@@ -73,7 +71,7 @@ class ResponseClass extends Response
     /**
      * @inheritdoc
      */
-    protected function getContent()
+    protected function getContent(): ?array
     {
         $classNames = array_merge([$this->content], $this->mergeWith);
         $propertiesToMerge = [];
@@ -93,9 +91,9 @@ class ResponseClass extends Response
      *
      * @param  string $className
      * @param  bool   $merge
-     * @return ResponseClass
+     * @return $this
      */
-    protected function withClass($className, $merge = false)
+    protected function withClass(string $className, bool $merge = false): static
     {
         $object = clone $this;
         $object->content = $className;
@@ -112,7 +110,7 @@ class ResponseClass extends Response
      * @param  string $className
      * @return $this
      */
-    protected function addClassToMerge($className)
+    protected function addClassToMerge(string $className): static
     {
         $this->mergeWith[] = $className;
 
@@ -126,16 +124,16 @@ class ResponseClass extends Response
      * @param  array  $except
      * @return array
      */
-    protected function getModelProperties($className, $except = [])
+    protected function getModelProperties(string $className, array $except = []): array
     {
-        if ($className === null || (! class_exists($className) && ! interface_exists($className))) {
+        if (! class_exists($className) && ! interface_exists($className)) {
             throw new \RuntimeException("Class or interface '{$className}' not found");
         }
 
         $variable = Variable::fromDescription([
             'type' => $className,
-            'with' => $this->getWith(),
-            'except' => array_unique(array_merge($this->getExcept(), $except)),
+            'with' => $this->with,
+            'except' => array_unique(array_merge($this->except, $except)),
             'description' => $this->description,
         ]);
 
@@ -146,45 +144,17 @@ class ResponseClass extends Response
      * Get ignored properties.
      *
      * @param  string[] $classNames
-     * @return array
+     * @return string[]
      */
-    protected function getModelsIgnoredProperties($classNames)
+    protected function getModelsIgnoredProperties(array $classNames): array
     {
         $ignored = [];
         foreach ($classNames as $className) {
             /** @var \OA\PropertyIgnore[] $annotations */
-            $annotations = $this->classAnnotations($className, 'OA\PropertyIgnore');
+            $annotations = $this->classAnnotations($className, \OA\PropertyIgnore::class);
             $ignored[] = Arr::pluck($annotations, 'name', 'name');
         }
 
         return ! empty($ignored) ? array_keys(array_merge([], ...$ignored)) : [];
-    }
-
-    /**
-     * Get property-read names
-     *
-     * @return array
-     */
-    protected function getWith()
-    {
-        if (is_string($this->with)) {
-            return $this->with = [$this->with];
-        }
-
-        return $this->with;
-    }
-
-    /**
-     * Get property names to avoid.
-     *
-     * @return array
-     */
-    protected function getExcept()
-    {
-        if (is_string($this->except)) {
-            return $this->except = [$this->except];
-        }
-
-        return $this->except;
     }
 }

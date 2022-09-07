@@ -25,31 +25,30 @@ class Parameter extends BaseValueDescribed
      * @Enum({"path", "query", "header"})
      * @var string Swagger parameter position
      */
-    public $in = 'path';
+    public string $in = 'path';
     /**
      * @Enum({"string", "integer", "number", "boolean", "array", "object"})
-     * @var string Swagger or PHP type
+     * @var string|null Swagger or PHP type
      */
-    public $type = 'integer';
+    public ?string $type = 'integer';
 
-    public $required = true;
+    public ?bool $required = true;
 
     /**
      * @Enum({"simple", "matrix", "label", "form", "spaceDelimited", "pipeDelimited", "deepObject"})
-     * @var string
      */
-    public $style;
+    public ?string $style = null;
 
     /**
      * @Enum({true, false})
      * @var boolean
      */
-    public $explode;
+    public ?bool $explode = null;
 
     /**
      * @inheritdoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         $data = parent::toArray();
         $data['in'] = $this->in;
@@ -67,7 +66,7 @@ class Parameter extends BaseValueDescribed
     /**
      * @inheritdoc
      */
-    protected function isSchemaTypeUsed()
+    protected function isSchemaTypeUsed(): bool
     {
         return true;
     }
@@ -95,7 +94,7 @@ class Parameter extends BaseValueDescribed
      *
      * @return array
      */
-    protected static function getDefaultStyles()
+    protected static function getDefaultStyles(): array
     {
         return [
             // 'in.type' => 'style',

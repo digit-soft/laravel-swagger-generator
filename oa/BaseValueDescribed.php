@@ -16,72 +16,72 @@ abstract class BaseValueDescribed extends BaseAnnotation
     use WithVariableDescriber;
 
     /**
-     * @var string Variable name
+     * @var string|null Variable name
      */
-    public $name;
+    public ?string $name = null;
     /**
      * @Enum({"string", "integer", "number", "boolean", "array", "object"})
-     * @var string Swagger or PHP type
+     * @var string|null Swagger or PHP type
      */
-    public $type;
+    public ?string $type = null;
     /**
      * @Enum({"int32", "int64", "float", "byte", "date", "date-time", "password", "binary"})
-     * @var string Format for swagger
+     * @var string|null Format for swagger
      */
-    public $format;
+    public ?string $format = null;
     /**
      * @var bool Value may be null
      */
-    public $nullable;
+    public ?bool $nullable = null;
     /**
-     * @var float|int Minimum value of number value
+     * @var float|int|null Minimum value of number value
      */
-    public $minimum;
+    public int|float|null $minimum = null;
     /**
-     * @var float|int Maximum value of number value
+     * @var float|int|null Maximum value of number value
      */
-    public $maximum;
+    public int|float|null $maximum = null;
     /**
-     * @var int Min length of string value
+     * @var int|null Min length of string value
      */
-    public $minLength;
+    public ?int $minLength = null;
     /**
-     * @var int Min length of string value
+     * @var int|null Min length of string value
      */
-    public $maxLength;
+    public ?int $maxLength = null;
     /**
-     * @var array Array of possible values
+     * @var array|null Array of possible values
      */
-    public $enum;
+    public ?array $enum = null;
     /**
-     * @var string Text description
+     * @var string|null Text description
      */
-    public $description;
+    public ?string $description = null;
     /**
      * @var mixed Example of variable (It's possible to set `example` to NULL)
      */
-    public $example;
+    public mixed $example = null;
     /**
      * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
      * @var mixed Array item type
      */
-    public $items;
+    public array|string|null $items = null;
     /**
      * @var bool Flag that value is required
      */
-    public $required;
+    public ?bool $required = null;
     /**
      * @var string
      */
-    protected $_phpType;
+    protected ?string $_phpType = null;
 
     /**
      * Check that variable name is nested (with dots)
      * @return bool
      */
-    public function isNested()
+    public function isNested(): bool
     {
-        return $this->name !== null && strpos($this->name, '.') !== false;
+        return $this->name !== null && str_contains($this->name, '.');
     }
 
     /**
@@ -89,7 +89,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return string|null
      */
-    public function getNestedParentName()
+    public function getNestedParentName(): ?string
     {
         [ , , , $parentName] = $this->getNestedPaths();
 
@@ -101,7 +101,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return string[]
      */
-    public function getNestedPaths()
+    public function getNestedPaths(): array
     {
         $nameParts = explode('.', $this->name);
         if (count($nameParts) === 1) {
@@ -178,7 +178,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
     /**
      * @inheritdoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         $swType = $this->type ?? $this->guessType();
         $data = [
@@ -216,7 +216,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
             $example = $example === null && $this->type !== Variable::SW_TYPE_OBJECT && ($phpType = $this->describer()->phpType($this->type)) !== $this->type
                 ? $this->describer()->example($phpType, null, $this->name)
                 : $example;
-            if ($example !== null && $this->describer()->isValueSuitableForType($this->type, $example)) {
+            if ($example !== null && $this->type !== null && $this->describer()->isValueSuitableForType($this->type, $example)) {
                 $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
             }
         }
@@ -256,11 +256,12 @@ abstract class BaseValueDescribed extends BaseAnnotation
 
     /**
      * Check that object has enum set
+     *
      * @return bool
      */
-    protected function hasEnum()
+    protected function hasEnum(): bool
     {
-        return is_array($this->enum) && !empty($this->enum);
+        return is_array($this->enum) && ! empty($this->enum);
     }
 
     /**
@@ -269,7 +270,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      * @param  array $keys
      * @return string
      */
-    protected function makePathFromKeysArray(array $keys)
+    protected function makePathFromKeysArray(array $keys): string
     {
         $first = array_shift($keys);
         $keys = array_map(fn ($k) => $k === '*' ? '.items' : '.properties.' . $k, $keys);
@@ -283,7 +284,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return mixed
      */
-    protected function getExampleProcessed()
+    protected function getExampleProcessed(): mixed
     {
         $example = $this->example;
         if ($this->hasEnum()) {
@@ -296,9 +297,9 @@ abstract class BaseValueDescribed extends BaseAnnotation
     /**
      * Guess object properties key
      *
-     * @return array|null
+     * @return array
      */
-    protected function guessProperties()
+    protected function guessProperties(): array
     {
         $example = $this->getExampleProcessed();
         if ($example !== null) {
@@ -321,7 +322,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return string|null
      */
-    protected function guessType()
+    protected function guessType(): ?string
     {
         $example = $this->getExampleProcessed();
         if ($example !== null) {
@@ -334,7 +335,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
     /**
      * Process type in object.
      */
-    protected function processType()
+    protected function processType(): void
     {
         if ($this->type === null) {
             return;
@@ -362,7 +363,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      * @param  string $type
      * @return bool
      */
-    protected function isPhpType($type)
+    protected function isPhpType(string $type): bool
     {
         if ($this->describer()->isTypeArray($type)) {
             return true;
@@ -377,7 +378,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return bool
      */
-    protected function isSchemaTypeUsed()
+    protected function isSchemaTypeUsed(): bool
     {
         return false;
     }
@@ -387,7 +388,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return bool
      */
-    protected function isExampleRequired()
+    protected function isExampleRequired(): bool
     {
         return false;
     }
@@ -397,7 +398,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return array
      */
-    protected function getExcludedKeys()
+    protected function getExcludedKeys(): array
     {
         return [];
     }
@@ -407,7 +408,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @return array
      */
-    protected function getExcludedEmptyKeys()
+    protected function getExcludedEmptyKeys(): array
     {
         return [];
     }

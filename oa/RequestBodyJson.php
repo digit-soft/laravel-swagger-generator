@@ -20,8 +20,6 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
  */
 class RequestBodyJson extends RequestBody
 {
-    public $contentType = 'application/json';
-
     use CleanupsDescribedData, WithVariableDescriber;
 
     /**
@@ -31,21 +29,21 @@ class RequestBodyJson extends RequestBody
      */
     public function __toString()
     {
-        return json_encode($this->content);
+        return (string)json_encode($this->content);
     }
 
     /**
      * Process content row by row recursively.
      *
-     * @param array $content
+     * @param  array $content
      * @return array
      */
-    protected function processContent($content)
+    protected function processContent(array $content): array
     {
         $result = [];
         foreach ($content as $key => $row) {
             if (is_object($row)) {
-                if (!method_exists($row, 'toArray')) {
+                if (! method_exists($row, 'toArray')) {
                     continue;
                 }
                 if ($row instanceof RequestParam) {
@@ -70,8 +68,11 @@ class RequestBodyJson extends RequestBody
     /**
      * @inheritdoc
      */
-    public function toArray()
+    public function toArray(): array
     {
+        if (! is_array($this->content)) {
+            throw new \RuntimeException("'OA\RequestBodyJson::\$content' must be array");
+        }
         $content = $this->processContent($this->content);
 
         return [

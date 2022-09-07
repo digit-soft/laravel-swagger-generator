@@ -27,16 +27,16 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  */
 class Response extends BaseAnnotation
 {
-    public $content;
-    public $contentType = 'application/json';
-    public $status = 200;
-    public $description;
-    public $asList = false;
-    public $asPagedList = false;
-    public $asCursorPagedList = false;
+    public mixed $content = null;
+    public string $contentType = 'application/json';
+    public int $status = 200;
+    public ?string $description = null;
+    public bool $asList = false;
+    public bool $asPagedList = false;
+    public bool $asCursorPagedList = false;
 
-    protected $_hasNoData = false;
-    protected $_setProperties = [];
+    protected bool $_hasNoData = false;
+    protected array $_setProperties = [];
 
     use CleanupsDescribedData, WithVariableDescriber;
 
@@ -53,7 +53,7 @@ class Response extends BaseAnnotation
     /**
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         $asList = $this->asList || $this->asPagedList || $this->asCursorPagedList;
         if ($asList) {
@@ -80,7 +80,7 @@ class Response extends BaseAnnotation
      *
      * @return string|null
      */
-    public function getComponentKey()
+    public function getComponentKey(): ?string
     {
         return null;
     }
@@ -90,7 +90,7 @@ class Response extends BaseAnnotation
      *
      * @return bool
      */
-    public function hasData()
+    public function hasData(): bool
     {
         return ! $this->_hasNoData;
     }
@@ -98,9 +98,9 @@ class Response extends BaseAnnotation
     /**
      * Get content array
      *
-     * @return array
+     * @return array|null
      */
-    protected function getContent()
+    protected function getContent(): ?array
     {
         $this->_hasNoData = ! $this->wasSetInConstructor('content') && empty($this->content)
             ? true : $this->_hasNoData;

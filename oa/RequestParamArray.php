@@ -15,7 +15,8 @@ class RequestParamArray extends RequestParam
 {
     /**
      * RequestParamArray constructor.
-     * @param array $values
+     *
+     * @param  array $values
      */
     public function __construct(array $values)
     {

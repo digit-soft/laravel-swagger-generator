@@ -22,26 +22,26 @@ trait WithRecursiveDescriber
      * @param  bool  $withExample
      * @return array
      */
-    protected function describeValue($value, array $additionalData = [], bool $withExample = true)
+    protected function describeValue(mixed $value, array $additionalData = [], bool $withExample = true): array
     {
-        $type = $this->swaggerType(strtolower(gettype($value)));
-        $type = $type === 'null' ? null : $type;
-        $desc = ['type' => $type];
-        $examplable = [
+        $swaggerType = $this->swaggerType(strtolower(gettype($value)));
+        $swaggerType = $swaggerType === 'null' ? null : $swaggerType;
+        $desc = ['type' => $swaggerType];
+        $couldHaveExamples = [
             Variable::SW_TYPE_STRING,
             Variable::SW_TYPE_INTEGER,
             Variable::SW_TYPE_NUMBER,
             Variable::SW_TYPE_BOOLEAN,
         ];
-        switch ($type) {
-            case 'object':
+        switch ($swaggerType) {
+            case Variable::SW_TYPE_OBJECT:
                 $desc = $this->describeObject($value, $additionalData);
                 break;
-            case 'array':
+            case Variable::SW_TYPE_ARRAY:
                 $desc = $this->describeArray($value, $additionalData, $withExample);
                 break;
         }
-        if ($withExample && in_array($type, $examplable, true)) {
+        if ($withExample && in_array($swaggerType, $couldHaveExamples, true)) {
             $desc['example'] = $value;
             if (! empty($additionalData)) {
                 $desc = array_merge($desc, $additionalData);
@@ -59,7 +59,7 @@ trait WithRecursiveDescriber
      * @param  bool   $withExample
      * @return array
      */
-    protected function describeObject($value, array $additionalData = [], bool $withExample = true)
+    protected function describeObject(object $value, array $additionalData = [], bool $withExample = true): array
     {
         $data = [
             'type' => 'object',
@@ -94,7 +94,7 @@ trait WithRecursiveDescriber
      * @param  bool  $withExample
      * @return array
      */
-    protected function describeArray($value, array $additionalData = [], bool $withExample = true)
+    protected function describeArray(array $value, array $additionalData = [], bool $withExample = true): array
     {
         if (empty($value)) {
             $data = [

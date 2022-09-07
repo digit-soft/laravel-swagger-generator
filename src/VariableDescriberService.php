@@ -19,11 +19,11 @@ class VariableDescriberService
     /**
      * @var Filesystem
      */
-    protected $files;
+    protected Filesystem $files;
     /**
      * @var array
      */
-    protected $classShortcuts = [];
+    protected array $classShortcuts = [];
 
     /**
      * VariableDescriberService constructor.
@@ -42,16 +42,17 @@ class VariableDescriberService
      * @param  bool        $describe
      * @return string
      */
-    public function toYml(array $content = [], bool $describe = false, ?string $filePath = null)
+    public function toYml(array $content = [], bool $describe = false, ?string $filePath = null): string
     {
         $arrayContent = $content;
         if ($describe) {
-            $arrayContent = static::describe($arrayContent);
+            $arrayContent = $this->describe($arrayContent);
         }
         $yamlContent = Yaml::dump($arrayContent, 20, 2, Yaml::DUMP_EMPTY_ARRAY_AS_SEQUENCE);
         if ($filePath !== null) {
             $this->files->put($filePath, $yamlContent);
         }
+
         return $yamlContent;
     }
 
@@ -59,13 +60,13 @@ class VariableDescriberService
      * Parse Yaml file
      *
      * @param  string $filePath
-     * @return array
+     * @return array|null
      */
-    public function fromYml(string $filePath)
+    public function fromYml(string $filePath): ?array
     {
         $contentStr = $this->files->get($filePath);
 
-        return Yaml::parse($contentStr);
+        return is_array($parsed = Yaml::parse($contentStr)) ? $parsed : null;
     }
 
     /**
@@ -76,7 +77,7 @@ class VariableDescriberService
      * @param  bool  $withExample
      * @return array
      */
-    public function describe($variable, array $additionalData = [], bool $withExample = true)
+    public function describe(mixed $variable, array $additionalData = [], bool $withExample = true): array
     {
         return $this->describeValue($variable, $additionalData, $withExample);
     }
@@ -87,7 +88,7 @@ class VariableDescriberService
      * @param  string $className
      * @return string
      */
-    public function shortenClass(string $className)
+    public function shortenClass(string $className): string
     {
         $className = ltrim($className, '\\');
         if (isset($this->classShortcuts[$className])) {

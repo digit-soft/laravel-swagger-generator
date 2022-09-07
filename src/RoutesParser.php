@@ -267,17 +267,21 @@ class RoutesParser
         }
         foreach ($annotations as $annotation) {
             $annKey = $annotation->getComponentKey();
-            if (($annotationData = $this->getComponent($annKey, static::COMPONENT_RESPONSE)) === null) {
+            $annotationData = $annKey !== null ? $this->getComponent($annKey, static::COMPONENT_RESPONSE) : null;
+            if ($annotationData === null) {
                 $annotationData = $annotation->toArray();
                 if (! $annotation->hasData()) {
                     $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_NO_DOC_CLASS, $route, $annotation->content);
                 }
-                $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
+                if ($annKey !== null) {
+                    $this->setComponent($annotationData, $annKey, static::COMPONENT_RESPONSE);
+                }
             }
-            $annotationDataRef = ['$ref' => $this->getComponentReference($annKey, static::COMPONENT_RESPONSE)];
             $annStatus = $annotation->status;
             $data = [
-                $annStatus => $annKey !== null ? $annotationDataRef : $annotationData,
+                $annStatus => $annKey !== null
+                    ? ['$ref' => $this->getComponentReference($annKey, static::COMPONENT_RESPONSE)]
+                    : $annotationData,
             ];
             if (isset($result[$annStatus])) {
                 $result[$annStatus] = $this->describer()->merge($result[$annStatus], $data[$annStatus]);

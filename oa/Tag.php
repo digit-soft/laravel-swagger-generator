@@ -1,4 +1,5 @@
 <?php
+
 namespace OA;
 
 use Doctrine\Common\Annotations\Annotation;
@@ -18,7 +19,7 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class Tag extends BaseAnnotation
 {
-    public $name;
+    public string $name;
 
     /**
      * Tag constructor.
@@ -35,6 +36,10 @@ class Tag extends BaseAnnotation
      */
     public function __toString()
     {
-        return preg_replace('/[\s_]+/u', '-', (string)$this->name);
+        if (! isset($this->name)) {
+            throw new \RuntimeException("'OA\Tag::\$name' is required");
+        }
+
+        return preg_replace('/[\s_]+/u', '-', $this->name);
     }
 }

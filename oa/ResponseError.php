@@ -13,11 +13,11 @@ use Doctrine\Common\Annotations\Annotation\Target;
  */
 class ResponseError extends Response
 {
-    public $status = 400;
-    public $content;
+    public int $status = 400;
+    public mixed $content;
 
-    protected $usedDefaultContent = false;
-    protected $defaultDescription;
+    protected bool $usedDefaultContent = false;
+    protected ?string $defaultDescription = null;
 
     /**
      * Response constructor.
@@ -26,7 +26,7 @@ class ResponseError extends Response
     public function __construct(array $values)
     {
         $this->_setProperties = $this->configureSelf($values, 'status');
-        if (!$this->wasSetInConstructor('content')) {
+        if (! $this->wasSetInConstructor('content')) {
             $this->content = $this->getDefaultContentByStatus();
             $this->usedDefaultContent = true;
         }
@@ -35,7 +35,7 @@ class ResponseError extends Response
     /**
      * @inheritdoc
      */
-    public function getComponentKey()
+    public function getComponentKey(): ?string
     {
         $isDefault = $this->usedDefaultContent && $this->description === $this->defaultDescription;
         if (!$isDefault) {
@@ -47,18 +47,20 @@ class ResponseError extends Response
     /**
      * @inheritdoc
      */
-    public function hasData()
+    public function hasData(): bool
     {
         return true;
     }
 
     /**
      * Get default content for given error code
+     *
      * @return mixed|null
      */
-    protected function getDefaultContentByStatus()
+    protected function getDefaultContentByStatus(): mixed
     {
         $content = static::defaultContentList();
+
         return $content[$this->status] ?? null;
     }
 

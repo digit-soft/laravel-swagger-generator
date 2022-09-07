@@ -35,7 +35,7 @@ class Parameters extends BaseAnnotation
     /**
      * @inheritDoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         $data = [];
         foreach ($this->parameters as $parameter) {

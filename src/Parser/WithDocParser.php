@@ -2,6 +2,7 @@
 
 namespace DigitSoft\Swagger\Parser;
 
+use phpDocumentor\Reflection\DocBlockFactory;
 use phpDocumentor\Reflection\DocBlock\Tags\Param;
 use phpDocumentor\Reflection\DocBlock\Tags\Property;
 use phpDocumentor\Reflection\DocBlock\Tags\PropertyRead;
@@ -14,7 +15,7 @@ use phpDocumentor\Reflection\DocBlock\Tags\PropertyWrite;
  */
 trait WithDocParser
 {
-    protected $docFactory;
+    protected DocBlockFactory $docFactory;
 
     /**
      * Get summary from PHPDoc block.
@@ -22,14 +23,9 @@ trait WithDocParser
      * @param  string $docStr
      * @return string
      */
-    protected function getDocSummary(string $docStr)
+    protected function getDocSummary(string $docStr): string
     {
-        if (! is_string($docStr)) {
-            return '';
-        }
-        $docblock = $this->getDocFactory()->create($docStr);
-
-        return $docblock->getSummary();
+        return $this->getDocFactory()->create($docStr)->getSummary();
     }
 
     /**
@@ -39,11 +35,8 @@ trait WithDocParser
      * @param  string|null $tagName
      * @return \phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    protected function getDocTags(string $docStr, ?string $tagName = null)
+    protected function getDocTags(string $docStr, ?string $tagName = null): array
     {
-        if (! is_string($docStr)) {
-            return [];
-        }
         $docBlock = $this->getDocFactory()->create($docStr);
 
         return $tagName !== null ? $docBlock->getTagsByName($tagName) : $docBlock->getTags();
@@ -58,7 +51,7 @@ trait WithDocParser
      * @param  array|null $not     array with NOT permitted variable names
      * @return array Info about tags indexed by variable name
      */
-    protected function getDocTagsPropertiesDescribed(string $docStr, string $tagName = 'property', ?array $only = null, ?array $not = null)
+    protected function getDocTagsPropertiesDescribed(string $docStr, string $tagName = 'property', ?array $only = null, ?array $not = null): array
     {
         $tags = $this->getDocTagsProperties($docStr, $tagName, $only, $not);
         if (empty($tags)) {
@@ -72,7 +65,7 @@ trait WithDocParser
             $type = $this->describer()->normalizeType($type);
             $result[$name] = [
                 'type' => $type,
-                'description' => $description !== null ? $description->render() : null,
+                'description' => $description?->render(),
             ];
         }
 
@@ -88,7 +81,7 @@ trait WithDocParser
      * @param  array|null $not     array with NOT permitted variable names
      * @return Property[]|PropertyRead[]|PropertyWrite[]
      */
-    protected function getDocTagsProperties(string $docStr, string $tagName = 'property', ?array $only = null, ?array $not = null)
+    protected function getDocTagsProperties(string $docStr, string $tagName = 'property', ?array $only = null, ?array $not = null): array
     {
         /** @var Property[]|PropertyRead[]|PropertyWrite[]|Param[] $propertiesRaw */
         $propertiesRaw = $this->getDocTags($docStr, $tagName);
@@ -113,10 +106,10 @@ trait WithDocParser
      *
      * @return \phpDocumentor\Reflection\DocBlockFactory
      */
-    protected function getDocFactory()
+    protected function getDocFactory(): DocBlockFactory
     {
-        if ($this->docFactory === null) {
-            $this->docFactory = \phpDocumentor\Reflection\DocBlockFactory::createInstance();
+        if (! isset($this->docFactory)) {
+            $this->docFactory = DocBlockFactory::createInstance();
         }
 
         return $this->docFactory;

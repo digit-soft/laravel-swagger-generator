@@ -14,23 +14,24 @@ class ClassParser
     /**
      * @var string
      */
-    public $className;
+    public string $className;
     /**
      * @var array
      */
-    public $constructorParams = [];
+    public array $constructorParams = [];
     /**
      * Model class names list
+     *
      * @var array
      */
-    public $modelClasses = [
+    public array $modelClasses = [
         'Illuminate\Database\Eloquent\Model',
         'DigitSoft\StaticModels\Model',
     ];
 
-    protected $instance;
+    protected object $instance;
 
-    protected $_isModel;
+    protected bool $_isModel;
 
     /**
      * ModelParser constructor.
@@ -49,7 +50,7 @@ class ClassParser
      * @param  bool $describeClasses
      * @return array
      */
-    public function properties(bool $onlyVisible = true, bool $describeClasses = true)
+    public function properties(bool $onlyVisible = true, bool $describeClasses = true): array
     {
         $appends = [];
         $hidden = null;
@@ -72,7 +73,7 @@ class ClassParser
      * @param  \Illuminate\Database\Eloquent\Model $model
      * @return array
      */
-    protected function getModelAppends($model)
+    protected function getModelAppends($model): array
     {
         $ref = $this->reflectionProperty($model, 'appends');
         $ref->setAccessible(true);
@@ -86,9 +87,9 @@ class ClassParser
      * @param  array|null $only
      * @param  array|null $not
      * @param  bool       $describeClasses
-     * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
+     * @return \phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    public function propertiesRead(?array $only = null, ?array $not = null, bool $describeClasses = true)
+    public function propertiesRead(?array $only = null, ?array $not = null, bool $describeClasses = true): array
     {
         return $this->getPropertiesDescribed('property-read', $only, $not, $describeClasses);
     }
@@ -100,9 +101,9 @@ class ClassParser
      * @param  array|null $only
      * @param  array|null $not
      * @param  bool       $describeClasses
-     * @return array|\phpDocumentor\Reflection\DocBlock\Tag[]
+     * @return \phpDocumentor\Reflection\DocBlock\Tag[]
      */
-    protected function getPropertiesDescribed(string $tag = 'property', ?array $only = null, ?array $not = null, bool $describeClasses = false)
+    protected function getPropertiesDescribed(string $tag = 'property', ?array $only = null, ?array $not = null, bool $describeClasses = false): array
     {
         $docStr = $this->docBlockClass($this->className);
         if ($docStr === null) {
@@ -133,12 +134,13 @@ class ClassParser
     }
 
     /**
-     * Check that class is model subclass
+     * Check that class is a subclass of model.
+     *
      * @return bool
      */
-    protected function isModel()
+    protected function isModel(): bool
     {
-        if ($this->_isModel === null) {
+        if (! isset($this->_isModel)) {
             $this->_isModel = ! empty(array_intersect($this->modelClasses, class_parents($this->className)));
         }
 
@@ -146,9 +148,11 @@ class ClassParser
     }
 
     /**
+     * Get instance of the model.
+     *
      * @return object
      */
-    protected function instantiate()
+    protected function instantiate(): object
     {
         return $this->instance ?? $this->instance = app()->make($this->className, $this->constructorParams);
     }

@@ -15,7 +15,7 @@ trait CleanupsDescribedData
      *
      * @param  array $target
      */
-    protected static function handleIncompatibleTypeKeys(array &$target)
+    protected static function handleIncompatibleTypeKeys(array &$target): void
     {
         foreach ($target as $key => &$value) {
             if (is_array($value)) {
@@ -39,7 +39,7 @@ trait CleanupsDescribedData
                 break;
             case Variable::SW_TYPE_ARRAY:
                 Arr::forget($target, ['properties']);
-                if (isset($target['example']) && isset($target['items']['example'])) {
+                if (isset($target['example'], $target['items']['example'])) {
                     Arr::forget($target, ['items.example']);
                 }
                 break;

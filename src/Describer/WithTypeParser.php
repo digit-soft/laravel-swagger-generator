@@ -13,21 +13,22 @@ use DigitSoft\Swagger\Yaml\Variable;
 trait WithTypeParser
 {
     /** @var array Basic types list */
-    protected $basicTypes = [
+    protected array $basicTypes = [
         'string', 'integer', 'float', 'object', 'boolean', 'null', 'array', 'resource',
     ];
     /** @var array Basic types shortcuts */
-    protected $basicTypesSyn = [
+    protected array $basicTypesSyn = [
         'int' => 'integer',
         'bool' => 'boolean',
     ];
     /** @var array List of simplified class types */
-    protected $classSimpleTypes = [
+    protected array $classSimpleTypes = [
         \Illuminate\Support\Carbon::class => 'string',
+        \Carbon\Carbon::class => 'string',
     ];
     //TODO: Combine rules description and example generation
     /** @var array Rules data (with PHP type and variable names) */
-    protected $varRules = [
+    protected array $varRules = [
         'url' => [
             'type' => 'string',
             'names' => [
@@ -153,8 +154,8 @@ trait WithTypeParser
         ],
     ];
 
-    protected $varRuleNames;
-    protected $varRuleNamesSortedRegex;
+    protected ?array $varRuleNames = null;
+    protected ?string $varRuleNamesSortedRegex = null;
 
     /**
      * Check that given type is basic
@@ -162,7 +163,7 @@ trait WithTypeParser
      * @param  string $type
      * @return bool
      */
-    public function isBasicType($type)
+    public function isBasicType(string $type): bool
     {
         $type = $this->normalizeType($type, true);
 
@@ -173,13 +174,14 @@ trait WithTypeParser
      * Check that given type is array of types
      *
      * @param  string $type
+     * @param  bool   $normalize
      * @return bool
      */
-    public function isTypeArray($type)
+    public function isTypeArray(string $type, bool $normalize = true): bool
     {
-        $type = $this->normalizeType($type);
+        $type = $normalize ? $this->normalizeType($type) : $type;
 
-        return strpos($type, '[]') !== false;
+        return str_contains($type, '[]');
     }
 
     /**
@@ -188,7 +190,7 @@ trait WithTypeParser
      * @param  string $type
      * @return bool
      */
-    public function isTypeClassName($type)
+    public function isTypeClassName(string $type): bool
     {
         $type = $this->normalizeType($type, true);
 
@@ -196,23 +198,23 @@ trait WithTypeParser
     }
 
     /**
-     * Normalize type name
+     * Normalize type name.
      *
      * @param  string $type
      * @param  bool   $stripArray
      * @return string
      */
-    public function normalizeType(string $type, bool $stripArray = false)
+    public function normalizeType(string $type, bool $stripArray = false): string
     {
         $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
-        if ($stripArray && $this->isTypeArray($type)) {
+        if ($stripArray && $this->isTypeArray($type, false)) {
             $type = substr($type, 0, -2);
         }
         $typeLower = strtolower($type);
         if (isset($this->basicTypesSyn[$typeLower])) {
             return $this->basicTypesSyn[$typeLower];
         }
-        if (strpos($type, '\\') !== false || class_exists($type) || interface_exists($type)) {
+        if (str_contains($type, '\\') || class_exists($type) || interface_exists($type)) {
             return ltrim($type, '\\');
         }
 
@@ -225,7 +227,7 @@ trait WithTypeParser
      * @param  mixed $example
      * @return string|null
      */
-    public function swaggerTypeByExample($example)
+    public function swaggerTypeByExample(mixed $example): ?string
     {
         if ($example === null) {
             return null;
@@ -244,56 +246,46 @@ trait WithTypeParser
      * @param  string $phpType
      * @return string|null
      */
-    public function swaggerType($phpType)
+    public function swaggerType(string $phpType): ?string
     {
         if ($this->isTypeArray($phpType)) {
             $phpType = 'array';
         } elseif ($this->isTypeClassName($phpType)) {
             $phpType = $this->simplifyClassName($phpType);
         }
-        switch ($phpType) {
-            case 'string':
-                return Variable::SW_TYPE_STRING;
-            case 'int':
-            case 'integer':
-                return Variable::SW_TYPE_INTEGER;
-            case 'float':
-            case 'double':
-                return Variable::SW_TYPE_NUMBER;
-            case 'object':
-                return Variable::SW_TYPE_OBJECT;
-            case 'array':
-                return Variable::SW_TYPE_ARRAY;
-            default:
-                return $phpType;
-        }
+
+        return match ($phpType) {
+            'string' => Variable::SW_TYPE_STRING,
+            'int', 'integer' => Variable::SW_TYPE_INTEGER,
+            'float', 'double' => Variable::SW_TYPE_NUMBER,
+            'object' => Variable::SW_TYPE_OBJECT,
+            'array' => Variable::SW_TYPE_ARRAY,
+            default => $phpType,
+        };
     }
 
     /**
      * Get PHP type by given Swagger type
      *
-     * @param  string $swType
-     * @return string
+     * @param  string|null $swType
+     * @return string|null
      */
-    public function phpType($swType)
+    public function phpType(?string $swType): ?string
     {
-        switch ($swType) {
-            case Variable::SW_TYPE_OBJECT:
-                return 'array';
-            case Variable::SW_TYPE_NUMBER:
-                return 'float';
-            default:
-                return $swType;
-        }
+        return match ($swType) {
+            Variable::SW_TYPE_OBJECT => 'array',
+            Variable::SW_TYPE_NUMBER => 'float',
+            default => $swType,
+        };
     }
 
     /**
      * Simplify class name to basic type
      *
      * @param  string $className
-     * @return mixed|string
+     * @return string
      */
-    public function simplifyClassName($className)
+    public function simplifyClassName(string $className): string
     {
         $className = ltrim($className, '\\');
 
@@ -308,34 +300,27 @@ trait WithTypeParser
      * @param  bool   $excludeEmpty Exclude empty values for array and object
      * @return bool
      */
-    public function isValueSuitableForType($swType, $value, $excludeEmpty = true)
+    public function isValueSuitableForType(string $swType, mixed $value, bool $excludeEmpty = true): bool
     {
-        switch ($swType) {
-            case Variable::SW_TYPE_OBJECT:
-                return is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) !== array_keys(array_values($value));
-            case Variable::SW_TYPE_ARRAY:
-                return is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) === array_keys(array_values($value));
-            case Variable::SW_TYPE_NUMBER:
-                return is_numeric($value);
-            case Variable::SW_TYPE_INTEGER:
-                return is_int($value);
-            case Variable::SW_TYPE_STRING:
-                return is_string($value);
-            case Variable::SW_TYPE_BOOLEAN:
-                return is_bool($value);
-        }
-
-        return false;
+        return match ($swType) {
+            Variable::SW_TYPE_OBJECT => is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) !== array_keys(array_values($value)),
+            Variable::SW_TYPE_ARRAY => is_array($value) && (! $excludeEmpty || ! empty($value)) && array_keys($value) === array_keys(array_values($value)),
+            Variable::SW_TYPE_NUMBER => is_numeric($value),
+            Variable::SW_TYPE_INTEGER => is_int($value),
+            Variable::SW_TYPE_STRING => is_string($value),
+            Variable::SW_TYPE_BOOLEAN => is_bool($value),
+            default => false,
+        };
     }
 
     /**
      * Get possible rule for a variable name
      *
-     * @param  string      $varName
+     * @param  string|null $varName
      * @param  string|null $default
      * @return string|null
      */
-    protected function getVariableRule($varName, $default = null)
+    protected function getVariableRule(?string $varName, ?string $default = null): ?string
     {
         if ($varName === null) {
             return null;
@@ -359,35 +344,29 @@ trait WithTypeParser
      * @param  string $rule
      * @return string|null
      */
-    protected function getRuleType($rule)
+    protected function getRuleType(string $rule): ?string
     {
-        if (is_string($rule) && isset($this->varRules[$rule])) {
+        if (isset($this->varRules[$rule])) {
             return $this->varRules[$rule]['type'];
         }
-        if ($this->isBasicType($rule)) {
-            return $rule;
-        }
 
-        return null;
+        return $this->isBasicType($rule) ? $rule : null;
     }
 
     /**
      * Cleanup variable name (if nested or have suffix appended)
      *
      * @param  string $name
-     * @return string|null
+     * @return string
      */
-    protected function cleanupVariableName($name)
+    protected function cleanupVariableName(string $name): string
     {
         $suffixes = ['_confirm', '_original', '_example', '_new', '_old'];
-        // Name is not a string
-        if (! is_string($name)) {
-            return null;
-        }
         // Name is nested
-        if (strpos($name, '.') !== false) {
+        if (str_contains($name, '.')) {
             $nameExp = explode('.', $name);
-            $name = last($nameExp);
+            /** @noinspection CallableParameterUseCaseInTypeContextInspection */
+            $name = end($nameExp);
         }
         foreach ($suffixes as $suffix) {
             $len = strlen($suffix);
@@ -396,7 +375,6 @@ trait WithTypeParser
                 break;
             }
         }
-
         // Check for ending
         $regex = $this->getRulesPossibleVarNamesRegex();
         if (preg_match($regex, $name, $matches)) {
@@ -411,7 +389,7 @@ trait WithTypeParser
      *
      * @return string
      */
-    protected function getRulesPossibleVarNamesRegex()
+    protected function getRulesPossibleVarNamesRegex(): string
     {
         if ($this->varRuleNamesSortedRegex !== null) {
             return $this->varRuleNamesSortedRegex;
@@ -443,7 +421,7 @@ trait WithTypeParser
      *
      * @return array
      */
-    protected function getRulesPossibleVarNames()
+    protected function getRulesPossibleVarNames(): array
     {
         if ($this->varRuleNames !== null) {
             return $this->varRuleNames;
