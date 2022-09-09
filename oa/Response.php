@@ -55,8 +55,7 @@ class Response extends BaseAnnotation
      */
     public function toArray(): array
     {
-        $asList = $this->asList || $this->asPagedList || $this->asCursorPagedList;
-        if ($asList) {
+        if ($this->isList()) {
             $contentRaw = $this->describer()->describe(['']);
             Arr::set($contentRaw, 'items', $this->getContent());
         } else {
@@ -117,7 +116,7 @@ class Response extends BaseAnnotation
      *
      * @return array|null
      */
-    protected function getContentByAnnotations()
+    protected function getContentByAnnotations(): ?array
     {
         if (! is_array($this->content) || Arr::isAssoc($this->content)) {
             return null;
@@ -150,7 +149,7 @@ class Response extends BaseAnnotation
      * @param  bool         $any        Check if any of given properties was set, otherwise checks all given properties list
      * @return bool
      */
-    protected function wasSetInConstructor($properties, $any = false)
+    protected function wasSetInConstructor(array|string $properties, bool $any = false): bool
     {
         $properties = (array)$properties;
         if (count($properties) === 1) {
@@ -168,16 +167,16 @@ class Response extends BaseAnnotation
      */
     public function __toString()
     {
-        return $this->status;
+        return (string)$this->status;
     }
 
     /**
      * Wrap response content in default response
      *
-     * @param  bool $content
+     * @param  mixed $content
      * @return array|mixed
      */
-    protected function wrapInDefaultResponse($content = null)
+    protected function wrapInDefaultResponse(mixed $content = null): mixed
     {
         $content = $content ?? $this->content;
         $responseData = static::getDefaultResponse($this->contentType, $this->status);
@@ -205,7 +204,7 @@ class Response extends BaseAnnotation
      * @param  int    $status
      * @return mixed|null
      */
-    protected static function getDefaultResponse($contentType, $status = 200)
+    protected static function getDefaultResponse(string $contentType, int $status = 200): mixed
     {
         $key = static::isSuccessStatus($status) ? 'ok' : 'error';
         $responses = [
@@ -243,9 +242,19 @@ class Response extends BaseAnnotation
      * @param  int|string $status
      * @return bool
      */
-    protected static function isSuccessStatus($status)
+    protected static function isSuccessStatus($status): bool
     {
         return in_array((int)$status, [200, 201, 202, 204], true);
+    }
+
+    /**
+     * Determines whether response is a list of items.
+     *
+     * @return bool
+     */
+    protected function isList(): bool
+    {
+        return $this->asList || $this->asPagedList || $this->asCursorPagedList;
     }
 
     /**
@@ -253,7 +262,7 @@ class Response extends BaseAnnotation
      *
      * @return array
      */
-    protected static function getPagerExample()
+    protected static function getPagerExample(): array
     {
         $data = array_fill(0, 100, null);
         $pager = new \Illuminate\Pagination\LengthAwarePaginator($data, 100, 10, 2);
@@ -266,7 +275,7 @@ class Response extends BaseAnnotation
      *
      * @return array
      */
-    protected static function getCursorPagerExample()
+    protected static function getCursorPagerExample(): array
     {
         $cursor = new \Illuminate\Pagination\Cursor(['id' => 20]);
         $data = array_map(function ($v) { return ['id' => $v]; }, array_keys(array_fill(1, 100, null)));
@@ -280,7 +289,7 @@ class Response extends BaseAnnotation
      *
      * @return string
      */
-    protected function getDefaultDescription()
+    protected function getDefaultDescription(): string
     {
         $list = static::getDefaultStatusDescriptions();
 
@@ -292,7 +301,7 @@ class Response extends BaseAnnotation
      *
      * @return array
      */
-    protected static function getDefaultStatusDescriptions()
+    protected static function getDefaultStatusDescriptions(): array
     {
         return [
             200 => 'OK',

@@ -136,6 +136,40 @@ class VariableDescriberService
     }
 
     /**
+     * Merge arrays, maintain uniqueness in list arrays.
+     *
+     * @param  array $a
+     * @param  array $b
+     * @return array
+     */
+    public function mergeUnique(array $a, array $b): array
+    {
+        $args = func_get_args();
+        $res = array_shift($args);
+        while (! empty($args)) {
+            foreach (array_shift($args) as $k => $v) {
+                if (is_int($k)) {
+                    if (array_is_list($res)) {
+                        if (! in_array($v, $res, true)) {
+                            $res[] = $v;
+                        }
+                    } elseif (array_key_exists($k, $res)) {
+                        $res[] = $v;
+                    } else {
+                        $res[$k] = $v;
+                    }
+                } elseif (is_array($v) && isset($res[$k]) && is_array($res[$k])) {
+                    $res[$k] = $this->mergeUnique($res[$k], $v);
+                } else {
+                    $res[$k] = $v;
+                }
+            }
+        }
+
+        return $res;
+    }
+
+    /**
      * Merge arrays without merging keys under `properties` key.
      *
      * In such way we are trying to rewrite all under properties key, without recursive merge.
@@ -144,7 +178,7 @@ class VariableDescriberService
      * @param  array $b
      * @return array
      */
-    public function mergeWithPropertiesRewrite($a, $b)
+    public function mergeWithPropertiesRewrite(array $a, array $b = [])
     {
         $args = func_get_args();
         $prevKey = null;

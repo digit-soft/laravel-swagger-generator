@@ -62,7 +62,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public mixed $example = null;
     /**
-     * @Enum({"string", "integer", "numeric", "boolean", "array", "object"})
+     * @Enum({"string", "integer", "number", "boolean", "array", "object"})
      * @var mixed Array item type
      */
     public array|string|null $items = null;
@@ -71,7 +71,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public ?bool $required = null;
     /**
-     * @var string
+     * @var string|null
      */
     protected ?string $_phpType = null;
 
@@ -126,7 +126,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      *
      * @param  array $target
      */
-    public function toArrayRecursive(&$target)
+    public function toArrayRecursive(array &$target): void
     {
         $nameArr = explode('.', $this->name);
         $currentTarget = &$target;
@@ -143,7 +143,6 @@ abstract class BaseValueDescribed extends BaseAnnotation
                 if (! isset($currentTarget['properties'])) {
                     $currentTarget = ['type' => 'object', 'properties' => []];
                 }
-                /** @noinspection UnsupportedStringOffsetOperationsInspection */
                 $currentTarget['properties'][$key] = $currentTarget['properties'][$key] ?? [];
                 $currentTarget = &$currentTarget['properties'][$key];
             }
@@ -172,7 +171,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public function __toString()
     {
-        return $this->name;
+        return (string)$this->name;
     }
 
     /**
@@ -180,28 +179,33 @@ abstract class BaseValueDescribed extends BaseAnnotation
      */
     public function toArray(): array
     {
+        $exampleRequired = $this->isExampleRequired();
         $swType = $this->type ?? $this->guessType();
-        $data = [
-            'type' => $swType,
-        ];
-        $optional = [
-            'format', 'name', 'required', 'description', 'enum',
-            'nullable', 'minimum', 'maximum', 'minLength', 'maxLength',
-            'example' => 'exampleProcessed',
-        ];
-        foreach ($optional as $arrKey => $optKey) {
-            $arrKey = is_numeric($arrKey) ? $optKey : $arrKey;
-            $optValue = $this->{$optKey};
-            if ($optValue !== null) {
-                $data[$arrKey] = $optValue;
+        $data = [];
+        $attributesMap = ['example' => 'exampleProcessed'];
+        $attributes = $this->getDumpedKeys();
+        $excludeKeys = $this->getExcludedKeys();
+        $excludeEmptyKeys = $this->getExcludedEmptyKeys();
+        if (in_array('type', $attributes, true)) {
+            $attributes = array_diff($attributes, ['type']);
+            $data['type'] = $swType;
+        }
+        foreach ($attributes as $key) {
+            $sourceKey = $attributesMap[$key] ?? $key;
+            if (($attrValue = $this->{$sourceKey}) !== null) {
+                $data[$key] = $attrValue;
             }
         }
         // Add properties to object
         if ($swType === Variable::SW_TYPE_OBJECT) {
             $data['properties'] = $this->guessProperties();
-        }
+            // Remove `example` data if we have successfully got the properties
+            if (! empty($data['properties'])) {
+                unset($data['example']);
+                $exampleRequired = false;
+            }
         // Add items key to array
-        if ($swType === Variable::SW_TYPE_ARRAY) {
+        } elseif ($swType === Variable::SW_TYPE_ARRAY) {
             $this->items = $this->items ?? 'string';
             $data['items'] = ['type' => $this->items];
             if (isset($data['format'])) {
@@ -210,7 +214,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
             }
         }
         // Write example if needed
-        if (! isset($data['example']) && $this->isExampleRequired()) {
+        if ($exampleRequired && ! isset($data['example'])) {
             $example = $this->describer()->example(null, $this->type, $this->name);
             // Get example one more time for PHP type (except PHP_ARRAY, SW_TYPE_OBJECT)
             $example = $example === null && $this->type !== Variable::SW_TYPE_OBJECT && ($phpType = $this->describer()->phpType($this->type)) !== $this->type
@@ -220,15 +224,10 @@ abstract class BaseValueDescribed extends BaseAnnotation
                 $data['example'] = Arr::get($data, 'format') !== Variable::SW_FORMAT_BINARY ? $example : 'binary';
             }
         }
-
-        $excludeKeys = $this->getExcludedKeys();
-        $excludeEmptyKeys = $this->getExcludedEmptyKeys();
-
         // Exclude undesirable keys
         if (! empty($excludeKeys)) {
             $data = Arr::except($data, $excludeKeys);
         }
-
         // Exclude undesirable keys those are empty
         if (! empty($excludeEmptyKeys)) {
             $data = array_filter($data, function ($value, $key) use ($excludeEmptyKeys) {
@@ -237,7 +236,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
         }
         // Remap schema children keys
         if ($this->isSchemaTypeUsed()) {
-            $schemaKeys = ['type', 'items', 'example', 'format'];
+            $schemaKeys = ['type', 'format', 'items', 'enum', 'example'];
             foreach ($schemaKeys as $schemaKey) {
                 if (($dataValue = $data[$schemaKey] ?? null) === null) {
                     continue;
@@ -302,19 +301,16 @@ abstract class BaseValueDescribed extends BaseAnnotation
     protected function guessProperties(): array
     {
         $example = $this->getExampleProcessed();
+        $described = [];
+        // By given example
         if ($example !== null) {
             $described = Variable::fromExample($example, $this->name, $this->description)->describe();
-
-            return ! empty($described['properties']) ? $described['properties'] : [];
+        // By PHP type
+        } elseif ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
+            $described = Variable::fromDescription(['type' => $this->_phpType])->describe(false);
         }
 
-        if ($this->_phpType !== null && $this->describer()->isTypeClassName($this->_phpType)) {
-            $described = Variable::fromDescription(['type' => $this->_phpType])->describe();
-
-            return ! empty($described['properties']) ? $described['properties'] : [];
-        }
-
-        return [];
+        return ! empty($described['properties']) ? $described['properties'] : [];
     }
 
     /**
@@ -374,7 +370,7 @@ abstract class BaseValueDescribed extends BaseAnnotation
     }
 
     /**
-     * Definition must include `schema` key and type, items... keys must be present under that key.
+     * Definition must include `schema` key and type, items, enum... keys must be present under that key.
      *
      * @return bool
      */
@@ -391,6 +387,21 @@ abstract class BaseValueDescribed extends BaseAnnotation
     protected function isExampleRequired(): bool
     {
         return false;
+    }
+
+    /**
+     * Get keys that can be dumped to array.
+     *
+     * @return array
+     */
+    protected function getDumpedKeys(): array
+    {
+        return [
+            'name', 'type', 'format', 'description',
+            'example',
+            'required', 'nullable', 'enum',
+            'minimum', 'maximum', 'minLength', 'maxLength',
+        ];
     }
 
     /**

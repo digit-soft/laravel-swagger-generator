@@ -70,14 +70,16 @@ class GenerateCommand extends Command
         $filePath = $this->getMainFile();
         $arrayContent = config('swagger-generator.content', []);
         $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesBefore', []));
+        Variable::collectClassReferences(true, true);
         $routesData = $this->getRoutesData();
         $arrayContent = $this->describer()->merge($arrayContent, $routesData);
         $arrayContent = $this->mergeWithFilesContent($arrayContent, config('swagger-generator.contentFilesAfter', []));
         $definitions = $this->generateAdditionalDefinitions();
+        Variable::populateComponentsArrayWithCollectedClassReferences($definitions['components']);
         $arrayContent = $this->describer()->merge($arrayContent, $definitions);
         $content = $this->describer()->toYml($arrayContent);
         $this->files->put($filePath, $content);
-        $this->getOutput()->success(sprintf("Swagger YML file generated to '%s'", $filePath));
+        $this->getOutput()->success(sprintf("Swagger YML file was generated in '%s'", $filePath));
         $this->printTimeSpent($startTime);
 
         return 0;
@@ -206,7 +208,7 @@ class GenerateCommand extends Command
         $this->sortPaths($paths);
         ksort($parser->components['responses']);
         ksort($parser->components['requestBodies']);
-        $data = ['paths' => $paths, 'components' => $parser->components];
+        $data = ['paths' => $paths, 'components' => array_filter($parser->components, fn ($rows) => ! empty($rows))];
         if ($this->getOutput()->isVerbose()) {
             $responses = array_keys($parser->components['responses']);
             $requests = array_keys($parser->components['requestBodies']);

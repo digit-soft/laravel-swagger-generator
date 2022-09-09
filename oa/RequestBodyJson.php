@@ -41,6 +41,7 @@ class RequestBodyJson extends RequestBody
     protected function processContent(array $content): array
     {
         $result = [];
+        $required = [];
         foreach ($content as $key => $row) {
             if (is_object($row)) {
                 if (! method_exists($row, 'toArray')) {
@@ -48,6 +49,9 @@ class RequestBodyJson extends RequestBody
                 }
                 if ($row instanceof RequestParam) {
                     $row->toArrayRecursive($result);
+                    if ($row->required && ! $row->isNested()) {
+                        $required[] = $row->name;
+                    }
                 } else {
                     $result[$key] = $this->describer()->describe($row->toArray());
                 }
@@ -60,6 +64,9 @@ class RequestBodyJson extends RequestBody
                 $currentRow = &$result[$key];
                 static::handleIncompatibleTypeKeys($currentRow);
             }
+        }
+        if (! empty($result) && ! empty($requiredAttributes = array_unique(array_merge($this->required, $required)))) {
+            $result['required'] = $requiredAttributes;
         }
 
         return $result;
@@ -77,7 +84,7 @@ class RequestBodyJson extends RequestBody
 
         return [
             'description' => $this->description ?? '',
-            'required' => true,
+            // 'required' => true,
             'content' => [
                 $this->contentType => [
                     'schema' => $content,

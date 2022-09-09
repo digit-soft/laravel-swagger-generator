@@ -156,6 +156,7 @@ trait WithTypeParser
 
     protected ?array $varRuleNames = null;
     protected ?string $varRuleNamesSortedRegex = null;
+    protected array $classExistChecks = [];
 
     /**
      * Check that given type is basic
@@ -192,9 +193,13 @@ trait WithTypeParser
      */
     public function isTypeClassName(string $type): bool
     {
-        $type = $this->normalizeType($type, true);
+        if (isset($this->classExistChecks[$type])) {
+            return $this->classExistChecks[$type];
+        }
+        $typeClean = $this->normalizeType($type, true);
 
-        return ! in_array($type, $this->basicTypes, true) && (class_exists($type) || interface_exists($type));
+        return $this->classExistChecks[$type] = $this->classExistChecks[$typeClean] =
+            (! in_array($typeClean, $this->basicTypes, true) && (class_exists($typeClean) || interface_exists($typeClean)));
     }
 
     /**
@@ -255,7 +260,7 @@ trait WithTypeParser
         }
 
         return match ($phpType) {
-            'string' => Variable::SW_TYPE_STRING,
+            'string', 'null' => Variable::SW_TYPE_STRING,
             'int', 'integer' => Variable::SW_TYPE_INTEGER,
             'float', 'double' => Variable::SW_TYPE_NUMBER,
             'object' => Variable::SW_TYPE_OBJECT,
