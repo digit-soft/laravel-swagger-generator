@@ -588,6 +588,7 @@ class RoutesParser
         // Describe optionally
         if ($describe) {
             $result = $this->describer()->describe($result, $resultAdditional);
+            $this->applyFromRequestLabelsToRules($result, $labels);
         }
 
         return [$result, $resultAdditional, $required];
