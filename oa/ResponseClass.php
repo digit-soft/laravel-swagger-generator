@@ -30,25 +30,6 @@ class ResponseClass extends Response
     public array $except = [];
 
     /**
-     * @var array Array of class names to merge with
-     */
-    protected array $mergeWith = [];
-
-    /**
-     * @inheritdoc
-     */
-    public function toArray(): array
-    {
-        /** @var Symlink $symlink */
-        $symlink = $this->classAnnotation($this->content, \OA\Symlink::class);
-        if ($symlink && $symlink->class !== $this->content) {
-            return $this->withClass($symlink->class, $symlink->merge)->toArray();
-        }
-
-        return parent::toArray();
-    }
-
-    /**
      * @inheritdoc
      */
     public function getComponentKey(): ?string
@@ -56,10 +37,10 @@ class ResponseClass extends Response
         $className = explode('\\', $this->content);
         $key = end($className);
         if (! empty($this->with)) {
-            $key .= '__w_' . implode('_', $this->with);
+            $key .= '__w_' . str_replace(['\\', '.'], '_', implode('_', $this->with));
         }
         if (! empty($this->except)) {
-            $key .= '__wo_' . implode('_', $this->except);
+            $key .= '__wo_' . str_replace(['\\', '.'], '_', implode('_', $this->except));
         }
         $key .= $this->asList || $this->asPagedList ? '__list' : '';
         $key .= $this->asPagedList ? '_paged' : '';
@@ -73,48 +54,10 @@ class ResponseClass extends Response
      */
     protected function getContent(): ?array
     {
-        $classNames = array_merge([$this->content], $this->mergeWith);
-        $propertiesToMerge = [];
-        $propertiesToIgnore = $this->getModelsIgnoredProperties($classNames);
-        foreach ($classNames as $className) {
-            $propertiesToMerge[] = $this->getModelProperties($className, $propertiesToIgnore);
-        }
-        $properties = ! empty($propertiesToMerge) ? $this->describer()->mergeWithPropertiesRewrite([], ...$propertiesToMerge) : [];
+        $properties = $this->getModelProperties($this->content);
         $this->_hasNoData = empty($properties) || empty($properties['properties']) ? true : $this->_hasNoData;
 
-
         return $properties;
-    }
-
-    /**
-     * Get clone with another class
-     *
-     * @param  string $className
-     * @param  bool   $merge
-     * @return $this
-     */
-    protected function withClass(string $className, bool $merge = false): static
-    {
-        $object = clone $this;
-        $object->content = $className;
-        if ($merge) {
-            $object->mergeWith[] = $this->content;
-        }
-
-        return $object;
-    }
-
-    /**
-     * Add class name to merge with.
-     *
-     * @param  string $className
-     * @return $this
-     */
-    protected function addClassToMerge(string $className): static
-    {
-        $this->mergeWith[] = $className;
-
-        return $this;
     }
 
     /**
@@ -134,7 +77,6 @@ class ResponseClass extends Response
             'type' => $className,
             'with' => $this->with,
             'except' => array_unique(array_merge($this->except, $except)),
-            'description' => $this->description,
         ]);
 
         return $variable->describe();

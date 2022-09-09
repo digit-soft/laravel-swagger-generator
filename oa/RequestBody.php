@@ -14,6 +14,7 @@ use Doctrine\Common\Annotations\Annotation\Attribute;
  * @Attributes({
  *   @Attribute("description", type="string"),
  *   @Attribute("contentType", type="string"),
+ *   @Attribute("required", type="array"),
  * })
  * @internal
  */
@@ -24,6 +25,8 @@ class RequestBody extends BaseAnnotation
     public string $contentType = 'application/json';
 
     public mixed $content;
+
+    public array $required = [];
 
     public function __construct(array $values)
     {

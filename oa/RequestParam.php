@@ -34,7 +34,7 @@ class RequestParam extends BaseValueDescribed
      */
     protected function getExcludedKeys(): array
     {
-        return ['name'];
+        return ['name', 'required'];
     }
 
     /**

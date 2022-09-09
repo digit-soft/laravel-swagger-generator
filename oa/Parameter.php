@@ -52,6 +52,8 @@ class Parameter extends BaseValueDescribed
     {
         $data = parent::toArray();
         $data['in'] = $this->in;
+        // Path parameters are always required
+        $data['required'] = $this->in === 'path' ? true : $this->required;
         $type = $data['schema']['type'] ?? 'string';
         if (($style = $this->getStyle($this->in, $type)) !== null) {
             $data['style'] = $style;
@@ -66,19 +68,30 @@ class Parameter extends BaseValueDescribed
     /**
      * @inheritdoc
      */
+    protected function getDumpedKeys(): array
+    {
+        return [
+            'name', 'type', 'format', 'description',
+            'required', 'enum', 'example',
+        ];
+    }
+
+    /**
+     * @inheritdoc
+     */
     protected function isSchemaTypeUsed(): bool
     {
         return true;
     }
 
     /**
-     * Get param style
+     * Get parameter style.
      *
-     * @param  string $in
-     * @param  string $type
+     * @param  string      $in
+     * @param  string|null $type
      * @return string|null
      */
-    protected function getStyle($in, $type)
+    protected function getStyle(string $in, ?string $type): ?string
     {
         if ($this->style !== null) {
             return $this->style;

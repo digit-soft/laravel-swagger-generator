@@ -7,9 +7,12 @@ use DigitSoft\Swagger\Parsers\ClassParser;
 use DigitSoft\Swagger\Parser\WithReflections;
 use DigitSoft\Swagger\Parser\WithAnnotationReader;
 use DigitSoft\Swagger\Parser\WithVariableDescriber;
+use DigitSoft\Swagger\Describer\CollectsClassReferences;
 
 class Variable
 {
+    use WithReflections, WithAnnotationReader, WithVariableDescriber, CollectsClassReferences;
+
     const KEY_EXAMPLE = 'example';
     const KEY_TYPE = 'type';
     const KEY_DESC = 'description';
@@ -69,8 +72,6 @@ class Variable
 
     protected static array $_cache_objects = [];
 
-    use WithReflections, WithAnnotationReader, WithVariableDescriber;
-
     /**
      * Variable constructor.
      * @param  array $config
@@ -102,9 +103,10 @@ class Variable
     /**
      * Describe variable
      *
+     * @param  bool $useRef
      * @return array
      */
-    public function describe(): array
+    public function describe(bool $useRef = true): array
     {
         $this->fillMissingProperties();
         $typeSwagger = $this->getSwType();
@@ -125,25 +127,43 @@ class Variable
             $result['example'] = $this->example;
         }
         $res = [];
-        switch ($result['type']) {
+        switch ($typeSwagger) {
             case static::SW_TYPE_OBJECT:
                 $className = $this->describer()->normalizeType($this->type);
-                $objCacheKey = $this->generateObjectCacheKey($className);
+                $classNameExists = $this->describer()->isTypeClassName($className);
+                if ($useRef && $classNameExists && ($ref = static::getCollectedClassReference($className, $this->with, $this->except, $this->only)) !== null) {
+                    // dump($ref, $className);
+                    return $ref;
+                }
                 $res = ['type' => static::SW_TYPE_OBJECT, 'properties' => []];
                 // If class does not exist then $objCacheKey will be NULL
-                if ($objCacheKey !== null) {
-                    // Look for a cache
-                    if (isset(static::$_cache_objects[$objCacheKey])) {
-                        $cached = static::$_cache_objects[$objCacheKey];
-                        if (isset($this->description)) {
-                            $cached['description'] = $this->description;
-                        }
-                        return $cached;
+                if ($classNameExists) {
+                    $properties = [];
+                    $propsIgnored = $this->getClassIgnoredProperties($className);
+                    $symlinkClasses = [$className => ['merge' => true, 'ignore' => $propsIgnored]];
+                    $symlinkClass = $className;
+                    /** @var $symlink \OA\Symlink|null */
+                    while (($symlink = $this->classAnnotation($symlinkClass, \OA\Symlink::class)) !== null && ! isset($symlinkClasses[$symlink->class])) {
+                        $symlinkClasses[$symlinkClass]['merge'] = $symlink->merge;
+                        /** @noinspection SlowArrayOperationsInLoopInspection */
+                        $propsIgnored = array_merge($propsIgnored, $this->getClassIgnoredProperties($symlink->class));
+                        $symlinkClasses[$symlink->class] = ['merge' => true, 'ignore' => $propsIgnored];
+                        $symlinkClass = $symlink->class;
                     }
-                    $res['properties'] = $this->getDescriptionByPHPDocTypeClass($className, $this->with ?? []);
-                    $res['properties'] = $res['properties'] ?? [];
+                    $symlinkClasses = array_filter($symlinkClasses, fn ($r) => ! empty($r['merge']));
+                    foreach ($symlinkClasses as $classNameToParse => $row) {
+                        $propertiesCurrent = $this->getDescriptionByPHPDocTypeClass($classNameToParse, $this->with ?? []);
+                        if (! empty($row['ignore'])) {
+                            $propertiesCurrent = array_diff_key($propertiesCurrent, $row['ignore']);
+                        }
+                        $properties[] = $propertiesCurrent;
+                    }
+                    // Write properties from class and symlinks
+                    $res['properties'] = ! empty($properties) ? $this->describer()->mergeWithPropertiesRewrite(...$properties) : [];
+                    // Get description from a class PHPDoc directly
+                    $res['description'] = $this->description ?? $this->getDescriptionSummaryByPHPDocTypeClass($className);
                 } elseif (is_array($this->example) && Arr::isAssoc($this->example)) {
-                    $describedEx = $this->describer()->describe($this->example);
+                    $describedEx = $this->describer()->describe($this->example); // W/o nested examples
                     $res['properties'] = Arr::get($describedEx, 'properties', []);
                     // Remove already described example
                     Arr::forget($result, 'example');
@@ -153,6 +173,12 @@ class Variable
                     $res['properties'] = $this->describer()->merge($res['properties'], $this->properties);
                 }
                 $res['properties'] = ! empty($this->except) ? Arr::except($res['properties'], $this->except) : $res['properties'];
+                // Write `$ref` for the class
+                if ($useRef && $classNameExists) {
+                    return static::setCollectedClassReference(
+                        $className, $this->describer()->merge($res, $result), $this->with, $this->except, $this->only
+                    );
+                }
                 break;
             case static::SW_TYPE_ARRAY:
                 if ($this->describer()->isTypeArray($this->type)) {
@@ -169,13 +195,21 @@ class Variable
                 ];
                 break;
         }
-        $result = $this->describer()->merge($res, $result);
-        // Write object data to cache
-        if (isset($objCacheKey) && $result['type'] === static::SW_TYPE_OBJECT) {
-            static::$_cache_objects[$objCacheKey] = $result;
-        }
 
-        return $result;
+        return $this->describer()->merge($res, $result);
+    }
+
+    /**
+     * Get ignored properties.
+     *
+     * @param  string $className
+     * @return string[]
+     */
+    protected function getClassIgnoredProperties(string $className): array
+    {
+        $annotations = $this->classAnnotations($className, \OA\PropertyIgnore::class);
+
+        return Arr::pluck($annotations, 'name', 'name');
     }
 
     /**
@@ -372,6 +406,17 @@ class Variable
     }
 
     /**
+     * Get description from a class PHPDoc.
+     *
+     * @param  string $className
+     * @return string|null
+     */
+    protected function getDescriptionSummaryByPHPDocTypeClass(string $className): ?string
+    {
+        return (new ClassParser($className))->docSummary();
+    }
+
+    /**
      * Get properties by annotations
      *
      * @param  string $className
@@ -443,24 +488,6 @@ class Variable
                 $properties[$keyBase]['with'] = [$keyWith];
             }
         }
-    }
-
-    /**
-     * Get cache key for objects.
-     *
-     * @param  string $className
-     * @return string|null
-     */
-    protected function generateObjectCacheKey(string $className): ?string
-    {
-        if (! class_exists($className) && ! interface_exists($className)) {
-            return null;
-        }
-
-        return $className
-            . '::' . (! empty($this->with) ? implode(',', $this->with) : '-')
-            . '::' . (! empty($this->except) ? implode(',', $this->except) : '-')
-            . '::' . (! empty($this->only) ? implode(',', $this->only) : '-');
     }
 
     /**

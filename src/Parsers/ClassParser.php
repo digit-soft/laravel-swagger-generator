@@ -68,20 +68,6 @@ class ClassParser
     }
 
     /**
-     * Get model appends attribute.
-     *
-     * @param  \Illuminate\Database\Eloquent\Model $model
-     * @return array
-     */
-    protected function getModelAppends($model): array
-    {
-        $ref = $this->reflectionProperty($model, 'appends');
-        $ref->setAccessible(true);
-
-        return $ref->getValue($model);
-    }
-
-    /**
      * Get `property-read` tags.
      *
      * @param  array|null $only
@@ -92,6 +78,21 @@ class ClassParser
     public function propertiesRead(?array $only = null, ?array $not = null, bool $describeClasses = true): array
     {
         return $this->getPropertiesDescribed('property-read', $only, $not, $describeClasses);
+    }
+
+    /**
+     * Get summary from class PHPDoc.
+     *
+     * @return string|null
+     */
+    public function docSummary(): ?string
+    {
+        $docStr = $this->docBlockClass($this->className);
+        if ($docStr === null) {
+            return null;
+        }
+
+        return $this->getDocSummary($docStr);
     }
 
     /**
@@ -145,6 +146,20 @@ class ClassParser
         }
 
         return $this->_isModel;
+    }
+
+    /**
+     * Get model appends attribute.
+     *
+     * @param  \Illuminate\Database\Eloquent\Model $model
+     * @return array
+     */
+    protected function getModelAppends($model): array
+    {
+        $ref = $this->reflectionProperty($model, 'appends');
+        $ref->setAccessible(true);
+
+        return $ref->getValue($model);
     }
 
     /**

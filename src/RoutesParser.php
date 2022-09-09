@@ -2,10 +2,12 @@
 
 namespace DigitSoft\Swagger;
 
+use OA\Parameter;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Routing\Route;
 use Illuminate\Console\OutputStyle;
+use DigitSoft\Swagger\Yaml\Variable;
 use Illuminate\Routing\RouteCollection;
 use DigitSoft\Swagger\Parser\WithDocParser;
 use Illuminate\Foundation\Http\FormRequest;
@@ -31,6 +33,7 @@ class RoutesParser
     const COMPONENT_RESPONSE = 'responses';
     const COMPONENT_REQUESTS = 'requestBodies';
     const COMPONENT_PARAMETER = 'parameters';
+    const COMPONENT_OBJECTS = 'x-objects';
 
     const PROBLEM_NO_RESPONSE = 'no_response';
     const PROBLEM_ROUTE_CLOSURE = 'route_closure';
@@ -95,52 +98,92 @@ class RoutesParser
             if ($ref instanceof \ReflectionFunction) {
                 $this->trigger(static::EVENT_PROBLEM_FOUND, static::PROBLEM_ROUTE_CLOSURE, $route);
             }
-            $routeWoBody = ! empty(array_intersect(['GET', 'HEAD'], $route->methods));
-            $routeData = [
-                'summary' => '',
-                'description' => '',
-            ];
-            if (($security = $this->getRouteSecurity($route)) !== null) {
-                $routeData['security'] = $security;
-            }
-            if (($tags = $this->getRouteTags($route)) !== null) {
-                $routeData['tags'] = $tags;
-            }
-            if (($summary = $this->getRouteSummary($route)) !== null) {
-                $routeData['summary'] = $summary;
-            }
-            if (($description = $this->getRouteDescription($route)) !== null) {
-                $routeData['description'] = $description;
-            }
-            if (($params = $this->getRouteParams($route)) !== null) {
-                $routeData['parameters'] = $params;
-            }
-            if (($request = $this->getRouteRequest($route, $routeWoBody)) !== null) {
-                if ($routeWoBody) {
-                    $routeData['parameters'] = isset($routeData['parameters']) ? array_merge($routeData['parameters'], $request) : $request;
-                } else {
-                    $routeData['requestBody'] = $request;
-                }
-            }
-            if (($responses = $this->getRouteResponses($route)) !== null) {
-                $routeData['responses'] = $responses;
-            }
-
-            $tag = ! empty($routeData['tags']) ? reset($routeData['tags']) : 'default';
-            $routeData['operationId'] = $this->getRouteId($route, $tag);
-            $path = $this->normalizeUri($route->uri(), true);
-            $paths[$path] = $paths[$path] ?? [];
-            foreach ($route->methods as $method) {
-                if (in_array($method, $documentedMethods, true)) {
-                    $paths[$path][strtolower($method)] = $routeData;
-                }
-            }
+            $this->parseRoute($paths, $route, $documentedMethods, $this->routeNum);
             ++$this->routeNum;
             $this->trigger(static::EVENT_ROUTE_PROCESSED, $route);
         }
         $this->trigger(static::EVENT_FINISH);
 
         return $paths;
+    }
+
+    /**
+     * Parse one route.
+     *
+     * @param  array                     $data
+     * @param  \Illuminate\Routing\Route $route
+     * @param  array                     $documentedMethods
+     * @param  int                       $num
+     * @return array
+     */
+    protected function parseRoute(array &$data, Route $route, array $documentedMethods, int $num = 1): array
+    {
+        $routeWoBody = ! empty(array_intersect(['GET', 'HEAD'], $route->methods));
+        $routeData = [
+            'summary' => '',
+            'description' => '',
+        ];
+        if (($security = $this->getRouteSecurity($route)) !== null) {
+            $routeData['security'] = $security;
+        }
+        if (($tags = $this->getRouteTags($route)) !== null) {
+            $routeData['tags'] = $tags;
+        }
+        if (($summary = $this->getRouteSummary($route)) !== null) {
+            $routeData['summary'] = $summary;
+        }
+        if (($description = $this->getRouteDescription($route)) !== null) {
+            $routeData['description'] = $description;
+        }
+        if (($params = $this->getRouteParams($route)) !== null) {
+            $routeData['parameters'] = $params;
+        }
+        if (($request = $this->getRouteRequest($route, $routeWoBody)) !== null) {
+            if ($routeWoBody) {
+                $routeData['parameters'] = isset($routeData['parameters']) ? array_merge($routeData['parameters'], $request) : $request;
+            } else {
+                $routeData['requestBody'] = $request;
+            }
+        }
+        if (($responses = $this->getRouteResponses($route)) !== null) {
+            $routeData['responses'] = $responses;
+        }
+
+        $tag = ! empty($routeData['tags']) ? reset($routeData['tags']) : 'default';
+        $routeData['operationId'] = $this->getRouteId($route, $tag);
+        $path = $this->normalizeUri($route->uri(), true);
+        $methods = array_intersect($route->methods, $documentedMethods);
+        $dataRows = [
+            [$path, $methods, $routeData]
+        ];
+        // Add multiple definitions for routes with optional parameters
+        if (str_contains($route->uri(), '?')) {
+            $paramsOptional = [];
+            preg_match_all('/\{(?P<parameters>[a-z0-9_-]+)\?\}/i', $route->uri(), $paramsOptional);
+            $paramsOptional = array_reverse($paramsOptional['parameters']);
+            $pathLast = $path;
+            $paramNamesRemoved = [];
+            $numCopy = 1;
+            foreach ($paramsOptional as $paramName) {
+                $paramNamesRemoved[] = $paramName;
+                $pathNew = rtrim(preg_replace('/\/?\{' . $paramName . '\}/', '', $pathLast), '/');
+                $paramsCurrent = array_filter($params, fn ($p) => $p['in'] !== 'path' || ! in_array($p['name'], $paramNamesRemoved, true));
+                $routeDataCurrent = array_merge($routeData, ['parameters' => $paramsCurrent, 'operationId' => $routeData['operationId'] . '.cp-' . $numCopy]);
+
+                $dataRows[] = [$pathNew, $methods, $routeDataCurrent];
+                $pathLast = $pathNew;
+                $numCopy++;
+            }
+        }
+        // Populate target array with parsed data
+        foreach ($dataRows as $row) {
+            [$rPath, $rMethods, $rData] = $row;
+            foreach ($rMethods as $m) {
+                $data[$rPath][strtolower($m)] = $rData;
+            }
+        }
+
+        return [$path, $methods, $routeData];
     }
 
     /**
@@ -186,6 +229,7 @@ class RoutesParser
         if (! empty($paramsAnnGroup = $this->routeAnnotations($route, \OA\Parameters::class))) {
             foreach ($paramsAnnGroup as $paramsGroup) {
                 /** @var \OA\Parameters $paramsGroup */
+                /** @noinspection SlowArrayOperationsInLoopInspection */
                 $paramsAnn = array_merge($paramsAnn, $paramsGroup->parameters);
             }
             $paramsAnn = array_unique($paramsAnn, SORT_STRING);
@@ -285,6 +329,10 @@ class RoutesParser
             ];
             if (isset($result[$annStatus])) {
                 $result[$annStatus] = $this->describer()->merge($result[$annStatus], $data[$annStatus]);
+                // Leave only `$ref` (reference)
+                if (isset($result[$annStatus]['$ref'])) {
+                    $result[$annStatus] = Arr::only($result[$annStatus], ['$ref']);
+                }
             } else {
                 $result = $this->describer()->merge($result, $data);
             }
@@ -361,7 +409,7 @@ class RoutesParser
                 if (isset($schema['schema'])) {
                     $path .= '.schema';
                 }
-                $merged = $this->describer()->merge($rulesData, Arr::get($result, $path, []));
+                $merged = $this->describer()->mergeUnique($rulesData, Arr::get($result, $path, []));
                 static::handleIncompatibleTypeKeys($merged);
                 Arr::set($result, $path, $merged);
             }
@@ -389,25 +437,15 @@ class RoutesParser
         if (! isset($body['content'])) {
             return null;
         }
-
         $params = [];
-
         foreach ($body['content'] as $contentType => $bodyByContentType) {
             if (empty($bodyByContentType['schema']['properties'])) {
                 continue;
             }
-
             $properties = $bodyByContentType['schema']['properties'];
-
             foreach ($properties as $property => $row) {
-                $row['in'] = 'query';
-                $row['name'] = $property;
-                $inSchemaData = Arr::only($row, ['type', 'enum']);
-                if (! empty($inSchemaData)) {
-                    $row['schema'] = $inSchemaData;
-                    unset($row['type'], $row['enum']);
-                }
-                $params[$property] = $row;
+                $param = new Parameter(array_merge($row, ['in' => 'query', 'name' => $property]));
+                $params[$property] = $param->toArray();
             }
         }
 
@@ -418,7 +456,7 @@ class RoutesParser
      * Get FormRequest rules, process them and return described data
      *
      * @param  string $className
-     * @return array
+     * @return array Described request by validation rules + required attributes
      */
     protected function parseFormRequestRules(string $className): array
     {
@@ -436,7 +474,11 @@ class RoutesParser
             $labels = [];
         }
         $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
-        [$exampleData] = $this->processFormRequestRules($rulesRaw, $labels);
+        [$exampleData, , $required] = $this->processFormRequestRules($rulesRaw, $labels);
+        $requiredAttributes = array_values(array_keys(array_filter($required, fn ($v, $k) => $v && is_string($k), ARRAY_FILTER_USE_BOTH)));
+        if (! empty($requiredAttributes)) {
+            $exampleData['required'] = $requiredAttributes;
+        }
 
         return $exampleData;
     }
@@ -447,7 +489,7 @@ class RoutesParser
      * @param  array $rules
      * @return array
      */
-    protected function normalizeFormRequestRules(array $rules)
+    protected function normalizeFormRequestRules(array $rules): array
     {
         $result = [];
         $rulesExpanded = [];
@@ -546,8 +588,6 @@ class RoutesParser
         // Describe optionally
         if ($describe) {
             $result = $this->describer()->describe($result, $resultAdditional);
-            $this->applyFormRequestRequiredRules($result, $required);
-            $this->applyFromRequestLabelsToRules($result, $labels);
         }
 
         return [$result, $resultAdditional, $required];
@@ -591,14 +631,14 @@ class RoutesParser
                 if (($min = reset($ruleParams)) !== false) {
                     $paramKey = is_numeric($value) ? 'minimum' : 'minLength';
                     $paramKey = is_array($value) ? 'minItems' : $paramKey;
-                    $params[$paramKey] = strpos($min, '.') !== false ? (float)$min : (int)$min;
+                    $params[$paramKey] = str_contains($min, '.') ? (float)$min : (int)$min;
                 }
                 break;
             case 'max':
                 if (($max = reset($ruleParams)) !== false) {
                     $paramKey = is_numeric($value) ? 'maximum' : 'maxLength';
                     $paramKey = is_array($value) ? 'maxItems' : $paramKey;
-                    $params[$paramKey] = strpos($max, '.') !== false ? (float)$max : (int)$max;
+                    $params[$paramKey] = str_contains($max, '.') ? (float)$max : (int)$max;
                 }
                 break;
             case 'between':
@@ -630,9 +670,9 @@ class RoutesParser
      * @param  string|mixed $rule
      * @return array
      */
-    protected function normalizeFormRequestValidationRule($rule): array
+    protected function normalizeFormRequestValidationRule(mixed $rule): array
     {
-        if (! is_string($rule) || strpos($rule, ':') === false) {
+        if (! is_string($rule) || ! str_contains($rule, ':')) {
             return [$rule, []];
         }
 
@@ -643,34 +683,12 @@ class RoutesParser
     }
 
     /**
-     * Apply required rules to parsed and described rules
-     *
-     * @param  array $rules
-     * @param  array $required
-     */
-    protected function applyFormRequestRequiredRules(array &$rules, array $required)
-    {
-        foreach ($required as $key => $value) {
-            if (is_array($value) && isset($rules['properties'][$key])) {
-                $this->applyFormRequestRequiredRules($rules['properties'][$key], $value);
-            } elseif (is_bool($value) && $value) {
-                if ($key === '*') {
-                    $rules['required'] = $value;
-                } elseif (isset($rules['properties'][$key])) {
-                    $keyToSet = 'properties.' . $key . '.required';
-                    Arr::set($rules, $keyToSet, $value);
-                }
-            }
-        }
-    }
-
-    /**
      * Apply labels as description to described validation rules.
      *
      * @param  array $rules
      * @param  array $labels
      */
-    protected function applyFromRequestLabelsToRules(array &$rules, array $labels)
+    protected function applyFromRequestLabelsToRules(array &$rules, array $labels): void
     {
         if (empty($labels) || empty($rules['properties'])) {
             return;
@@ -679,7 +697,7 @@ class RoutesParser
         foreach ($labels as $attribute => $label) {
             $attributeNormalized = $attribute;
             // Attribute names with a wildcard (*)
-            if (strpos($attribute, '*') !== false) {
+            if (str_contains($attribute, '*')) {
                 $attributeNormalized = str_replace('*', 'items', str_replace('*.', 'items.properties.', $attribute));
                 if (Arr::get($rules['properties'], $attributeNormalized) !== null) {
                     Arr::set($rules['properties'], $attributeNormalized . '.description', Str::ucfirst($label));
