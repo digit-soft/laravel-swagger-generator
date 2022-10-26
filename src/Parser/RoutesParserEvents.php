@@ -118,7 +118,7 @@ trait RoutesParserEvents
      * @param  \Illuminate\Foundation\Http\FormRequest $request
      * @param  string|null                             $exception
      */
-    protected function eventRouteFormRequestFailed(object $request, ?string $exception = null): void
+    protected function eventRouteFormRequestFailed(object $request, ?object $exception = null): void
     {
         $this->failedFormRequests[] = [get_class($request), $exception];
     }
