@@ -467,6 +467,8 @@ class RoutesParser
         }
         try {
             $rulesRaw = $instance->rules();
+            $ignoreParams = array_map(fn (\OA\RequestParamIgnore $a) => $a->name, $this->classAnnotations($className, \OA\RequestParamIgnore::class));
+            $rulesRaw = ! empty($ignoreParams) ? Arr::except($rulesRaw, $ignoreParams) : $rulesRaw;
             $labels = $instance->attributes();
         } catch (\Throwable $exception) {
             $this->trigger(static::EVENT_FORM_REQUEST_FAILED, $instance, $exception);

@@ -16,9 +16,11 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  *   @Attribute("name", type="string"),
  * })
  */
-final class PropertyIgnore extends BaseAnnotation
+final class RequestParamIgnore extends BaseAnnotation
 {
-    /** @var string property name to ignore */
+    /**
+     * @var string name of the request parameter to ignore
+     */
     public string $name;
 
     public function __construct(array $values)
@@ -40,3 +42,4 @@ final class PropertyIgnore extends BaseAnnotation
         return $this->name;
     }
 }
+
