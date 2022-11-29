@@ -25,6 +25,9 @@ trait WithDocParser
      */
     protected function getDocSummary(string $docStr): string
     {
+        if (trim($docStr) === '') {
+            return '';
+        }
         return $this->getDocFactory()->create($docStr)->getSummary();
     }
 
@@ -37,6 +40,9 @@ trait WithDocParser
      */
     protected function getDocTags(string $docStr, ?string $tagName = null): array
     {
+        if (trim($docStr) === '') {
+            return [];
+        }
         $docBlock = $this->getDocFactory()->create($docStr);
 
         return $tagName !== null ? $docBlock->getTagsByName($tagName) : $docBlock->getTags();
