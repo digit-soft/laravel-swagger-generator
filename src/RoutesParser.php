@@ -475,9 +475,13 @@ class RoutesParser
             $rulesRaw = [];
             $labels = [];
         }
-        $rulesRaw = $this->normalizeFormRequestRules($rulesRaw);
-        [$exampleData, , $required] = $this->processFormRequestRules($rulesRaw, $labels);
-        $requiredAttributes = array_values(array_keys(array_filter($required, fn ($v, $k) => $v && is_string($k), ARRAY_FILTER_USE_BOTH)));
+        $rulesNormalized = $this->normalizeFormRequestRules($rulesRaw);
+        [$exampleData, , $required] = $this->processFormRequestRules($rulesNormalized, $rulesRaw, $labels);
+        $requiredAttributes = array_values(array_keys(array_filter($required, function ($v, $k) {
+            return is_string($k) && (
+                    (is_bool($v) && $v) || (is_array($v) && ! empty($v['__self']))
+                );
+        }, ARRAY_FILTER_USE_BOTH)));
         if (! empty($requiredAttributes)) {
             $exampleData['required'] = $requiredAttributes;
         }
@@ -551,23 +555,30 @@ class RoutesParser
     /**
      * Process rules obtained from FromRequest class and return data examples.
      *
-     * @param  array       $rules
+     * @param  array       $rules    Rulex processed and nested
+     * @param  array       $rulesRaw Rules raw
      * @param  array       $labels
      * @param  bool        $describe
      * @param  string|null $parent
+     * @param  string|null $parentFullPath
      * @return array
      */
-    protected function processFormRequestRules(array $rules, array $labels = [], bool $describe = true, ?string $parent = null): array
+    protected function processFormRequestRules(array $rules, array $rulesRaw, array $labels = [], bool $describe = true, ?string $parent = null, ?string $parentFullPath = null): array
     {
         $resultAdditional = [];
         $result = [];
         $required = [];
         foreach ($rules as $key => $row) {
             $required[$key] = false;
+            $fullPath = (isset($parentFullPath) ? $parentFullPath . '.' : '') . $key;
             if (Arr::isAssoc($row)) {
                 // Replace KEY for nested rules
                 $keyToPlace = $key === "*" ? 0 : $key;
-                [$result[$keyToPlace], $resultAdditional[$keyToPlace], $required[$keyToPlace]] = $this->processFormRequestRules($row, [], false, $key);
+                [$result[$keyToPlace], $resultAdditional[$keyToPlace], $required[$key]] = $this->processFormRequestRules($row, $rulesRaw, [], false, $key, $fullPath);
+                // Mark as required self
+                if (is_array($rulesRawThis = $rulesRaw[$fullPath] ?? null)) {
+                    $required[$key]['__self'] = in_array('required', $rulesRawThis, true);
+                }
                 continue;
             }
             foreach ($row as $ruleRow) {
