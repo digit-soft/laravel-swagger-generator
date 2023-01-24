@@ -581,9 +581,9 @@ class RoutesParser
                 }
                 continue;
             }
+            $required[$key] = in_array('required', $row, true);
             foreach ($row as $ruleRow) {
                 [$ruleName] = $this->normalizeFormRequestValidationRule($ruleRow);
-                $required[$key] = $ruleName === 'required' || $required[$key];
                 $keyForExample = $key === '*' && $parent !== null ? $parent : $key;
                 if (($example = $this->describer()->example(null, null, $keyForExample, $ruleName)) !== null) {
                     $additionalParams = $this->parseAdditionalParamsFromRequestValidationRules($row, $example);
