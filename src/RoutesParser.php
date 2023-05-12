@@ -517,6 +517,7 @@ class RoutesParser
             if (Arr::isAssoc($row)) {
                 $row = $this->normalizeFormRequestRules($row);
             } else {
+                array_walk($row, function (&$rule) { $rule = is_object($rule) && $rule instanceof \Stringable ? (string)$rule : $rule; });
                 $row = array_values(array_filter($row, function ($value) { return is_string($value); }));
             }
             $result[$key] = $row;
@@ -691,7 +692,12 @@ class RoutesParser
         }
 
         [$ruleName, $ruleParamsStr] = explode(':', $rule);
-        $ruleParams = array_map('trim', explode(',', $ruleParamsStr));
+        // Trim whitespace and possible quotes
+        $ruleParams = array_map(function ($v) {
+            $v = trim($v);
+
+            return ($trimmed = trim($v, '"\'')) !== "" ? $trimmed : $v;
+        }, explode(',', $ruleParamsStr));
 
         return [$ruleName, $ruleParams];
     }
