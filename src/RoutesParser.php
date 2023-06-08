@@ -669,6 +669,7 @@ class RoutesParser
             case 'in':
                 $ruleParams = array_filter($ruleParams, fn ($v) => (string)$v !== "");
                 if (! empty($ruleParams)) {
+                    sort($ruleParams);
                     $params['enum'] = $ruleParams;
                 }
                 break;
