@@ -444,12 +444,43 @@ class RoutesParser
             }
             $properties = $bodyByContentType['schema']['properties'];
             foreach ($properties as $property => $row) {
+                $type = $row['type'] ?? null;
+                // Parse objects
+                if ($type === Variable::SW_TYPE_OBJECT) {
+                    $paramsPlain = $this->convertRequestBodyObjectToPlainParamsForQuery($row, $property);
+                    $params = array_merge($params, $paramsPlain);
+                    continue;
+                }
                 $param = new Parameter(array_merge($row, ['in' => 'query', 'name' => $property]));
                 $params[$property] = $param->toArray();
             }
         }
 
         return ! empty($params) ? array_values($params) : null;
+    }
+
+    /**
+     * Extract a plain list of properties from the object to build the query parameters.
+     *
+     * @param  array       $description
+     * @param  string|null $prefix
+     * @param  array       $results
+     * @return array
+     */
+    protected function convertRequestBodyObjectToPlainParamsForQuery(array $description, ?string $prefix = null, array &$results = []): array
+    {
+        $properties = $description['properties'] ?? [];
+        foreach ($properties as $property => $row) {
+            $propertyType = $row['type'] ?? Variable::SW_TYPE_STRING;
+            $propertyFullName = $prefix !== null ? $prefix . '[' . $property . ']' : $property;
+            if ($propertyType === Variable::SW_TYPE_OBJECT) {
+                $this->convertRequestBodyObjectToPlainParamsForQuery($row, $propertyFullName, $results);
+                continue;
+            }
+            $results[$propertyFullName] = (new Parameter(array_merge($row, ['in' => 'query', 'type' => $propertyType, 'name' => $propertyFullName])))->toArray();
+        }
+
+        return $results;
     }
 
     /**
