@@ -76,6 +76,17 @@ abstract class BaseValueDescribed extends BaseAnnotation
     protected ?string $_phpType = null;
 
     /**
+     * BaseValueDescribed constructor.
+     *
+     * @param  array $values
+     */
+    public function __construct(array $values)
+    {
+        $this->configureSelf($values, 'name');
+        $this->processType();
+    }
+
+    /**
      * Check that variable name is nested (with dots)
      * @return bool
      */
@@ -151,17 +162,6 @@ abstract class BaseValueDescribed extends BaseAnnotation
                 $currentTarget = empty($currentTarget) ? $this->toArray() : $this->describer()->merge($currentTarget, $this->toArray());
             }
         }
-    }
-
-    /**
-     * BaseValueDescribed constructor.
-     *
-     * @param  array $values
-     */
-    public function __construct(array $values)
-    {
-        $this->configureSelf($values, 'name');
-        $this->processType();
     }
 
     /**

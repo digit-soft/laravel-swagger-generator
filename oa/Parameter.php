@@ -16,6 +16,7 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  *   @Attribute("name",type="string"),
  *   @Attribute("type",type="string"),
  *   @Attribute("in",type="string"),
+ *   @Attribute("style",type="string"),
  *   @Attribute("description",type="string"),
  * })
  */
@@ -112,7 +113,7 @@ class Parameter extends BaseValueDescribed
         return [
             // 'in.type' => 'style',
             // 'in.*' => 'style',
-            'query.array' => 'deepObject',
+            'query.array' => 'form',
         ];
     }
 }

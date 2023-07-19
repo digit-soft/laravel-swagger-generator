@@ -445,13 +445,21 @@ class RoutesParser
             $properties = $bodyByContentType['schema']['properties'];
             foreach ($properties as $property => $row) {
                 $type = $row['type'] ?? null;
+                $paramName = $property;
                 // Parse objects
                 if ($type === Variable::SW_TYPE_OBJECT) {
-                    $paramsPlain = $this->convertRequestBodyObjectToPlainParamsForQuery($row, $property);
+                    $paramsPlain = $this->convertRequestBodyObjectToPlainParamsForQuery($row, $paramName);
                     $params = array_merge($params, $paramsPlain);
                     continue;
                 }
-                $param = new Parameter(array_merge($row, ['in' => 'query', 'name' => $property]));
+                // Modify array
+                if ($type === Variable::SW_TYPE_ARRAY) {
+                    $paramName .= '[]';
+                    $typeItems = $row['items'] ?? Variable::SW_TYPE_STRING;
+                    $typeItems = is_array($typeItems) ? $typeItems['type'] ?? Variable::SW_TYPE_STRING : $typeItems;
+                    $row = array_merge($row, ['items' => $typeItems]);
+                }
+                $param = new Parameter(array_merge($row, ['in' => 'query', 'name' => $paramName]));
                 $params[$property] = $param->toArray();
             }
         }
