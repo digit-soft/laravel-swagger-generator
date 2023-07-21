@@ -211,19 +211,50 @@ trait WithTypeParser
      */
     public function normalizeType(string $type, bool $stripArray = false): string
     {
-        $type = strpos($type, '|') ? explode('|', $type)[0] : $type;
-        if ($stripArray && $this->isTypeArray($type, false)) {
-            $type = substr($type, 0, -2);
+        [$typeNormalized] = $this->normalizeTypeAndNullableFlag($type, $stripArray);
+
+        return $typeNormalized;
+    }
+
+    /**
+     * Normalize the PHP type and return `nullable` flag.
+     *
+     * @param  string $type
+     * @param  bool   $stripArray
+     * @return array
+     */
+    public function normalizeTypeAndNullableFlag(string $type, bool $stripArray = false): array
+    {
+        [$typeParsed, $nullable] = $this->getNormalizedPhpTypeInfo($type);
+        if ($stripArray && $this->isTypeArray($typeParsed, false)) {
+            $typeParsed = substr($typeParsed, 0, -2);
         }
-        $typeLower = strtolower($type);
-        if (isset($this->basicTypesSyn[$typeLower])) {
-            return $this->basicTypesSyn[$typeLower];
+        $typeLower = strtolower($typeParsed);
+        if (($typeSyn = $this->basicTypesSyn[$typeLower] ?? null) !== null) {
+            return [$typeSyn, $nullable];
         }
-        if (str_contains($type, '\\') || class_exists($type) || interface_exists($type)) {
-            return ltrim($type, '\\');
+        if (str_contains($typeParsed, '\\') || class_exists($typeParsed) || interface_exists($typeParsed)) {
+            return [ltrim($typeParsed, '\\'), $nullable];
         }
 
-        return $typeLower;
+        return [$typeLower, $nullable];
+    }
+
+    /**
+     * Get normalized type info.
+     *
+     * @param  string $type        Type to parse
+     * @param  string $defaultType Default type if nothing was found
+     * @return array{string,bool} Type, Is_Nullable
+     */
+    protected function getNormalizedPhpTypeInfo(string $type, string $defaultType = 'string'): array
+    {
+        $types = strpos($type, '|') ? explode('|', $type) : [$type];
+        $nullTypes = ['null', 'NULL', 'Null'];
+        $nullable = ! empty(array_intersect($nullTypes, $types));
+        $typesFiltered = array_diff($types, $nullTypes);
+
+        return [! empty($typesFiltered) ? reset($typesFiltered) : $defaultType, $nullable];
     }
 
     /**

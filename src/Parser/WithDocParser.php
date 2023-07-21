@@ -68,11 +68,14 @@ trait WithDocParser
             $type = (string)$tag->getType();
             $name = $tag->getVariableName();
             $description = $tag->getDescription();
-            $type = $this->describer()->normalizeType($type);
+            [$typeNormalized, $nullable] = $this->describer()->normalizeTypeAndNullableFlag($type);
             $result[$name] = [
-                'type' => $type,
+                'type' => $typeNormalized,
                 'description' => $description?->render(),
             ];
+            if ($nullable) {
+                $result[$name]['nullable'] = $nullable;
+            }
         }
 
         return $result;
