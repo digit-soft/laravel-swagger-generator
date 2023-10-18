@@ -354,13 +354,22 @@ class RoutesParser
         $request = null;
         $stdTypes = ['int', 'integer', 'string', 'float', 'array', 'bool', 'boolean'];
         foreach ($ref->getParameters() as $parameter) {
-            if ($parameter->hasType() && ($type = $parameter->getType()?->getName()) !== null && ! in_array($type, $stdTypes, true)) {
-                if (
-                    class_exists($type)
-                    && isset(class_parents($type)[FormRequest::class])
-                    && ! $this->hasIgnoreAnnotation($type)
-                    && ($request = $this->getParamsFromFormRequest($type, $asQueryParams)) !== null
-                ) {
+            if (
+                $parameter->hasType()
+                && ($type = $parameter->getType()?->getName()) !== null
+                && ! in_array($type, $stdTypes, true)
+                && class_exists($type)
+            ) {
+                $isFormRequest = isset(class_parents($type)[FormRequest::class]);
+                $isDto = isset(class_parents($type)[\Spatie\LaravelData\Data::class]);
+                if (! ($isFormRequest || $isDto) || $this->hasIgnoreAnnotation($type)) {
+                    continue;
+                }
+                $request = $isFormRequest
+                    ? $this->getParamsFromFormRequest($type, $asQueryParams)
+                    : $this->getParamsFromFormRequest($type, $asQueryParams, true);
+                // Request data parsed successfully
+                if ($request !== null) {
                     break;
                 }
             }
@@ -385,17 +394,18 @@ class RoutesParser
     }
 
     /**
-     * Get and process FormRequest annotations and rules
+     * Get and process FormRequest or DTO annotations and rules
      *
      * @param  string $className
      * @param  bool   $asRaw
+     * @param  bool   $asDto Parse DTO, not FromRequest
      * @return array
      */
-    protected function getParamsFromFormRequest(string $className, bool $asRaw = false): array
+    protected function getParamsFromFormRequest(string $className, bool $asRaw = false, bool $asDto = false): array
     {
         $classKey = $this->describer()->shortenClass($className);
         if ($asRaw || ($result = $this->getComponent($classKey, static::COMPONENT_REQUESTS)) === null) {
-            $rulesData = $this->parseFormRequestRules($className);
+            $rulesData = $asDto ? $this->parseDtoRequestRules($className) : $this->parseFormRequestRules($className);
             $annotationsData = $this->parseFormRequestAnnotations($className);
             if (empty($annotationsData['description'])) {
                 $classRef = $this->reflectionClass($className);
@@ -511,6 +521,40 @@ class RoutesParser
             $labels = $instance->attributes();
         } catch (\Throwable $exception) {
             $this->trigger(static::EVENT_FORM_REQUEST_FAILED, $instance, $exception);
+            $rulesRaw = [];
+            $labels = [];
+        }
+        $rulesNormalized = $this->normalizeFormRequestRules($rulesRaw);
+        [$exampleData, , $required] = $this->processFormRequestRules($rulesNormalized, $rulesRaw, $labels);
+        $requiredAttributes = array_values(array_keys(array_filter($required, function ($v, $k) {
+            return is_string($k) && (
+                    (is_bool($v) && $v) || (is_array($v) && ! empty($v['__self']))
+                );
+        }, ARRAY_FILTER_USE_BOTH)));
+        if (! empty($requiredAttributes)) {
+            $exampleData['required'] = $requiredAttributes;
+        }
+
+        return $exampleData;
+    }
+
+    /**
+     * Get rules from DataTransferObjects, process them and return described data
+     *
+     * @param  string $className DTO class name
+     * @return array Described request by validation rules + required attributes
+     */
+    protected function parseDtoRequestRules(string $className): array
+    {
+        /** @var \Spatie\LaravelData\Data $className */
+        $rulesRaw = $className::getValidationRules($className::empty());
+        try {
+            // $rulesRaw = $instance->rules();
+            $ignoreParams = array_map(fn (\OA\RequestParamIgnore $a) => $a->name, $this->classAnnotations($className, \OA\RequestParamIgnore::class));
+            $rulesRaw = ! empty($ignoreParams) ? Arr::except($rulesRaw, $ignoreParams) : $rulesRaw;
+            $labels = method_exists($className, 'attributes') ? $className::attributes() : [];
+        } catch (\Throwable $exception) {
+            $this->trigger(static::EVENT_FORM_REQUEST_FAILED, $className, $exception);
             $rulesRaw = [];
             $labels = [];
         }
