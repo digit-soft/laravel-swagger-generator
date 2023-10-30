@@ -30,7 +30,11 @@ trait WithAnnotationReader
      */
     protected function routeAnnotation(Route $route, string $name = \OA\Tag::class): ?BaseAnnotation
     {
-        $annotations = $this->routeAnnotations($route, $name);
+        try {
+            $annotations = $this->routeAnnotations($route, $name);
+        } catch (\ReflectionException $e) {
+            return null;
+        }
 
         return ! empty($annotations) ? reset($annotations) : null;
     }
@@ -44,7 +48,11 @@ trait WithAnnotationReader
      */
     protected function routeAnnotations(Route $route, ?string $name = null) :array
     {
-        $ref = $this->routeReflection($route);
+        try {
+            $ref = $this->routeReflection($route);
+        } catch (\ReflectionException $e) {
+            return [];
+        }
         if (! $ref instanceof \ReflectionMethod) {
             return [];
         }
@@ -74,7 +82,11 @@ trait WithAnnotationReader
      */
     protected function controllerAnnotations(Route $route, ?string $name = null, bool $checkExtending = false, bool $mergeExtended = false): array
     {
-        $ref = $this->routeReflection($route);
+        try {
+            $ref = $this->routeReflection($route);
+        } catch (\ReflectionException $e) {
+            return [];
+        }
         if (! $ref instanceof \ReflectionMethod) {
             return [];
         }
