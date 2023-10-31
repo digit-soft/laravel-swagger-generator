@@ -26,6 +26,10 @@ trait WithRouteReflections
         }
         $controller = $route->getController();
         $method = $route->getActionMethod();
+        // Invokable controller
+        if ($method === get_class($controller)) {
+            return $this->reflectionMethod($controller, '__invoke');
+        }
 
         return $this->reflectionMethod($controller, $method);
     }
