@@ -90,4 +90,23 @@ return [
     |
      */
     'generateDefinitions' => [],
+
+    'defaultResponses' => [
+        'ok' => [
+            'response' => [
+                'success' => true,
+                'message' => 'OK',
+                'result' => false,
+            ],
+            'resultKey' => 'properties.result',
+        ],
+        'error' => [
+            'response' => [
+                'success' => false,
+                'message' => 'Error',
+                'errors' => [],
+            ],
+            'resultKey' => 'properties.errors',
+        ],
+    ],
 ];
