@@ -453,8 +453,10 @@ class RoutesParser
                 continue;
             }
             $properties = $bodyByContentType['schema']['properties'];
+            $requiredProperties = $bodyByContentType['schema']['required'] ?? [];
             foreach ($properties as $property => $row) {
                 $type = $row['type'] ?? null;
+                $row['required'] = in_array($property, $requiredProperties, true);
                 $paramName = $property;
                 // Parse objects
                 if ($type === Variable::SW_TYPE_OBJECT) {
