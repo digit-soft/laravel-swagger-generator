@@ -207,25 +207,11 @@ class Response extends BaseAnnotation
     protected static function getDefaultResponse(string $contentType, int $status = 200): mixed
     {
         $key = static::isSuccessStatus($status) ? 'ok' : 'error';
+
+        $defaultResponses = config('swagger-generator.defaultResponses');
+
         $responses = [
-            'application/json' => [
-                'ok' => [
-                    'response' => [
-                        'success' => true,
-                        'message' => 'OK',
-                        'result' => false,
-                    ],
-                    'resultKey' => 'properties.result',
-                ],
-                'error' => [
-                    'response' => [
-                        'success' => false,
-                        'message' => 'Error',
-                        'errors' => [],
-                    ],
-                    'resultKey' => 'properties.errors',
-                ],
-            ],
+            'application/json' => $defaultResponses,
         ];
 
         $responseKey = $contentType . '.' . $key;
