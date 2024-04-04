@@ -244,7 +244,9 @@ class Response extends BaseAnnotation
      */
     protected static function isSuccessStatus($status): bool
     {
-        return in_array((int)$status, [200, 201, 202, 204], true);
+        $statusInt = (int)$status;
+
+        return $statusInt >= 200 && $statusInt < 400;
     }
 
     /**
