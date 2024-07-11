@@ -18,6 +18,7 @@ use Doctrine\Common\Annotations\Annotation\Attributes;
  * @Target("METHOD")
  * @Attributes({
  *   @Attribute("status",type="integer"),
+ *   @Attribute("isSuccessful",type="boolean"),
  *   @Attribute("contentType",type="string"),
  *   @Attribute("description",type="string"),
  *   @Attribute("asList",type="boolean"),
@@ -30,6 +31,7 @@ class Response extends BaseAnnotation
     public mixed $content = null;
     public string $contentType = 'application/json';
     public int $status = 200;
+    public ?bool $isSuccessful = null;
     public ?string $description = null;
     public bool $asList = false;
     public bool $asPagedList = false;
@@ -179,12 +181,12 @@ class Response extends BaseAnnotation
     protected function wrapInDefaultResponse(mixed $content = null): mixed
     {
         $content = $content ?? $this->content;
-        $responseData = static::getDefaultResponse($this->contentType, $this->status);
+        $responseData = static::getDefaultResponse($this->contentType, $this->status, $this->isSuccessful);
         if ($responseData === null) {
             return $content;
         }
         [$responseRaw, $resultKey] = array_values($responseData);
-        if (($this->asPagedList || $this->asCursorPagedList) && static::isSuccessStatus($this->status)) {
+        if (($this->asPagedList || $this->asCursorPagedList) && ($this->isSuccessful ?? static::isSuccessStatus($this->status))) {
             if ($this->asPagedList) {
                 $responseRaw['pagination'] = static::getPagerExample();
             } elseif ($this->asCursorPagedList) {
@@ -200,13 +202,14 @@ class Response extends BaseAnnotation
     /**
      * Get default response by content type [response, result_array_key].
      *
-     * @param  string $contentType
-     * @param  int    $status
+     * @param  string    $contentType
+     * @param  int       $status
+     * @param  bool|null $isSuccessful Override check by status for success/error response
      * @return mixed|null
      */
-    protected static function getDefaultResponse(string $contentType, int $status = 200): mixed
+    protected static function getDefaultResponse(string $contentType, int $status = 200, ?bool $isSuccessful = null): mixed
     {
-        $key = static::isSuccessStatus($status) ? 'ok' : 'error';
+        $key = ($isSuccessful ?? static::isSuccessStatus($status)) ? 'ok' : 'error';
         $responses = [
             'application/json' => [
                 'ok' => [
