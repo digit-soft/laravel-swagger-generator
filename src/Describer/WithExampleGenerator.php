@@ -54,7 +54,7 @@ trait WithExampleGenerator
         $isArray = $this->isTypeArray($phpType);
         if ($rule === null || ($example = $this->exampleByRule($rule)) === null) {
             $typeClean = $isArray ? substr($phpType, 0, -2) : $phpType;
-            $example = $this->exampleByType($typeClean);
+            $example = $this->exampleByType($typeClean, $varName);
         }
         $example = $this->typeCastExample($example, $phpType);
         $example = $isArray ? [$example] : $example;
@@ -141,7 +141,7 @@ trait WithExampleGenerator
             case 'double':
                 return 1.65 * $iteration;
             case 'string':
-                $strArr = ['string', 'str value', 'str example', 'string data', 'some txt'];
+                $strArr = ['string', 'string value', 'string example', 'string data', 'some text'];
                 return $this->takeFromArray($strArr, $iteration);
             case 'bool':
             case 'boolean':
@@ -358,11 +358,15 @@ trait WithExampleGenerator
      * Get example by given type
      *
      * @param  string|null $type
+     * @param  string|null $varName
      * @return array|int|string|null
      */
-    protected function exampleByType(?string $type): mixed
+    protected function exampleByType(?string $type, ?string $varName = null): mixed
     {
         $type = is_string($type) ? $this->normalizeType($type, true) : null;
+        if ($type === 'string' && is_string($varName)) {
+            return Str::headline($varName);
+        }
         $key = $type;
         if (! isset($this->varsSequences[$key])) {
             $this->varsSequences[$key] = $this->generateExampleByTypeSequence($type, 10);
