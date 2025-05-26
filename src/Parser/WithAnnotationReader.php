@@ -178,6 +178,9 @@ trait WithAnnotationReader
         if (is_array($ref)) {
             $ref = $this->reflectionMethod(...$ref);
         }
+        if (! $ref instanceof \ReflectionMethod) {
+            return [];
+        }
         if (($annotations = $this->getCachedAnnotations($ref)) === null) {
             $annotations = $this->annotationReader()->getMethodAnnotations($ref);
             $this->setCachedAnnotations($ref, $annotations);
