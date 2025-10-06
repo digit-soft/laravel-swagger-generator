@@ -68,7 +68,7 @@ class RoutesParser
      * @param  RouteCollection  $routes
      * @param  OutputStyle|null $output
      */
-    public function __construct(RouteCollection $routes, OutputStyle $output = null)
+    public function __construct(RouteCollection $routes, ?OutputStyle $output = null)
     {
         $this->routes = $routes;
         $this->output = $output;
@@ -166,7 +166,7 @@ class RoutesParser
             $numCopy = 1;
             foreach ($paramsOptional as $paramName) {
                 $paramNamesRemoved[] = $paramName;
-                $pathNew = rtrim(preg_replace('/\/?\{' . $paramName . '\}/', '', $pathLast), '/');
+                $pathNew = rtrim((string) preg_replace('/\/?\{' . $paramName . '\}/', '', $pathLast), '/');
                 $paramsCurrent = array_filter($params, fn ($p) => $p['in'] !== 'path' || ! in_array($p['name'], $paramNamesRemoved, true));
                 $routeDataCurrent = array_merge($routeData, ['parameters' => $paramsCurrent, 'operationId' => $routeData['operationId'] . '.cp-' . $numCopy]);
 
@@ -179,7 +179,7 @@ class RoutesParser
         foreach ($dataRows as $row) {
             [$rPath, $rMethods, $rData] = $row;
             foreach ($rMethods as $m) {
-                $data[$rPath][strtolower($m)] = $rData;
+                $data[$rPath][strtolower((string) $m)] = $rData;
             }
         }
 
@@ -585,7 +585,7 @@ class RoutesParser
         $result = [];
         $rulesExpanded = [];
         foreach ($rules as $key => $row) {
-            if (str_contains($key, '.')) {
+            if (str_contains((string) $key, '.')) {
                 Arr::set($rulesExpanded, $key, $row);
                 unset($rules[$key]);
             }
@@ -731,14 +731,14 @@ class RoutesParser
                 if (($min = reset($ruleParams)) !== false) {
                     $paramKey = is_numeric($value) ? 'minimum' : 'minLength';
                     $paramKey = is_array($value) ? 'minItems' : $paramKey;
-                    $params[$paramKey] = str_contains($min, '.') ? (float)$min : (int)$min;
+                    $params[$paramKey] = str_contains((string) $min, '.') ? (float)$min : (int)$min;
                 }
                 break;
             case 'max':
                 if (($max = reset($ruleParams)) !== false) {
                     $paramKey = is_numeric($value) ? 'maximum' : 'maxLength';
                     $paramKey = is_array($value) ? 'maxItems' : $paramKey;
-                    $params[$paramKey] = str_contains($max, '.') ? (float)$max : (int)$max;
+                    $params[$paramKey] = str_contains((string) $max, '.') ? (float)$max : (int)$max;
                 }
                 break;
             case 'between':
@@ -804,7 +804,7 @@ class RoutesParser
         foreach ($labels as $attribute => $label) {
             $attributeNormalized = $attribute;
             // Attribute names with a wildcard (*)
-            if (str_contains($attribute, '*')) {
+            if (str_contains((string) $attribute, '*')) {
                 $attributeNormalized = str_replace('*', 'items', str_replace('*.', 'items.properties.', $attribute));
                 if (Arr::get($rules['properties'], $attributeNormalized) !== null) {
                     Arr::set($rules['properties'], $attributeNormalized . '.description', Str::ucfirst($label));
