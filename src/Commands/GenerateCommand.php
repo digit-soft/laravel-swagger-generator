@@ -79,7 +79,8 @@ class GenerateCommand extends Command
         $arrayContent = $this->describer()->merge($arrayContent, $definitions);
         $content = $this->describer()->toYml($arrayContent);
         $this->files->put($filePath, $content);
-        $this->getOutput()->success(sprintf("Swagger YML file was generated in '%s'", $filePath));
+        $routesCnt = array_reduce($arrayContent['paths'], fn ($carry, $item) => $carry + count($item ?? []), 0);
+        $this->getOutput()->success(sprintf("Swagger YML file was generated in '%s' with %d routes", $filePath, $routesCnt));
         $this->printTimeSpent($startTime);
 
         return 0;
