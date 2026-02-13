@@ -34,6 +34,7 @@ class RoutesParser
     const COMPONENT_REQUESTS = 'requestBodies';
     const COMPONENT_PARAMETER = 'parameters';
     const COMPONENT_OBJECTS = 'x-objects';
+    const COMPONENT_SCHEMAS = 'schemas';
 
     const PROBLEM_NO_RESPONSE = 'no_response';
     const PROBLEM_ROUTE_CLOSURE = 'route_closure';

@@ -122,7 +122,8 @@ trait CollectsClassReferences
             return static::$collectedClassReferencesKeys[$classNameWithAttributes];
         }
         $classNameSafe = str_replace(['\\', '.'], '_', $classNameWithAttributes);
-        $keys = ['components', RoutesParser::COMPONENT_OBJECTS, $classNameSafe];
+        $componentsKey = config('swagger-generator.generateObjectsAsSchemas', false) ? RoutesParser::COMPONENT_SCHEMAS : RoutesParser::COMPONENT_OBJECTS;
+        $keys = ['components', $componentsKey, $classNameSafe];
 
         return static::$collectedClassReferencesKeys[$classNameWithAttributes] = '#/' . implode('/', $keys);
     }
